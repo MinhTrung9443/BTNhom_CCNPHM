@@ -1,0 +1,96 @@
+/* Bootstrap Variables Override */
+/* Customize Bootstrap variables before importing Bootstrap */
+
+:root {
+  /* Primary Color Scheme */
+  --bs-primary: #0d6efd;
+  --bs-primary-rgb: 13, 110, 253;
+  
+  /* Secondary Colors */
+  --bs-secondary: #6c757d;
+  --bs-success: #198754;
+  --bs-info: #0dcaf0;
+  --bs-warning: #ffc107;
+  --bs-danger: #dc3545;
+  --bs-light: #f8f9fa;
+  --bs-dark: #212529;
+
+  /* Custom Brand Colors */
+  --brand-primary: #2563eb;
+  --brand-secondary: #64748b;
+  
+  /* Spacing */
+  --custom-spacing-xs: 0.25rem;
+  --custom-spacing-sm: 0.5rem;
+  --custom-spacing-md: 1rem;
+  --custom-spacing-lg: 1.5rem;
+  --custom-spacing-xl: 3rem;
+  
+  /* Border Radius */
+  --bs-border-radius: 0.375rem;
+  --bs-border-radius-sm: 0.25rem;
+  --bs-border-radius-lg: 0.5rem;
+  --bs-border-radius-xl: 1rem;
+  
+  /* Shadows */
+  --custom-shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --custom-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --custom-shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --custom-shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+}
+
+/* Custom Utility Classes */
+.shadow-custom {
+  box-shadow: var(--custom-shadow) !important;
+}
+
+.shadow-custom-md {
+  box-shadow: var(--custom-shadow-md) !important;
+}
+
+.shadow-custom-lg {
+  box-shadow: var(--custom-shadow-lg) !important;
+}
+
+/* Custom Button Variants */
+.btn-brand-primary {
+  --bs-btn-color: #fff;
+  --bs-btn-bg: var(--brand-primary);
+  --bs-btn-border-color: var(--brand-primary);
+  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-bg: #1d4ed8;
+  --bs-btn-hover-border-color: #1d4ed8;
+  --bs-btn-focus-shadow-rgb: 37, 99, 235;
+  --bs-btn-active-color: #fff;
+  --bs-btn-active-bg: #1e40af;
+  --bs-btn-active-border-color: #1e40af;
+  --bs-btn-active-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.125);
+  --bs-btn-disabled-color: #fff;
+  --bs-btn-disabled-bg: var(--brand-primary);
+  --bs-btn-disabled-border-color: var(--brand-primary);
+}
+
+/* Responsive spacing utilities */
+@media (max-width: 576px) {
+  .p-mobile-2 { padding: 0.5rem !important; }
+  .m-mobile-2 { margin: 0.5rem !important; }
+}
+
+/* Custom animations */
+.fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.slide-up {
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
