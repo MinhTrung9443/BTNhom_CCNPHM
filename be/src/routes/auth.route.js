@@ -7,5 +7,6 @@ const router = express.Router();
 
 router.post('/forgot-password', validate(forgotPasswordSchema), authController.forgotPassword);
 router.post('/reset-password/:token', validate(resetPasswordSchema), authController.resetPassword);
-
+router.post('/register', authController.register);
+router.post('/verify-otp', authController.verifyOTP);
 export default router;

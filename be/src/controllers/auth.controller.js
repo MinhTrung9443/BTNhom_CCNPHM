@@ -20,7 +20,29 @@ const resetPassword = async (req, res) => {
     });
 };
 
+const register = async (req, res) => {
+    const { name, email, password, phone, address } = req.body;
+    await authService.register(name, email, password, phone, address);
+    res.status(201).json({
+        success: true,
+        email: email,
+        message: "Tài khoản đã được tạo thành công.",
+    });
+};
+
+const verifyOTP = async (req, res) => {
+    const { email, otp } = req.body;
+
+  await authService.verifyOTP(email, otp);
+  res.status(200).json({
+      success: true,
+      message: "Mã OTP đã được xác thực thành công.",
+  });
+}
+
 export {
     forgotPassword,
-    resetPassword
+    resetPassword,
+    register,
+    verifyOTP
 };
