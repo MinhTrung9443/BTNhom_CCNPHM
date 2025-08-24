@@ -60,9 +60,15 @@ const ForgotPasswordPage = () => {
     setErrors({});
 
     try {
+<<<<<<< HEAD
       const res= await authService.forgotPassword(formData.email);
       setIsSubmitted(true);
       toast.success(res.message || 'Email khôi phục mật khẩu đã được gửj!');
+=======
+      await authService.forgotPassword(formData.email);
+      setIsSubmitted(true);
+      toast.success('Email khôi phục mật khẩu đã được gửi!');
+>>>>>>> b437400ffb7132a56500410f112ed5d620c6f46f
     } catch (error) {
       const errorMessage = error.response?.data?.message || 
                           'Có lỗi xảy ra. Vui lòng thử lại.';

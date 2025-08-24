@@ -86,13 +86,21 @@ const ResetPasswordPage = () => {
     setErrors({});
 
     try {
+<<<<<<< HEAD
       const res = await authService.resetPassword(
+=======
+      await authService.resetPassword(
+>>>>>>> b437400ffb7132a56500410f112ed5d620c6f46f
         token, 
         formData.password, 
         formData.passwordConfirm
       );
       
+<<<<<<< HEAD
       toast.success(res.message || 'Mật khẩu đã được đặt lại thành coông!');
+=======
+      toast.success('Mật khẩu đã được đặt lại thành công!');
+>>>>>>> b437400ffb7132a56500410f112ed5d620c6f46f
       
       // Chuyển hướng đến trang login sau 2 giây
       setTimeout(() => {
