@@ -7,7 +7,7 @@ import './Auth.css';
 const Login = () => {
   const { login, loading, isAuthenticated } = useAuth();
   const [formData, setFormData] = useState({
-    login: '',
+    email: '',
     password: ''
   });
 
@@ -26,12 +26,19 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!formData.login || !formData.password) {
+    console.log('🔍 Form Data:', formData); // Debug log
+    console.log('📧 Email:', formData.email); // Debug log
+    console.log('🔑 Password:', formData.password); // Debug log
+    
+    if (!formData.email || !formData.password) {
       alert('Vui lòng điền đầy đủ thông tin');
       return;
     }
 
+    console.log('📤 Sending login request...'); // Debug log
     const result = await login(formData);
+    console.log('📥 Login result:', result); // Debug log
+    
     if (result.success) {
       // Redirect sẽ được xử lý bởi Navigate component khi isAuthenticated = true
     }
@@ -42,17 +49,17 @@ const Login = () => {
       <div className="auth-card">
         <div className="auth-header">
           <h2>🥮 Bánh Pía Quê Mình</h2>
-          <p>Đăng nhập để tiếp tục</p>
+          <p>Đăng nhập</p>
         </div>
 
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="form-group">
-            <label htmlFor="login">Email</label>
+            <label htmlFor="email">Email</label>
             <input
-              type="text"
-              id="login"
-              name="login"
-              value={formData.login}
+              type="email"
+              id="email"
+              name="email"
+              value={formData.email}
               onChange={handleChange}
               placeholder="Nhập email"
               disabled={loading}

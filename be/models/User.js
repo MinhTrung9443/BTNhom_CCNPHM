@@ -3,15 +3,6 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema({
-  username: {
-    type: String,
-    required: false, // Không bắt buộc nữa
-    unique: true,
-    trim: true,
-    minlength: [3, 'Tên người dùng phải có ít nhất 3 ký tự'],
-    maxlength: [20, 'Tên người dùng không được quá 20 ký tự'],
-    sparse: true // Cho phép null/undefined và vẫn unique
-  },
   email: {
     type: String,
     required: [true, 'Vui lòng nhập email'],
@@ -86,7 +77,6 @@ userSchema.methods.generateAuthToken = function() {
   return jwt.sign(
     { 
       id: this._id, 
-      username: this.username,
       email: this.email,
       role: this.role
     },

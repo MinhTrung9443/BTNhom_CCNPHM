@@ -9,6 +9,9 @@
     "watch": "node --watch index.js",
     "create-test-user": "node scripts/createTestUser.js",
     "test-jwt": "node test-jwt.js",
+    "check-db": "node check-and-create-data.js",
+    "fix-username": "node fix-username-index.js",
+    "debug-login": "node debug-login.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",

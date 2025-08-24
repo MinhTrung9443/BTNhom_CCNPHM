@@ -18,7 +18,7 @@ const transporter = nodemailer.createTransport({
 // Đăng ký tài khoản
 const register = async (req, res) => {
   try {
-    const { username, email, password, confirmPassword, fullName, phone, address } = req.body;
+    const {email, password, confirmPassword, fullName, phone, address } = req.body;
 
     // Kiểm tra các trường bắt buộc - không cần username
     if (!email || !password || !fullName) {
@@ -55,7 +55,6 @@ const register = async (req, res) => {
 
     // Tạo user mới - username có thể null
     const user = new User({
-      username: username || null, // Cho phép null
       email,
       password,
       fullName,
@@ -96,7 +95,6 @@ const register = async (req, res) => {
       data: {
         user: {
           id: user._id,
-          username: user.username,
           email: user.email,
           fullName: user.fullName,
           role: user.role
@@ -125,10 +123,19 @@ const register = async (req, res) => {
 // Đăng nhập
 const login = async (req, res) => {
   try {
-    const { login, password } = req.body;
+    console.log('🔍 Login attempt:', req.body); // Debug log
+    
+    const { email, password, login } = req.body;
+
+    // Chấp nhận cả email hoặc login field
+    const loginField = email || login;
+
+    console.log('📧 Login field:', loginField); // Debug log
+    console.log('🔑 Password provided:', !!password); // Debug log
 
     // Kiểm tra input
-    if (!login || !password) {
+    if (!loginField || !password) {
+      console.log('❌ Missing login field or password'); // Debug log
       return res.status(400).json({
         success: false,
         message: 'Vui lòng nhập đầy đủ thông tin đăng nhập'
@@ -138,12 +145,27 @@ const login = async (req, res) => {
     // Tìm user theo email hoặc username
     const user = await User.findOne({
       $or: [
-        { email: login },
-        { username: login }
+        { email: loginField },
+
       ]
     });
 
+    console.log('👤 User found:', !!user); // Debug log
+    if (user) {
+      console.log('📋 User details:', {
+        id: user._id,
+        email: user.email,
+        fullName: user.fullName,
+        phone: user.phone,
+        address: user.address,
+        role: user.role,
+        isActive: user.isActive,
+        emailVerified: user.emailVerified
+      });
+    }
+
     if (!user) {
+      console.log('❌ User not found for:', loginField); // Debug log
       return res.status(401).json({
         success: false,
         message: 'Thông tin đăng nhập không chính xác'
@@ -152,6 +174,7 @@ const login = async (req, res) => {
 
     // Kiểm tra tài khoản có bị khóa không
     if (!user.isActive) {
+      console.log('❌ User account is inactive'); // Debug log
       return res.status(401).json({
         success: false,
         message: 'Tài khoản đã bị khóa'
@@ -159,8 +182,12 @@ const login = async (req, res) => {
     }
 
     // Kiểm tra mật khẩu
+    console.log('🔐 Checking password...'); // Debug log
     const isPasswordValid = await user.comparePassword(password);
+    console.log('✅ Password valid:', isPasswordValid); // Debug log
+    
     if (!isPasswordValid) {
+      console.log('❌ Invalid password for user:', user.email); // Debug log
       return res.status(401).json({
         success: false,
         message: 'Thông tin đăng nhập không chính xác'
@@ -168,7 +195,9 @@ const login = async (req, res) => {
     }
 
     // Tạo JWT token
+    console.log('🎫 Generating JWT token...'); // Debug log
     const token = user.generateAuthToken();
+    console.log('✅ Login successful for:', user.email); // Debug log
 
     res.json({
       success: true,
@@ -177,7 +206,7 @@ const login = async (req, res) => {
         token,
         user: {
           id: user._id,
-          username: user.username,
+        
           email: user.email,
           fullName: user.fullName,
           phone: user.phone,

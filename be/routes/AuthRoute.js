@@ -43,7 +43,6 @@ router.get('/test-token', authenticateToken, (req, res) => {
     message: 'Token hợp lệ',
     user: {
       id: req.user._id,
-      username: req.user.username,
       email: req.user.email,
       role: req.user.role
     }

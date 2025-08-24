@@ -49,8 +49,12 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (credentials) => {
     try {
+      console.log('🔐 AuthContext login called with:', credentials); // Debug log
       setLoading(true);
+      
+      console.log('📡 Calling authAPI.login...'); // Debug log
       const response = await authAPI.login(credentials);
+      console.log('📥 API Response:', response); // Debug log
       
       if (response.data.success) {
         const { token, user } = response.data.data;
@@ -65,6 +69,9 @@ export const AuthProvider = ({ children }) => {
         return { success: true, user };
       }
     } catch (error) {
+      console.error('❌ Login error:', error); // Debug log
+      console.error('❌ Error response:', error.response); // Debug log
+      
       const message = error.response?.data?.message || 'Đăng nhập thất bại';
       toast.error(message);
       return { success: false, message };
