@@ -1,6 +1,5 @@
 import * as authService from '../services/auth.service.js';
 
-// Express 5 không cần async handler nữa
 const forgotPassword = async (req, res) => {
     const { email } = req.body;
     await authService.forgotPassword(email);
@@ -30,6 +29,20 @@ const register = async (req, res) => {
     });
 };
 
+const login = async (req, res) => {
+    const { email, password } = req.body;
+    const { user, token } = await authService.login(email, password);
+
+    res.status(200).json({
+        success: true,
+        message: 'Đăng nhập thành công.',
+        data: {
+            user,
+            token,
+        },
+    });
+}
+
 const verifyOTP = async (req, res) => {
     const { email, otp } = req.body;
 
@@ -44,5 +57,6 @@ export {
     forgotPassword,
     resetPassword,
     register,
+    login,
     verifyOTP
 };

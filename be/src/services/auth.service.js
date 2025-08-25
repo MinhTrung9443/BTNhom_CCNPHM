@@ -1,4 +1,6 @@
 import crypto from 'crypto';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 import { User, OTP } from '../models/index.js';
 import { NotFoundError } from '../utils/AppError.js';
 import logger from '../utils/logger.js';
@@ -88,6 +90,26 @@ const register = async (name, email, password, phone, address) => {
     await newUser.save();
 };
 
+const login = async (email, password) => {
+    const user = await User.findOne({ email });
+    if (!user) {
+        throw new AppError(401, 'Email hoặc mật khẩu không chính xác.');
+    }
+    if (!user.isVerified) {
+        throw new AppError(403, 'Tài khoản của bạn chưa được tạo. Vui lòng kiểm tra email.');
+    }
+    const isPasswordMatch = await bcrypt.compare(password, user.password);
+    if (!isPasswordMatch) {
+        throw new AppError(401, 'Email hoặc mật khẩu không chính xác.');
+    }
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+        expiresIn: process.env.JWT_EXPIRES_IN,
+    });
+    user.password = undefined;
+
+    return { user, token };
+};
+
 const verifyOTP = async (email, otp) => {
   const otpRecord = await OTP.findOne({ email, otp });
   if (!otpRecord) {
@@ -108,6 +130,7 @@ export {
     forgotPassword,
     resetPassword,
     register,
+    login,
     verifyOTP
 };
 
