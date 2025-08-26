@@ -14,12 +14,6 @@ project/
 │── be/ # Backend (Node.js + Express + MongoDB)
 │── README.md
 
-yaml
-Sao chép
-Chỉnh sửa
-
----
-
 ## 🔧 Khởi tạo dự án  
 
 Mở **2 terminal** để chạy song song:  
@@ -29,13 +23,13 @@ Mở **2 terminal** để chạy song song:
 cd fe
 npm install
 npm start
+```
 ### Terminal 2: Backend
-bash
-Sao chép
-Chỉnh sửa
+```bash
 cd be
 npm install
 npm start
+```
 🌐 Truy cập
 Frontend: http://localhost:3000
 
