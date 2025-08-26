@@ -4,6 +4,7 @@ import morgan from 'morgan';
 import cors from 'cors';
 import connectDB from './src/config/db.js';
 import authRoutes from './src/routes/auth.route.js';
+import userRoutes from './src/routes/user.route.js'; 
 import logger from './src/utils/logger.js';
 import { notFound, errorHandler } from './src/middlewares/error.js';
 import config from './src/config/index.js';
@@ -28,6 +29,7 @@ app.use(express.json());
 connectDB();
 
 app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

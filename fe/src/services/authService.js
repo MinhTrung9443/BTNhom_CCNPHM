@@ -60,7 +60,21 @@ const authService = {
   register: async (userData) => {
     try {
       const response = await apiClient.post('/auth/register', userData);
-      return response.data;
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  /**
+   * Xác thực OTP
+   * @param {Object} otpData - Dữ liệu xác thực OTP
+   * @returns {Promise} Response từ API
+   */
+  verifyOTP: async (email, otp) => {
+    try {
+      const response = await apiClient.post('/auth/verify-otp', { email, otp });
+      return response;
     } catch (error) {
       throw error;
     }
