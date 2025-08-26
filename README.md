@@ -29,7 +29,7 @@ Mở **2 terminal** để chạy song song:
 cd fe
 npm install
 npm start
-Terminal 2: Backend
+### Terminal 2: Backend
 bash
 Sao chép
 Chỉnh sửa
