@@ -1,12 +1,18 @@
 // src/components/auth/RegisterForm.js
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import InputField from '../common/InputField.js';
-import Button from '../common/Button.js';
-
+import React, { useState } from "react";
+import { Link } from "react-router-dom";
+import InputField from "../common/InputField";
+import Button from "../common/Button";
 
 const RegisterForm = ({ onSubmit }) => {
-  const [formData, setFormData] = useState({ name: '', email: '',phone : '', address : '', password: '', confirmPassword: '' });
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    address: "",
+    password: "",
+    confirmPassword: "",
+  });
   const [errors, setErrors] = useState({});
 
   const handleChange = (e) => {
@@ -17,12 +23,13 @@ const RegisterForm = ({ onSubmit }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     const newErrors = {};
-    if (!formData.name) newErrors.name = 'Name is required';
-    if (!formData.email) newErrors.email = 'Email is required';
-    if (!formData.phone) newErrors.phone = 'phone is required';
-    if (!formData.address) newErrors.address = 'Address is required';
-    if (!formData.password) newErrors.password = 'Password is required';
-    if (formData.password !== formData.confirmPassword) newErrors.confirmPassword = 'Passwords do not match';
+    if (!formData.name) newErrors.name = "Name is required";
+    if (!formData.email) newErrors.email = "Email is required";
+    if (!formData.phone) newErrors.phone = "phone is required";
+    if (!formData.address) newErrors.address = "Address is required";
+    if (!formData.password) newErrors.password = "Password is required";
+    if (formData.password !== formData.confirmPassword)
+      newErrors.confirmPassword = "Passwords do not match";
     setErrors(newErrors);
 
     if (Object.keys(newErrors).length === 0) {
