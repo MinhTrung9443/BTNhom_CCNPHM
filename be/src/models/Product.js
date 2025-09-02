@@ -8,7 +8,6 @@ const productSchema = new mongoose.Schema(
     discount: { type: Number, default: 0 }, // %
     images: [{ type: String }],
     categoryId: { type: mongoose.Schema.Types.ObjectId, ref: "Category" },
-    isFeatured: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
