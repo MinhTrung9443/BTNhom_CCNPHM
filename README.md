@@ -40,4 +40,9 @@ Import collection Postman từ link:
 👉 Postman Collection
 
 Thực hiện các request để kiểm tra tính năng: đăng ký, đăng nhập, CRUD...
-
+### Thêm data mongo
+### Terminal 3: Backend
+```bash
+cd be
+node insertData.js
+```
