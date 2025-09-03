@@ -8,6 +8,7 @@ import userRoutes from './src/routes/user.route.js';
 import logger from './src/utils/logger.js';
 import { notFound, errorHandler } from './src/middlewares/error.js';
 import config from './src/config/index.js';
+import productRoutes from "./src/routes/product.route.js";
 
 dotenv.config();
 const app = express();
@@ -30,6 +31,9 @@ connectDB();
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/products", productRoutes); // Thêm dòng này
 
 app.use(notFound);
 app.use(errorHandler);

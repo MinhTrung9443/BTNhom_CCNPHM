@@ -1,0 +1,71 @@
+/* ==================== LAYOUT STYLES ==================== */
+
+/* Main layout wrapper */
+.layout-wrapper {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Main content area */
+.main-content {
+  flex: 1;
+  margin-top: 20px;
+  margin-bottom: 20px;
+  padding: 0 15px;
+}
+
+/* Responsive spacing */
+@media (min-width: 768px) {
+  .main-content {
+    margin-top: 30px;
+    margin-bottom: 30px;
+    padding: 0 30px;
+  }
+}
+
+@media (min-width: 992px) {
+  .main-content {
+    margin-top: 40px;
+    margin-bottom: 40px;
+  }
+}
+
+/* Ensure header stays at top */
+header {
+  position: relative;
+  z-index: 1000;
+}
+
+/* Ensure footer stays at bottom */
+footer {
+  margin-top: auto;
+}
+
+/* Page sections spacing */
+.page-section {
+  margin-bottom: 40px;
+}
+
+.page-section:last-child {
+  margin-bottom: 0;
+}
+
+/* Container spacing adjustments */
+.container-spacing {
+  padding-top: 20px;
+  padding-bottom: 20px;
+}
+
+@media (min-width: 768px) {
+  .container-spacing {
+    padding-top: 30px;
+    padding-bottom: 30px;
+  }
+}
+
+/* Prevent content overflow */
+.main-content > * {
+  max-width: 100%;
+  overflow-x: hidden;
+}

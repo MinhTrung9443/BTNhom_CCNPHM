@@ -10,7 +10,7 @@ const protect = async (req, res, next) => {
     }
 
     if (!token) {
-        return next(new AppError(401, 'Bạn chưa đăng nhập. Vui lòng đăng nhập để tiếp tục.'));
+        return next(new AppError('Bạn chưa đăng nhập. Vui lòng đăng nhập để tiếp tục.', 401));
     }
 
     try {
@@ -18,12 +18,12 @@ const protect = async (req, res, next) => {
 
         const currentUser = await User.findById(decoded.id).select('-password');
         if (!currentUser) {
-            return next(new AppError(401, 'Người dùng của token này không còn tồn tại.'));
+            return next(new AppError('Người dùng của token này không còn tồn tại.', 401));
         }
         req.user = currentUser;
         next();
     } catch (error) {
-        return next(new AppError(401, 'Token không hợp lệ hoặc đã hết hạn.'));
+        return next(new AppError('Token không hợp lệ hoặc đã hết hạn.', 401));
     }
 };
 

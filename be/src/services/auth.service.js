@@ -2,7 +2,7 @@ import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { User, OTP } from '../models/index.js';
-import { NotFoundError } from '../utils/AppError.js';
+import { NotFoundError, AppError } from '../utils/AppError.js'; // Thêm AppError
 import logger from '../utils/logger.js';
 import sendEmail from '../utils/sendEmail.js';
 import sendOTP from '../utils/sendOTP.js';
@@ -33,18 +33,17 @@ const forgotPassword = async (email) => {
       email: user.email,
       subject: 'Your password reset token (valid for 10 min)',
       template: 'passwordReset',
-      firstName: user.name, // Assuming user model has a 'name' field
+      firstName: user.name,
       url: resetURL,
     });
     logger.info(`Password reset email sent to ${user.email}`);
   } catch (error) {
-    // If sending email fails, reset the token fields and re-throw the error
     user.passwordResetToken = undefined;
     user.passwordResetExpires = undefined;
-    await user.save({ validateBeforeSave: false }); // Save without validation to ensure reset happens
+    await user.save({ validateBeforeSave: false });
 
     logger.error(`Error sending password reset email, rolling back token: ${error}`);
-    throw error; // Re-throw the original error to be caught by the global error handler
+    throw error;
   }
 };
 
@@ -71,8 +70,7 @@ const resetPassword = async (token, password) => {
 
 const register = async (name, email, password, phone, address) => {
     const user = await User.findOne({email});
-    if (user)
-    {
+    if (user) {
       throw new Error('Email đã được sử dụng.');
     }
 
@@ -93,14 +91,14 @@ const register = async (name, email, password, phone, address) => {
 const login = async (email, password) => {
     const user = await User.findOne({ email });
     if (!user) {
-        throw new AppError(401, 'Email hoặc mật khẩu không chính xác.');
+        throw new AppError('Email hoặc mật khẩu không chính xác.', 401); // Sửa thứ tự tham số
     }
     if (!user.isVerified) {
-        throw new AppError(403, 'Tài khoản của bạn chưa được tạo. Vui lòng kiểm tra email.');
+        throw new AppError('Tài khoản của bạn chưa được tạo. Vui lòng kiểm tra email.', 403); // Sửa thứ tự tham số
     }
     const isPasswordMatch = await bcrypt.compare(password, user.password);
     if (!isPasswordMatch) {
-        throw new AppError(401, 'Email hoặc mật khẩu không chính xác.');
+        throw new AppError('Email hoặc mật khẩu không chính xác.', 401); // Sửa thứ tự tham số
     }
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
         expiresIn: process.env.JWT_EXPIRES_IN,
@@ -133,4 +131,3 @@ export {
     login,
     verifyOTP
 };
-

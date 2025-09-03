@@ -1,10 +1,12 @@
 import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import Layout from "../components/common/layout/Layout";
 
 import LoginPage from "../pages/auth/LoginPage.jsx";
 import RegisterPage from "../pages/auth/Register.jsx";
 import HomePage from "../pages/HomePage";
+import ProductsPage from "../pages/ProductsPage";
 import ProfilePage from "../pages/ProfilePage";
 import ForgotPasswordPage from "../pages/auth/ForgotPasswordPage";
 import ResetPasswordPage from "../pages/auth/ResetPasswordPage";
@@ -17,22 +19,19 @@ const ProtectedRoute = ({ children }) => {
   return children;
 };
 
-const AppRouter = () => {
+const AppRoutes = () => {
   return (
-    <BrowserRouter>
+    <Layout>
       <Routes>
+        {/* Public routes */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <HomePage />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/" element={<HomePage />} />
+        <Route path="/products" element={<ProductsPage />} />
+        
+        {/* Protected routes */}
         <Route
           path="/profile"
           element={
@@ -41,8 +40,18 @@ const AppRouter = () => {
             </ProtectedRoute>
           }
         />
+        
+        {/* Catch all route */}
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
+    </Layout>
+  );
+};
+
+const AppRouter = () => {
+  return (
+    <BrowserRouter>
+      <AppRoutes />
     </BrowserRouter>
   );
 };
