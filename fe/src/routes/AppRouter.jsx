@@ -10,6 +10,7 @@ import ProductsPage from "../pages/ProductsPage";
 import ProfilePage from "../pages/ProfilePage";
 import ForgotPasswordPage from "../pages/auth/ForgotPasswordPage";
 import ResetPasswordPage from "../pages/auth/ResetPasswordPage";
+import ProductDetailPage from '../pages/ProductDetailPage';
 
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated } = useAuth();
@@ -30,7 +31,7 @@ const AppRoutes = () => {
         <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
         <Route path="/" element={<HomePage />} />
         <Route path="/products" element={<ProductsPage />} />
-        
+        <Route path="/products/:id" element={<ProductDetailPage />} />
         {/* Protected routes */}
         <Route
           path="/profile"

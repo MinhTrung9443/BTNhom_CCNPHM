@@ -21,7 +21,7 @@ const ProductCard = ({ product }) => {
 
   return (
     <Card className="product-card h-100 shadow-sm">
-      <div className="position-relative">
+     <Link to={`/products/${_id}`} className="position-relative d-block"> {/* Bọc Link ở ngoài */}
         <Card.Img 
           variant="top" 
           src={imageUrl}
@@ -34,25 +34,22 @@ const ProductCard = ({ product }) => {
         />
         
         {discount > 0 && (
-          <Badge 
-            bg="danger" 
-            className="position-absolute top-0 start-0 m-2"
-          >
+          <Badge bg="danger" className="position-absolute top-0 start-0 m-2">
             -{discount}%
           </Badge>
         )}
         
-        <Badge 
-          bg="secondary" 
-          className="position-absolute top-0 end-0 m-2"
-        >
+        <Badge bg="secondary" className="position-absolute top-0 end-0 m-2">
           {categoryName}
         </Badge>
-      </div>
+      </Link> {/* Đóng thẻ Link */}
       
-      <Card.Body className="d-flex flex-column">
-        <Card.Title className="product-title" title={name}>
-          {name}
+       <Card.Body className="d-flex flex-column">
+        <Card.Title className="product-title">
+           {/* Tên sản phẩm cũng là một link */}
+          <Link to={`/products/${_id}`} className="text-decoration-none text-dark">
+            {name}
+          </Link>
         </Card.Title>
         
         <Card.Text className="product-description text-muted flex-grow-1">

@@ -10,7 +10,6 @@ import {
   Image,
 } from "react-bootstrap";
 import { toast } from "react-toastify";
-import Header from "../components/common/Header";
 import { useAuth } from "../contexts/AuthContext";
 import userService from "../services/userService";
 
@@ -134,7 +133,6 @@ const ProfilePage = () => {
 
   return (
     <div>
-      <Header />
       <Container className="my-4">
         <Card className="p-4">
           <Card.Title as="h3" className="mb-4">

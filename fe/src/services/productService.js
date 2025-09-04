@@ -71,5 +71,14 @@ export const productService = {
       console.error('Error fetching product:', error);
       throw error;
     }
-  }
+  },
+  getRelatedProducts: async (productId) => {
+    try {
+      const response = await apiClient.get(`/products/${productId}/related`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching related products:', error);
+      throw error;
+    }
+  },
 };

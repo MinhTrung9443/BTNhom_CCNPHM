@@ -11,7 +11,7 @@ router.get("/most-viewed", productController.getMostViewedProducts);
 router.get("/top-discounts", productController.getTopDiscountProducts);
 router.get("/", productController.getAllProducts);
 
-// Routes có thể cần auth (optional)
+router.get("/:id/related", productController.getRelatedProducts);
 router.get("/:id", productController.getProductDetail);
 
 export default router;

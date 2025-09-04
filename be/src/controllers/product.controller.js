@@ -240,5 +240,33 @@ export const productController = {
     } catch (error) {
       next(new AppError("Lỗi khi lấy chi tiết sản phẩm", 500));
     }
-  }
+  },
+  async getRelatedProducts(req, res, next) {
+    try {
+      const { id } = req.params;
+
+      // 1. Tìm sản phẩm hiện tại để lấy categoryId
+      const currentProduct = await Product.findById(id).select('categoryId');
+      if (!currentProduct) {
+        return next(new AppError("Không tìm thấy sản phẩm", 404));
+      }
+
+      // 2. Tìm các sản phẩm liên quan
+      const relatedProducts = await Product.find({
+        categoryId: currentProduct.categoryId, // Cùng danh mục
+        _id: { $ne: id }                       // Loại trừ chính sản phẩm hiện tại
+      })
+      .limit(4) // Giới hạn 4 sản phẩm
+      .populate('categoryId', 'name')
+      .select('name price discount images categoryId stock');
+
+      res.status(200).json({
+        success: true,
+        data: relatedProducts,
+      });
+    } catch (error) {
+      next(new AppError("Lỗi khi lấy sản phẩm liên quan", 500));
+    }
+  },
+
 };
