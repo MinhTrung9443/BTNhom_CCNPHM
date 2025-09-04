@@ -1,26 +1,21 @@
 import User from "../models/User.js";
 import { AppError } from "../utils/AppError.js";
 
-const updateUserProfile = async (userId, updateData) => {
-  const allowedUpdates = ["name", "phone", "address", "avatar"];
-  console.log("Received update data:", userId, updateData);
-
+const updateUserProfile = async (userId, updateData, file) => {
+  const allowedUpdates = ["name", "phone", "address"];
   const updates = {};
+
   Object.keys(updateData).forEach((key) => {
     if (allowedUpdates.includes(key)) {
-      if (updateData[key] !== null && updateData[key] !== undefined) {
-        updates[key] = updateData[key];
-        console.log(`Updating ${key} to ${updateData[key]}`);
-      } else {
-        console.log(`Skipping ${key} because it is null or undefined`);
-      }
-    } else {
-      console.log(`Ignoring invalid key: ${key}`);
+      updates[key] = updateData[key];
     }
   });
 
+  if (file) {
+    updates.avatar = `/${file.path.replace(/\\/g, "/")}`;
+  }
+
   if (Object.keys(updates).length === 0) {
-    console.log("No valid update data provided.");
     throw new AppError(400, "Không có thông tin hợp lệ để cập nhật.");
   }
 

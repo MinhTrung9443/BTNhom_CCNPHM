@@ -29,7 +29,10 @@ const ProductCard = ({ product }) => {
           className="product-image"
           style={{ height: '200px', objectFit: 'cover' }}
           onError={(e) => {
-            e.target.src = '/placeholder-image.jpg';
+             // Thêm dòng này để vô hiệu hóa onError sau lần chạy đầu
+    e.target.onerror = null; 
+    // Sau đó mới thay đổi src
+    e.target.src = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTUK2Rlg80FB-d9IqnxIPRI2bBN7RRRkw5OpQ&s';
           }}
         />
         

@@ -10,15 +10,15 @@ import Alert from 'react-bootstrap/Alert';
 import Spinner from 'react-bootstrap/Spinner';
 import InputGroup from 'react-bootstrap/InputGroup';
 import { toast } from 'react-toastify';
-import { useAuth } from '../../contexts/AuthContext';
-
+import { useDispatch } from 'react-redux';
+import { loginSuccess } from '../../redux/userSlice';
 import authService from '../../services/authService';
 import { validateEmail, validatePassword } from '../../utils/validation';
 
 
 const LoginPage = () => {
   const navigate = useNavigate(); 
-  const { login } = useAuth();
+  const dispatch = useDispatch();
   const location = useLocation();
   const message = location.state?.message;
 
@@ -39,9 +39,10 @@ const LoginPage = () => {
 
     try {
       const response = await authService.login(formData.email, formData.password);
+      console.log('Login response:', response);
       const { user, token } = response.data;
 
-      login(user, token);
+      dispatch(loginSuccess({ user, token }));
 
       toast.success(`Chào mừng trở lại, ${user.name}!`);
 

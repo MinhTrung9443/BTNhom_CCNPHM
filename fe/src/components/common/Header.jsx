@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
 import { Navbar, Container, Nav, NavDropdown, Form, Button, Badge } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
+import { useSelector, useDispatch } from 'react-redux';
+import { logoutSuccess } from '../../redux/userSlice';
 
 const Header = () => {
-  const { isAuthenticated, user, logout } = useAuth();
+  const { isAuthenticated, user } = useSelector((state) => state.user);
+  const dispatch = useDispatch();
   const [searchQuery, setSearchQuery] = useState('');
 
   const handleLogout = () => {
-    logout();
+    dispatch(logoutSuccess());
     // Sử dụng window.location thay vì useNavigate
     window.location.href = '/';
   };

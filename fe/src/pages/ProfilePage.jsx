@@ -10,19 +10,22 @@ import {
   Image,
 } from "react-bootstrap";
 import { toast } from "react-toastify";
-import { useAuth } from "../contexts/AuthContext";
+import { useSelector, useDispatch } from "react-redux";
+import { updateUser } from "../redux/userSlice";
 import userService from "../services/userService";
 
 const ProfilePage = () => {
-  const { user, token, login } = useAuth();
+  const { user } = useSelector((state) => state.user);
+  const dispatch = useDispatch();
   const [isLoading, setIsLoading] = useState(false);
   const fileInputRef = useRef(null);
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
     address: "",
-    avatar: "",
   });
+  const [avatarPreview, setAvatarPreview] = useState("");
+  const [avatarFile, setAvatarFile] = useState(null);
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
@@ -31,10 +34,12 @@ const ProfilePage = () => {
         name: user.name || "",
         phone: user.phone || "",
         address: user.address || "",
-        avatar:
-          user.avatar ||
-          `https://ui-avatars.com/api/?name=${user.name}&background=random&size=150`,
       });
+      setAvatarPreview(
+        user.avatar
+          ? `http://localhost:5000${user.avatar}`
+          : `https://ui-avatars.com/api/?name=${user.name}&background=random&size=150`
+      );
     }
   }, [user]);
 
@@ -66,30 +71,11 @@ const ProfilePage = () => {
     fileInputRef.current.click();
   };
 
-  const handleFileChange = async (event) => {
+  const handleFileChange = (event) => {
     const file = event.target.files[0];
-    if (!file) return;
-
-    setIsLoading(true);
-    try {
-      const formDataToSend = new FormData();
-      formDataToSend.append("avatar", file);
-
-      const response = await userService.uploadAvatar(formDataToSend);
-      const updatedAvatar = response.data.avatarUrl;
-
-      setFormData((prev) => ({ ...prev, avatar: updatedAvatar }));
-      login({ ...user, avatar: updatedAvatar }, token);
-      try {
-        await userService.updateCurrentUser({ avatar: updatedAvatar });
-        toast.success("Cập nhật ảnh đại diện thành công!");
-      } catch (error) {
-        toast.error(error.message || "Không thể cập nhật ảnh đại diện.");
-      }
-    } catch (error) {
-      toast.error(error.message || "Không thể tải lên ảnh đại diện.");
-    } finally {
-      setIsLoading(false);
+    if (file) {
+      setAvatarFile(file);
+      setAvatarPreview(URL.createObjectURL(file));
     }
   };
 
@@ -98,11 +84,9 @@ const ProfilePage = () => {
 
     const formErrors = {};
     Object.keys(formData).forEach((key) => {
-      if (key !== "avatar") {
-        const error = validate(key, formData[key]);
-        if (error) {
-          formErrors[key] = error;
-        }
+      const error = validate(key, formData[key]);
+      if (error) {
+        formErrors[key] = error;
       }
     });
 
@@ -114,9 +98,17 @@ const ProfilePage = () => {
 
     setIsLoading(true);
     try {
-      const response = await userService.updateCurrentUser(formData);
+      const data = new FormData();
+      data.append("name", formData.name);
+      data.append("phone", formData.phone);
+      data.append("address", formData.address);
+      if (avatarFile) {
+        data.append("avatar", avatarFile);
+      }
+
+      const response = await userService.updateCurrentUser(data);
       const updatedUser = response.data.data.user;
-      login(updatedUser, token);
+      dispatch(updateUser(updatedUser));
       toast.success("Cập nhật thông tin thành công!");
     } catch (error) {
       const message =
@@ -146,7 +138,7 @@ const ProfilePage = () => {
               >
                 <div className="position-relative d-inline-block">
                   <Image
-                    src={formData.avatar}
+                    src={avatarPreview}
                     roundedCircle
                     className="mb-3 img-fluid"
                     style={{

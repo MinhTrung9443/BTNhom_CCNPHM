@@ -4,11 +4,12 @@ import morgan from 'morgan';
 import cors from 'cors';
 import connectDB from './src/config/db.js';
 import authRoutes from './src/routes/auth.route.js';
-import userRoutes from './src/routes/user.route.js'; 
+import userRoutes from './src/routes/user.route.js';
+import productRoutes from "./src/routes/product.route.js";
+import uploadRoutes from './src/routes/upload.route.js';
 import logger from './src/utils/logger.js';
 import { notFound, errorHandler } from './src/middlewares/error.js';
 import config from './src/config/index.js';
-import productRoutes from "./src/routes/product.route.js";
 
 dotenv.config();
 const app = express();
@@ -27,13 +28,13 @@ app.use(
     }),
 );
 app.use(express.json());
+app.use('/uploads', express.static('uploads'));
 connectDB();
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
-app.use("/api/auth", authRoutes);
-app.use("/api/users", userRoutes);
-app.use("/api/products", productRoutes); // Thêm dòng này
+app.use("/api/products", productRoutes);
+app.use('/api/upload', uploadRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

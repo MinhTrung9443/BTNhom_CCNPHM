@@ -1,6 +1,6 @@
 import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { useAuth } from "../contexts/AuthContext";
+import { useSelector } from "react-redux";
 import Layout from "../components/common/layout/Layout";
 
 import LoginPage from "../pages/auth/LoginPage.jsx";
@@ -13,7 +13,7 @@ import ResetPasswordPage from "../pages/auth/ResetPasswordPage";
 import ProductDetailPage from '../pages/ProductDetailPage';
 
 const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated } = useSelector((state) => state.user);
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }

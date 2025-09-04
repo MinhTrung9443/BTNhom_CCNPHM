@@ -9,7 +9,7 @@ const getMe = (req, res) => {
 };
  
 const updateMe = async (req, res) => {
-    const updatedUser = await userService.updateUserProfile(req.user.id, req.body);
+    const updatedUser = await userService.updateUserProfile(req.user.id, req.body, req.file);
     res.status(200).json({
         success: true,
         message: 'Cập nhật thông tin thành công.',
@@ -18,4 +18,5 @@ const updateMe = async (req, res) => {
         },
     });
 };
+
 export { getMe, updateMe };
