@@ -2,6 +2,12 @@ import Product from "../models/Product.js";
 import Order from "../models/Order.js";
 import Cart from "../models/Cart.js";
 import Payment from "../models/Payment.js";
+import Delivery from "../models/Delivery.js";
+
+// Lấy thông tin đơn vị vận chuyển
+export const getDeliveryOptions = async () => {
+  return await Delivery.find({});
+};
 
 // Kiểm tra tồn kho cho preview
 export const checkProductsAvailability = async (products) => {

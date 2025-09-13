@@ -7,6 +7,7 @@ const router = express.Router();
 router.use(protect);
 
 router.post("/preview-order", paymentController.preview);
+router.post("/get-delivery", paymentController.getDelivery);
 router.post("/", paymentController.payment);
 
 export default router;

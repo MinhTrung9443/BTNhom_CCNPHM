@@ -56,4 +56,17 @@ const payment = async (req, res) => {
   }
 };
 
-export { preview, payment };
+const getDelivery = async (req, res) => {
+  try {
+    const deliveries = await paymentService.getDeliveryOptions();
+    res.status(200).json({ success: true, data: deliveries });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Lỗi khi lấy thông tin giao hàng.",
+      error: error.message,
+    });
+  }
+};
+
+export { preview, payment, getDelivery };

@@ -10,7 +10,7 @@ import ProductsPage from "../pages/ProductsPage";
 import ProfilePage from "../pages/ProfilePage";
 import ForgotPasswordPage from "../pages/auth/ForgotPasswordPage";
 import ResetPasswordPage from "../pages/auth/ResetPasswordPage";
-import ProductDetailPage from '../pages/ProductDetailPage';
+import ProductDetailPage from "../pages/ProductDetailPage";
 
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated } = useSelector((state) => state.user);
@@ -32,6 +32,7 @@ const AppRoutes = () => {
         <Route path="/" element={<HomePage />} />
         <Route path="/products" element={<ProductsPage />} />
         <Route path="/products/:id" element={<ProductDetailPage />} />
+        <Route path="/preview-order" element={<PreviewOrder />} />
         {/* Protected routes */}
         <Route
           path="/profile"
@@ -41,7 +42,7 @@ const AppRoutes = () => {
             </ProtectedRoute>
           }
         />
-        
+
         {/* Catch all route */}
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
