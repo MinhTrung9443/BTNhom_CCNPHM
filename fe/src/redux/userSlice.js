@@ -1,9 +1,20 @@
 import { createSlice } from '@reduxjs/toolkit';
 
+// Function to safely parse JSON from localStorage
+const getInitialUser = () => {
+  try {
+    const user = localStorage.getItem('user');
+    return user ? JSON.parse(user) : null;
+  } catch (error) {
+    console.error("Failed to parse user from localStorage", error);
+    return null;
+  }
+};
+
 const initialState = {
-  user: JSON.parse(localStorage.getItem('user')) || null,
-  token: localStorage.getItem('token') || null,
-  isAuthenticated: !!localStorage.getItem('token'),
+  user: getInitialUser(),
+  accessToken: localStorage.getItem('accessToken') || null,
+  isAuthenticated: !!localStorage.getItem('accessToken'),
 };
 
 const userSlice = createSlice({
@@ -11,23 +22,25 @@ const userSlice = createSlice({
   initialState,
   reducers: {
     loginSuccess: (state, action) => {
-      console.log('Login success action payload:', action.payload);
-      state.user = action.payload.user;
-      state.token = action.payload.token;
+      const { user, token } = action.payload;
+      state.user = user;
+      state.accessToken = token;
       state.isAuthenticated = true;
-      localStorage.setItem('user', JSON.stringify(action.payload.user));
-      localStorage.setItem('accessToken', action.payload.token);
+      localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('accessToken', token);
     },
     logoutSuccess: (state) => {
       state.user = null;
-      state.token = null;
+      state.accessToken = null;
       state.isAuthenticated = false;
       localStorage.removeItem('user');
-      localStorage.removeItem('token');
+      localStorage.removeItem('accessToken');
     },
     updateUser: (state, action) => {
-      state.user = action.payload;
-      localStorage.setItem('user', JSON.stringify(action.payload));
+      // Merge new user data with existing user data
+      const updatedUser = { ...state.user, ...action.payload };
+      state.user = updatedUser;
+      localStorage.setItem('user', JSON.stringify(updatedUser));
     },
   },
 });
