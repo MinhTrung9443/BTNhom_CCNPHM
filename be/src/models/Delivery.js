@@ -1,3 +1,5 @@
+import mongoose from "mongoose";
+
 const Delivery = new mongoose.Schema({
   type: {
     type: String,
@@ -25,4 +27,4 @@ const Delivery = new mongoose.Schema({
   },
 });
 
-module.exports = mongoose.model("Delivery", Delivery);
+export default mongoose.model("Delivery", Delivery);
