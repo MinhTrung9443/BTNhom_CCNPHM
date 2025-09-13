@@ -142,3 +142,5 @@ vite.config.ts.timestamp-*
 /fe/node_modules
 .clinerules
 .github
+
+/uploads
