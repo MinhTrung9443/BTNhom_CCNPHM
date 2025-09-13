@@ -33,3 +33,4 @@ class InternalServerError extends AppError {
 }
 
 export { AppError, BadRequestError, NotFoundError, UnauthorizedError, InternalServerError };
+export default AppError;

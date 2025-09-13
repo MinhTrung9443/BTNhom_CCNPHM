@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 const cartSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   items: [
@@ -11,9 +12,8 @@ const cartSchema = new mongoose.Schema({
       price: { type: Number, required: true },
     },
   ],
-  totalPrice: { type: Number, required: true },
-  createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now },
-});
-
-module.exports = mongoose.model("Cart", cartSchema);
+  totalPrice: { type: Number, required: true }
+}, { timestamps: true });
+cartSchema.index({ userId: 1 }, { unique: true });
+const Cart = mongoose.model("Cart", cartSchema);
+export default Cart;

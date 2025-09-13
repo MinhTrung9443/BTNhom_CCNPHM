@@ -6,10 +6,12 @@ import connectDB from './src/config/db.js';
 import authRoutes from './src/routes/auth.route.js';
 import userRoutes from './src/routes/user.route.js';
 import productRoutes from "./src/routes/product.route.js";
+import orderRoutes from './src/routes/order.route.js';
 import uploadRoutes from './src/routes/upload.route.js';
 import logger from './src/utils/logger.js';
 import { notFound, errorHandler } from './src/middlewares/error.js';
 import config from './src/config/index.js';
+import * as CronJobService from './src/services/cronJob.service.js';
 
 dotenv.config();
 const app = express();
@@ -31,9 +33,13 @@ app.use(express.json());
 app.use('/uploads', express.static('uploads'));
 connectDB();
 
+// Khởi tạo cron jobs
+CronJobService.init();
+
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use("/api/products", productRoutes);
+app.use('/api/orders', orderRoutes);
 app.use('/api/upload', uploadRoutes);
 
 app.use(notFound);
