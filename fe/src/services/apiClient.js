@@ -1,7 +1,6 @@
 import axios from 'axios';
 import { toast } from 'react-toastify';
 
-// Tạo instance axios với cấu hình mặc định
 const apiClient = axios.create({
   baseURL: 'http://localhost:5000/api',
   timeout: 10000,
@@ -10,7 +9,6 @@ const apiClient = axios.create({
   },
 });
 
-// Request interceptor - tự động thêm token vào header nếu có
 apiClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('accessToken');
@@ -24,7 +22,6 @@ apiClient.interceptors.request.use(
   }
 );
 
-// Response interceptor - xử lý lỗi chung
 apiClient.interceptors.response.use(
   (response) => {
     return response;

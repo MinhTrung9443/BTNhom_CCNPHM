@@ -10,7 +10,7 @@ import uploadRoutes from './src/routes/upload.route.js';
 import logger from './src/utils/logger.js';
 import { notFound, errorHandler } from './src/middlewares/error.js';
 import config from './src/config/index.js';
-
+import cartRoutes from './src/routes/cart.route.js';
 dotenv.config();
 const app = express();
 
@@ -21,9 +21,9 @@ if (process.env.NODE_ENV !== 'production') {
 // CORS configuration
 app.use(
     cors({
-        origin: ["http://localhost:3001","http://localhost:3000","http://localhost:3002", "http://localhost:3003"],
+        origin: ["http://localhost:3001", "http://localhost:3000", "http://localhost:3002", "http://localhost:3003"],
         credentials: true,
-        methods: ['GET', 'POST','PUT', 'DELETE', 'PATCH', 'OPTIONS', 'HEAD'],
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS', 'HEAD'],
         allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
     }),
 );
@@ -33,6 +33,7 @@ connectDB();
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/cart', cartRoutes);
 app.use("/api/products", productRoutes);
 app.use('/api/upload', uploadRoutes);
 
