@@ -24,10 +24,23 @@ const orderSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["pending", "paid", "shipped", "completed"],
+      enum: ["pending", "packed", "shipped", "delivered", "cancelled"],
       default: "pending",
     },
+    deliveryId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Delivery",
+    },
     orderLines: [orderLineSchema],
+    totalAmount: { type: Number, required: true },
+    shippingAddress: { type: String, required: true },
+    phoneNumber: { type: String, required: true },
+    recipientName: { type: String, required: true },
+    notes: { type: String },
+    paymentId: { type: mongoose.Schema.Types.ObjectId, ref: "Payment" },
+    cancelledAt: { type: Date },
+    cancelledBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    cancelledReason: { type: String },
   },
   { timestamps: true }
 );
