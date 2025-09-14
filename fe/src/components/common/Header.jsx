@@ -1,33 +1,46 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Navbar, Container, Nav, NavDropdown, Form, Button, Badge } from 'react-bootstrap';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
+import { fetchCart, clearCart } from '../../redux/cartSlice';
 import { logoutSuccess } from '../../redux/userSlice';
 
 const Header = () => {
   const { isAuthenticated, user } = useSelector((state) => state.user);
+  const { items: cartItems } = useSelector((state) => state.cart);
+
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      dispatch(fetchCart());
+    }
+  }, [isAuthenticated, dispatch]);
 
   const handleLogout = () => {
     dispatch(logoutSuccess());
-    // Sử dụng window.location thay vì useNavigate
-    window.location.href = '/';
+    dispatch(clearCart());
+    localStorage.removeItem('userInfo');
+    localStorage.removeItem('token');
+    navigate('/');
   };
+
 
   const handleSearch = (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      // Sử dụng window.location thay vì useNavigate
-      window.location.href = `/products?search=${encodeURIComponent(searchQuery.trim())}`;
+      navigate(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
       setSearchQuery('');
     }
   };
 
+  const totalCartItems = cartItems.reduce((total, item) => total + item.quantity, 0);
+
   return (
     <Navbar expand="lg" className="navbar-custom shadow-sm sticky-top">
       <Container>
-        {/* Logo & Brand */}
         <Navbar.Brand as={Link} to="/" className="brand-logo">
           <span className="brand-text">
             <strong>Đặc Sản</strong>
@@ -36,9 +49,8 @@ const Header = () => {
         </Navbar.Brand>
 
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
-        
+
         <Navbar.Collapse id="basic-navbar-nav">
-          {/* Main Navigation */}
           <Nav className="me-auto">
             <Nav.Link as={Link} to="/" className="nav-link-custom">
               <i className="fas fa-home me-1"></i>
@@ -48,35 +60,10 @@ const Header = () => {
               <i className="fas fa-birthday-cake me-1"></i>
               Sản phẩm
             </Nav.Link>
-            <NavDropdown title={
-              <span><i className="fas fa-list me-1"></i>Danh mục</span>
-            } id="category-dropdown" className="nav-dropdown-custom">
-              <NavDropdown.Item as={Link} to="/products?category=pia-dau-xanh">
-                🟢 Bánh pía đậu xanh
-              </NavDropdown.Item>
-              <NavDropdown.Item as={Link} to="/products?category=pia-thit">
-                🟤 Bánh pía thịt
-              </NavDropdown.Item>
-              <NavDropdown.Item as={Link} to="/products?category=pia-trung">
-                🟡 Bánh pía trứng
-              </NavDropdown.Item>
-              <NavDropdown.Item as={Link} to="/products?category=pia-dua">
-                🥥 Bánh pía dừa
-              </NavDropdown.Item>
-              <NavDropdown.Divider />
-              <NavDropdown.Item as={Link} to="/products?category=banh-in">
-                🥮 Bánh ín
-              </NavDropdown.Item>
-              <NavDropdown.Item as={Link} to="/products?category=banh-cam">
-                🟠 Bánh cam
-              </NavDropdown.Item>
-              <NavDropdown.Item as={Link} to="/products?category=kem-bo">
-                🧈 Kem bơ
-              </NavDropdown.Item>
+            <NavDropdown title={<span><i className="fas fa-list me-1"></i>Danh mục</span>} id="category-dropdown" className="nav-dropdown-custom">
             </NavDropdown>
           </Nav>
 
-          {/* Search Form */}
           <Form className="d-flex me-3" onSubmit={handleSearch}>
             <Form.Control
               type="search"
@@ -90,62 +77,30 @@ const Header = () => {
             </Button>
           </Form>
 
-          {/* User Menu */}
           <Nav>
-            {/* Cart */}
             <Nav.Link as={Link} to="/cart" className="nav-link-custom position-relative me-2">
               <i className="fas fa-shopping-cart"></i>
-              <Badge bg="danger" className="cart-badge">0</Badge>
+              {totalCartItems > 0 && (
+                <Badge bg="danger" className="cart-badge">{totalCartItems}</Badge>
+              )}
             </Nav.Link>
 
-            {/* User Authentication */}
             {isAuthenticated && user ? (
-              <NavDropdown 
-                title={
-                  <span className="user-dropdown">
-                    <i className="bi bi-person-circle me-2"></i>
-                    {user.name}
-                  </span>
-                } 
+              <NavDropdown
+                title={<span className="user-dropdown"><i className="bi bi-person-circle me-2"></i>{user.name}</span>}
                 id="user-dropdown"
                 className="user-dropdown-custom"
                 align="end"
               >
-                <NavDropdown.Item as={Link} to="/profile">
-                  <i className="bi bi-person-lines-fill me-2"></i>
-                  Thông tin cá nhân
-                </NavDropdown.Item>
-                <NavDropdown.Item as={Link} to="/orders">
-                  <i className="fas fa-shopping-bag me-2"></i>
-                  Đơn hàng của tôi
-                </NavDropdown.Item>
+                <NavDropdown.Item as={Link} to="/profile"><i className="bi bi-person-lines-fill me-2"></i>Thông tin cá nhân</NavDropdown.Item>
+                <NavDropdown.Item as={Link} to="/orders"><i className="fas fa-shopping-bag me-2"></i>Đơn hàng của tôi</NavDropdown.Item>
                 <NavDropdown.Divider />
-                <NavDropdown.Item onClick={handleLogout} className="text-danger">
-                  <i className="bi bi-box-arrow-right me-2"></i>
-                  Đăng xuất
-                </NavDropdown.Item>
+                <NavDropdown.Item onClick={handleLogout} className="text-danger"><i className="bi bi-box-arrow-right me-2"></i>Đăng xuất</NavDropdown.Item>
               </NavDropdown>
             ) : (
               <div className="auth-buttons">
-                <Button 
-                  as={Link} 
-                  to="/login" 
-                  variant="outline-warning" 
-                  size="sm" 
-                  className="me-2"
-                >
-                  <i className="fas fa-sign-in-alt me-1"></i>
-                  Đăng nhập
-                </Button>
-                <Button 
-                  as={Link} 
-                  to="/register" 
-                  variant="warning" 
-                  size="sm"
-                >
-                  <i className="fas fa-user-plus me-1"></i>
-                  Đăng ký
-                </Button>
+                <Button as={Link} to="/login" variant="outline-warning" size="sm" className="me-2"><i className="fas fa-sign-in-alt me-1"></i>Đăng nhập</Button>
+                <Button as={Link} to="/register" variant="warning" size="sm"><i className="fas fa-user-plus me-1"></i>Đăng ký</Button>
               </div>
             )}
           </Nav>

@@ -11,7 +11,7 @@ import paymentRoutes from "./src/routes/payment.route.js";
 import logger from "./src/utils/logger.js";
 import { notFound, errorHandler } from "./src/middlewares/error.js";
 import config from "./src/config/index.js";
-
+import cartRoutes from "./src/routes/cart.route.js";
 dotenv.config();
 const app = express();
 
@@ -39,6 +39,7 @@ connectDB();
 
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/cart", cartRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/payments", paymentRoutes);
