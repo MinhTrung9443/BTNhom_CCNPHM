@@ -1,32 +1,42 @@
 import React from "react";
-import { Card, Button, Row, Col, Badge } from "react-bootstrap";
+import { Card, Row, Col, Badge } from "react-bootstrap";
 
-const ProductCardOrder = ({ product }) => {
+const ProductCardOrder = ({ products }) => {
   return (
-    <Card className="mb-3 shadow-sm">
-      <Card.Body>
-        <Card.Title>{product.name}</Card.Title>
+    <>
+      {products.map((product, idx) => (
+        <Card key={idx} className="mb-3 shadow-sm">
+          <Card.Body>
+            <Card.Title>{product.productName}</Card.Title>
 
-        <Row className="mt-2 align-items-center">
-          <Col>
-            <h5 className="text-danger">
-              ₫
-              {product.productPrice -
-                (product.productPrice * product.discount) / 100}
-            </h5>
-            <small className="text-muted text-decoration-line-through">
-              ₫{product.productPrice.toLocaleString()}
-            </small>
-            <Badge bg="success" className="ms-2">
-              -{product.discount}%
-            </Badge>
-          </Col>
-          <Col className="text-end">
-            <strong>Số lượng:</strong> {product.quantity}
-          </Col>
-        </Row>
-      </Card.Body>
-    </Card>
+            <Row className="mt-2 align-items-center">
+              <Col>
+                <h5 className="text-danger">
+                  ₫
+                  {(
+                    product.productPrice -
+                    (product.productPrice * (product.discount || 0)) / 100
+                  ).toLocaleString()}
+                </h5>
+                {product.discount > 0 && (
+                  <small className="text-muted text-decoration-line-through">
+                    ₫{product.productPrice.toLocaleString()}
+                  </small>
+                )}
+                {product.discount > 0 && (
+                  <Badge bg="success" className="ms-2">
+                    -{product.discount}%
+                  </Badge>
+                )}
+              </Col>
+              <Col className="text-end">
+                <strong>Số lượng:</strong> {product.quantity}
+              </Col>
+            </Row>
+          </Card.Body>
+        </Card>
+      ))}
+    </>
   );
 };
 

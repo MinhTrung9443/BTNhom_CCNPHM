@@ -11,10 +11,10 @@ const DeliveryOptions = ({ options, selectedOptionId, onChange }) => {
             <Form.Check
               type="radio"
               id={`delivery-${option._id}`}
-              name="deliveryOption"
+              name="deliveryId"
               value={option._id}
               checked={selectedOptionId === option._id}
-              onChange={() => onChange(option._id)}
+              onChange={() => onChange(option._id, option.price)}
               label={
                 <div>
                   <strong>{option.name}</strong> — ₫

@@ -1,6 +1,18 @@
+import PreviewOrder from "../pages/PreviewOrder";
 import apiClient from "./apiClient";
 
-export const paymentService = {
+const paymentService = {
+  // ĐÚNG ✅
+  previewOrder: async (products) => {
+    try {
+      const response = await apiClient.post("/payments/preview-order", {
+        products,
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error setting order lines:", error);
+    }
+  },
   // Create order with payment method
   createOrder: async (orderData) => {
     try {
@@ -23,3 +35,5 @@ export const paymentService = {
     }
   },
 };
+
+export default paymentService;

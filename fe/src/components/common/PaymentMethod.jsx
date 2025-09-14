@@ -8,7 +8,7 @@ const PaymentMethod = ({ selected, onChange }) => {
       <Form.Check
         type="radio"
         label="Thanh toán khi nhận hàng (COD)"
-        name="payment"
+        name="paymentMethod"
         value="COD"
         checked={selected === "COD"}
         onChange={onChange}
@@ -16,7 +16,7 @@ const PaymentMethod = ({ selected, onChange }) => {
       <Form.Check
         type="radio"
         label="VNPAY"
-        name="payment"
+        name="paymentMethod"
         value="VNPAY"
         checked={selected === "VNPAY"}
         onChange={onChange}
@@ -24,7 +24,7 @@ const PaymentMethod = ({ selected, onChange }) => {
       <Form.Check
         type="radio"
         label="Chuyển khoản ngân hàng"
-        name="payment"
+        name="paymentMethod"
         value="BANK"
         checked={selected === "BANK"}
         onChange={onChange}

@@ -4,6 +4,7 @@ import RecipientInfoForm from "../components/common/RecipientInfoForm";
 import PaymentMethod from "../components/common/PaymentMethod";
 import OrderSummary from "../components/common/OrderSummary";
 import ProductCardOrder from "../components/common/ProductCardOrder";
+import DeliveryOptions from "../components/common/DeliveryOptions";
 import { useState } from "react";
 import { useEffect } from "react";
 import { useSelector } from "react-redux";
@@ -13,17 +14,39 @@ import paymentService from "../services/paymentService";
 
 const PreviewOrder = () => {
   const navigate = useNavigate();
+  const [deliveryOptions, setDeliveryOptions] = useState([]);
   const orderLines = useSelector((state) => state.order.orderLines);
+  const user = useSelector((state) => state.user.user);
   const [formData, setFormData] = useState({
     orderLines: orderLines,
-    recipientName: "",
-    phoneNumber: "",
-    shippingAddress: "",
+    recipientName: user.name || "",
+    phoneNumber: user.phone || "",
+    shippingAddress: user.address || "",
     notes: "",
     paymentMethod: "",
-    totalAmount: 0,
+    totalProductAmount: orderLines.reduce(
+      (acc, item) =>
+        acc + item.productPrice * (1 - item.discount / 100) * item.quantity,
+      0
+    ),
     deliveryId: null,
+    shippingFee: 0,
+    totalAmount: 0,
   });
+
+  useEffect(() => {
+    const fetchDeliveryOptions = async () => {
+      try {
+        const options = await paymentService.getDeliveryOptions();
+        setDeliveryOptions(options.data);
+        console.log("Fetched delivery options:", options.data);
+      } catch (error) {
+        console.error("Error fetching delivery options:", error);
+        toast.error("Lỗi khi tải tùy chọn giao hàng. Vui lòng thử lại.");
+      }
+    };
+    fetchDeliveryOptions();
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -39,6 +62,14 @@ const PreviewOrder = () => {
       toast.error("Đặt hàng thất bại. Vui lòng thử lại.");
     }
   };
+  const handleDeliveryChange = (deliveryId, shippingFee) => {
+    setFormData((prev) => ({
+      ...prev,
+      deliveryId: deliveryId,
+      shippingFee: shippingFee,
+      totalAmount: prev.totalProductAmount + shippingFee,
+    }));
+  };
 
   return (
     <Container className="my-4">
@@ -49,7 +80,17 @@ const PreviewOrder = () => {
         selected={formData.paymentMethod}
         onChange={handleChange}
       />
-      <OrderSummary subtotal={cart.subtotal} shippingFee={shippingFee} />
+
+      <DeliveryOptions
+        options={deliveryOptions}
+        selected={formData.deliveryId}
+        onChange={handleDeliveryChange}
+      />
+      <OrderSummary
+        subtotal={formData.totalProductAmount}
+        shippingFee={formData.shippingFee}
+      />
+
       <button className="btn btn-primary mt-4" onClick={handleSubmit}>
         Đặt hàng
       </button>

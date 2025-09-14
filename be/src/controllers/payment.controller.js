@@ -30,6 +30,8 @@ const payment = async (req, res) => {
     } = req.body;
     const userId = req.user._id;
 
+    console.log(req.body);
+
     // Gọi service để tạo đơn hàng
     const order = await paymentService.createOrder({
       userId,
