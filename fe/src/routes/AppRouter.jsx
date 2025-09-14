@@ -10,8 +10,9 @@ import ProductsPage from "../pages/ProductsPage";
 import ProfilePage from "../pages/ProfilePage";
 import ForgotPasswordPage from "../pages/auth/ForgotPasswordPage";
 import ResetPasswordPage from "../pages/auth/ResetPasswordPage";
-import ProductDetailPage from '../pages/ProductDetailPage';
-import CartPage from '../pages/CartPage';
+import ProductDetailPage from "../pages/ProductDetailPage";
+import CartPage from "../pages/CartPage";
+import PreviewOrder from "../pages/PreviewOrder";
 
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated } = useSelector((state) => state.user);
@@ -32,6 +33,7 @@ const AppRoutes = () => {
         <Route path="/" element={<HomePage />} />
         <Route path="/products" element={<ProductsPage />} />
         <Route path="/products/:id" element={<ProductDetailPage />} />
+        <Route path="/preview-order" element={<PreviewOrder />} />
         <Route path="/cart" element={<CartPage />} />
         <Route
           path="/profile"
@@ -42,6 +44,7 @@ const AppRoutes = () => {
           }
         />
 
+        {/* Catch all route */}
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </Layout>

@@ -1,11 +1,11 @@
-import axios from 'axios';
-import { toast } from 'react-toastify';
+import axios from "axios";
+import { toast } from "react-toastify";
 
 const apiClient = axios.create({
-  baseURL: 'http://localhost:5000/api',
+  baseURL: "http://localhost:5000/api",
   timeout: 10000,
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
 });
 
@@ -32,10 +32,10 @@ apiClient.interceptors.response.use(
     // Handle HTTP errors
     if (error.response) {
       const { status, data } = error.response;
-      
+
       switch (status) {
         case 400:
-          console.error('Bad Request:', data.message);
+          console.error("Bad Request:", data.message);
           break;
         case 401:
           console.error('Unauthorized:', data.message);
@@ -43,26 +43,26 @@ apiClient.interceptors.response.use(
           localStorage.removeItem('accessToken');
           break;
         case 403:
-          console.error('Forbidden:', data.message);
+          console.error("Forbidden:", data.message);
           break;
         case 404:
-          console.error('Not Found:', data.message);
+          console.error("Not Found:", data.message);
           break;
         case 500:
           console.error('Server Error:', data.message);
-          toast.error('Server error. Please try again later.');
+          // toast.error('Server error. Please try again later.');
           break;
         default:
-          console.error('Error:', data.message);
+          console.error("Error:", data.message);
       }
     } else if (error.request) {
       // Network error
       console.error('Network Error:', error.message);
       toast.error('Connection error. Please check your internet connection.');
     } else {
-      console.error('Error:', error.message);
+      console.error("Error:", error.message);
     }
-    
+
     return Promise.reject(error);
   }
 );

@@ -1,6 +1,11 @@
 import mongoose from "mongoose";
 const cartSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, unique: true },
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+    unique: true,
+  },
   items: [
     {
       productId: {
@@ -15,6 +20,9 @@ const cartSchema = new mongoose.Schema({
 }, { timestamps: true });
 cartSchema.virtual('totalPrice').get(function() {
   if (!this.items) return 0;
-  return this.items.reduce((total, item) => total + item.quantity * item.price, 0);
+  return this.items.reduce(
+    (total, item) => total + item.quantity * item.price,
+    0
+  );
 });
 export default mongoose.model("Cart", cartSchema);
