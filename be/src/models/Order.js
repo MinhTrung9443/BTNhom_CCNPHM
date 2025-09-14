@@ -91,6 +91,7 @@ const orderSchema = new mongoose.Schema(
     phoneNumber: { type: String, required: true },
     recipientName: { type: String, required: true },
     notes: { type: String },
+    paymentId: { type: mongoose.Schema.Types.ObjectId, ref: "Payment" },
     payment: {
       paymentMethod: {
         type: String,

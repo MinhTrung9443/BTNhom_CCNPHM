@@ -54,14 +54,15 @@ const Header = () => {
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="me-auto">
-            <Nav.Link as={Link} to="/" className="nav-link-custom">
+              <Nav.Link as={Link} to="/intro" className="nav-link-custom">
               <i className="fas fa-home me-1"></i>
               Trang chủ
             </Nav.Link>
-            <Nav.Link as={Link} to="/products" className="nav-link-custom">
+            <Nav.Link as={Link} to="/" className="nav-link-custom">
               <i className="fas fa-birthday-cake me-1"></i>
               Sản phẩm
             </Nav.Link>
+          
             <NavDropdown title={<span><i className="fas fa-list me-1"></i>Danh mục</span>} id="category-dropdown" className="nav-dropdown-custom">
               <NavDropdown.Item as={Link} to="/products?category=pia-dau-xanh">
                 🟢 Bánh pía đậu xanh

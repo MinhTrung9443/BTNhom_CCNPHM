@@ -10,16 +10,10 @@ import orderRoutes from './src/routes/order.route.js';
 import uploadRoutes from './src/routes/upload.route.js';
 import logger from './src/utils/logger.js';
 import { notFound, errorHandler } from './src/middlewares/error.js';
-import config from './src/config/index.js';
 import cartRoutes from './src/routes/cart.route.js';
 import * as CronJobService from './src/services/cronJob.service.js';
 
-import uploadRoutes from "./src/routes/upload.route.js";
 import paymentRoutes from "./src/routes/payment.route.js";
-import logger from "./src/utils/logger.js";
-import { notFound, errorHandler } from "./src/middlewares/error.js";
-import config from "./src/config/index.js";
-import cartRoutes from "./src/routes/cart.route.js";
 dotenv.config();
 const app = express();
 

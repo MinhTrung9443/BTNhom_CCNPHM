@@ -15,6 +15,8 @@ import ProfilePage from './pages/ProfilePage'
 import OrdersPage from './pages/OrdersPage'
 import OrderDetailPage from './pages/OrderDetailPage'
 import OrderStatsPage from './pages/OrderStatsPage'
+import PreviewOrder from './pages/PreviewOrder'
+import IntroPage from "./pages/IntroPage";
 
 // Protected Route component
 const ProtectedRoute = ({ children }) => {
@@ -40,7 +42,9 @@ function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
+          <Route path="/preview-order" element={<PreviewOrder />} />
           <Route path="/cart" element={<CartPage />} />
+        <Route path="/intro" element={<IntroPage />} />
 
           {/* Protected routes */}
           <Route
