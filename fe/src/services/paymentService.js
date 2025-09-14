@@ -16,7 +16,10 @@ const paymentService = {
   // Create order with payment method
   createOrder: async (orderData) => {
     try {
-      const response = await apiClient.post("/payments", orderData);
+      const response = await apiClient.post(
+        `/payments/payment-${orderData.paymentMethod}`,
+        orderData
+      );
       return response.data;
     } catch (error) {
       console.error("Error creating order:", error);

@@ -54,6 +54,23 @@ const PreviewOrder = () => {
   };
   const handleSubmit = async () => {
     try {
+      if (!formData.paymentMethod) {
+        toast.error("Vui lòng chọn phương thức thanh toán.");
+        return;
+      }
+      if (!formData.deliveryId) {
+        toast.error("Vui lòng chọn phương thức giao hàng.");
+        return;
+      }
+      if (
+        !formData.recipientName ||
+        !formData.phoneNumber ||
+        !formData.shippingAddress
+      ) {
+        toast.error("Vui lòng điền đầy đủ thông tin người nhận.");
+        return;
+      }
+
       await paymentService.createOrder(formData);
       toast.success("Đặt hàng thành công!");
       navigate("/order-success");
