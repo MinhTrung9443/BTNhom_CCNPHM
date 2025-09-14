@@ -1,5 +1,5 @@
 /**
- * Validation utilities - tương đương với Joi schema từ backend
+ * Validation utilities - equivalent to the Joi schema from the backend
  */
 
 /**
@@ -9,16 +9,16 @@
  */
 export const validateEmail = (email) => {
   if (!email) {
-    return { isValid: false, message: 'Email không được để trống.' };
+    return { isValid: false, message: 'Email is required.' };
   }
   
   if (typeof email !== 'string') {
-    return { isValid: false, message: 'Email phải là một chuỗi ký tự.' };
+    return { isValid: false, message: 'Email must be a string.' };
   }
   
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email)) {
-    return { isValid: false, message: 'Email không hợp lệ.' };
+    return { isValid: false, message: 'Invalid email format.' };
   }
   
   return { isValid: true, message: '' };
@@ -31,15 +31,15 @@ export const validateEmail = (email) => {
  */
 export const validatePassword = (password) => {
   if (!password) {
-    return { isValid: false, message: 'Mật khẩu không được để trống.' };
+    return { isValid: false, message: 'Password is required.' };
   }
   
   if (typeof password !== 'string') {
-    return { isValid: false, message: 'Mật khẩu phải là một chuỗi ký tự.' };
+    return { isValid: false, message: 'Password must be a string.' };
   }
   
   if (password.length < 6) {
-    return { isValid: false, message: 'Mật khẩu phải có ít nhất 6 ký tự.' };
+    return { isValid: false, message: 'Password must be at least 6 characters long.' };
   }
   
   return { isValid: true, message: '' };
@@ -53,11 +53,11 @@ export const validatePassword = (password) => {
  */
 export const validatePasswordConfirm = (password, passwordConfirm) => {
   if (!passwordConfirm) {
-    return { isValid: false, message: 'Xác nhận mật khẩu không được để trống.' };
+    return { isValid: false, message: 'Password confirmation is required.' };
   }
   
   if (password !== passwordConfirm) {
-    return { isValid: false, message: 'Mật khẩu xác nhận không khớp.' };
+    return { isValid: false, message: 'Passwords do not match.' };
   }
   
   return { isValid: true, message: '' };

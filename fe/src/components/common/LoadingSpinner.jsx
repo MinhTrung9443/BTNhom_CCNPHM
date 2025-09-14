@@ -1,22 +1,13 @@
-import React from 'react';
-import Spinner from 'react-bootstrap/Spinner';
+import React from 'react'
+import { Spinner } from 'react-bootstrap'
 
-/**
- * Reusable loading spinner component
- * @param {{
- *   size?: 'sm' | 'lg';
- *   variant?: string;
- *   text?: string;
- *   centered?: boolean;
- * }} props
- */
 const LoadingSpinner = ({ 
   size = 'lg', 
   variant = 'primary', 
-  text = 'Loading...',
+  text = 'Đang tải...',
   centered = true 
 }) => {
-  const containerClass = centered ? 'text-center p-4' : '';
+  const containerClass = centered ? 'text-center p-4' : ''
 
   return (
     <div className={containerClass}>
@@ -26,14 +17,19 @@ const LoadingSpinner = ({
         size={size}
         role="status"
         className="loading-spinner"
+        style={{ 
+          color: 'var(--primary-brown)',
+          width: '3rem',
+          height: '3rem'
+        }}
       >
         <span className="visually-hidden">{text}</span>
       </Spinner>
       {text && centered && (
-        <div className="mt-2 text-muted">{text}</div>
+        <div className="mt-3 text-muted fw-medium">{text}</div>
       )}
     </div>
-  );
-};
+  )
+}
 
-export default LoadingSpinner;
+export default LoadingSpinner

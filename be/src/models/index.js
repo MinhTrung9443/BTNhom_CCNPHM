@@ -6,8 +6,6 @@ import Category from "./Category.js";
 import ProductView from "./ProductView.js";
 import Cart from "./Cart.js";
 import Delivery from "./Delivery.js";
-import Payment from "./Payment.js";
-
 export {
   User,
   OTP,
@@ -17,5 +15,4 @@ export {
   Category,
   Cart,
   Delivery,
-  Payment,
 };

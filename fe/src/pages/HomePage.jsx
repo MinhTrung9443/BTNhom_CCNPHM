@@ -3,6 +3,7 @@ import { Container } from 'react-bootstrap';
 import { productService } from '../services/productService';
 import ProductSection from '../components/common/ProductSection';
 import LoadingSpinner from '../components/common/LoadingSpinner';
+import './HomePage.css';
 
 const HomePage = () => {
   const [loading, setLoading] = useState(true);
@@ -19,7 +20,6 @@ const HomePage = () => {
       try {
         setLoading(true);
         
-        // Gọi API thật từ backend
         const [latest, bestSellers, mostViewed, topDiscounts] = await Promise.allSettled([
           productService.getLatestProducts(),
           productService.getBestSellerProducts(),
@@ -64,8 +64,8 @@ const HomePage = () => {
     <div className="homepage">
       {/* Hero Section */}
       <section className="hero-section page-section">
-        <Container className="container-spacing">
-          <div className="hero-content text-center py-5">
+        <div className="hero-content text-center py-5">
+          <Container className="container-spacing">
             <h1 className="hero-title mb-4">
               🏺 Đặc Sản Sóc Trăng Chính Gốc
             </h1>
@@ -75,8 +75,8 @@ const HomePage = () => {
             <button className="btn btn-warning btn-lg">
               Khám phá ngay
             </button>
-          </div>
-        </Container>
+          </Container>
+        </div>
       </section>
 
       {/* Latest Products */}

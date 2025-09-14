@@ -2,6 +2,7 @@
 import mongoose from 'mongoose';
 import Category from './src/models/Category.js';
 import Product from './src/models/Product.js';
+import User from './src/models/User.js';
 
 // Kết nối MongoDB
 mongoose.connect('mongodb://localhost:27017/auth_db');
@@ -11,6 +12,16 @@ const insertTestData = async () => {
     // Xóa dữ liệu cũ
     await Category.deleteMany({});
     await Product.deleteMany({});
+    await User.deleteMany({});
+
+    // Thêm users
+    const users = await User.insertMany([
+        { name: 'Test User 1', email: 'user1@example.com', password: 'password123', phone: '1234567890', address: '123 Main St', isVerified: true, role: 'user' },
+        { name: 'Test User 2', email: 'user2@example.com', password: 'password123', phone: '0987654321', address: '456 Oak Ave', isVerified: true, role: 'user' },
+        { name: 'Admin User', email: 'admin@example.com', password: 'adminpassword', phone: '1112223333', address: '789 Pine Ln', isVerified: true, role: 'admin' },
+    ]);
+    console.log('Users inserted:', users.length);
+
 
     // Thêm categories
     const categories = await Category.insertMany([

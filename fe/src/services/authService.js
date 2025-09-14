@@ -1,13 +1,13 @@
 import apiClient from './apiClient';
 
 /**
- * Auth Service - xử lý các API liên quan đến authentication
+ * Auth Service - handles authentication-related APIs
  */
 const authService = {
   /**
-   * Gửi yêu cầu quên mật khẩu
-   * @param {string} email - Email của người dùng
-   * @returns {Promise} Response từ API
+   * Send a forgot password request
+   * @param {string} email - User's email
+   * @returns {Promise} API response
    */
   forgotPassword: async (email) => {
     try {
@@ -19,11 +19,11 @@ const authService = {
   },
 
   /**
-   * Đặt lại mật khẩu mới
-   * @param {string} token - Reset token từ URL
-   * @param {string} password - Mật khẩu mới
-   * @param {string} passwordConfirm - Xác nhận mật khẩu
-   * @returns {Promise} Response từ API
+   * Reset to a new password
+   * @param {string} token - Reset token from the URL
+   * @param {string} password - New password
+   * @param {string} passwordConfirm - Password confirmation
+   * @returns {Promise} API response
    */
   resetPassword: async (token, password, passwordConfirm) => {
     try {
@@ -38,10 +38,10 @@ const authService = {
   },
 
   /**
-   * Đăng nhập
+   * Login
    * @param {string} email 
    * @param {string} password 
-   * @returns {Promise} Response từ API
+   * @returns {Promise} API response
    */
   login: async (email, password) => {
     try {
@@ -53,9 +53,9 @@ const authService = {
   },
 
   /**
-   * Đăng ký
-   * @param {Object} userData - Thông tin đăng ký
-   * @returns {Promise} Response từ API
+   * Register
+   * @param {Object} userData - Registration information
+   * @returns {Promise} API response
    */
   register: async (userData) => {
     try {
@@ -67,9 +67,10 @@ const authService = {
   },
 
   /**
-   * Xác thực OTP
-   * @param {Object} otpData - Dữ liệu xác thực OTP
-   * @returns {Promise} Response từ API
+   * Verify OTP
+   * @param {string} email
+   * @param {string} otp
+   * @returns {Promise} API response
    */
   verifyOTP: async (email, otp) => {
     try {
@@ -81,23 +82,26 @@ const authService = {
   },
 
   /**
-   * Đăng xuất
-   * @returns {Promise} Response từ API
+   * Logout
+   * @returns {Promise} API response
    */
   logout: async () => {
     try {
       const response = await apiClient.post('/auth/logout');
       localStorage.removeItem('accessToken');
+      localStorage.removeItem('user');
       return response.data;
     } catch (error) {
+      // Still clear local storage on error
       localStorage.removeItem('accessToken');
+      localStorage.removeItem('user');
       throw error;
     }
   },
 
   /**
-   * Lấy thông tin profile
-   * @returns {Promise} Response từ API
+   * Get user profile
+   * @returns {Promise} API response
    */
   getProfile: async () => {
     try {

@@ -4,6 +4,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchCart, clearCart } from '../../redux/cartSlice';
 import { logoutSuccess } from '../../redux/userSlice';
+import authService from '../../services/authService';
+import './../../styles/header-footer.css';
 
 const Header = () => {
   const { isAuthenticated, user } = useSelector((state) => state.user);
@@ -12,19 +14,21 @@ const Header = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
-
   useEffect(() => {
     if (isAuthenticated) {
       dispatch(fetchCart());
     }
   }, [isAuthenticated, dispatch]);
 
-  const handleLogout = () => {
-    dispatch(logoutSuccess());
-    dispatch(clearCart());
-    localStorage.removeItem('userInfo');
-    localStorage.removeItem('token');
-    navigate('/');
+  const handleLogout = async () => {
+    try {
+      await authService.logout();
+    } catch (error) {
+      console.error('Logout failed on server:', error);
+    } finally {
+      dispatch(logoutSuccess());
+      navigate('/');
+    }
   };
 
 
@@ -47,9 +51,7 @@ const Header = () => {
             <span className="brand-highlight"> Sóc Trăng</span>
           </span>
         </Navbar.Brand>
-
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
-
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="me-auto">
             <Nav.Link as={Link} to="/" className="nav-link-custom">
@@ -61,9 +63,30 @@ const Header = () => {
               Sản phẩm
             </Nav.Link>
             <NavDropdown title={<span><i className="fas fa-list me-1"></i>Danh mục</span>} id="category-dropdown" className="nav-dropdown-custom">
+              <NavDropdown.Item as={Link} to="/products?category=pia-dau-xanh">
+                🟢 Bánh pía đậu xanh
+              </NavDropdown.Item>
+              <NavDropdown.Item as={Link} to="/products?category=pia-thit">
+                🟤 Bánh pía thịt
+              </NavDropdown.Item>
+              <NavDropdown.Item as={Link} to="/products?category=pia-trung">
+                🟡 Bánh pía trứng
+              </NavDropdown.Item>
+              <NavDropdown.Item as={Link} to="/products?category=pia-dua">
+                🥥 Bánh pía dừa
+              </NavDropdown.Item>
+              <NavDropdown.Divider />
+              <NavDropdown.Item as={Link} to="/products?category=banh-in">
+                🥮 Bánh ín
+              </NavDropdown.Item>
+              <NavDropdown.Item as={Link} to="/products?category=banh-cam">
+                🟠 Bánh cam
+              </NavDropdown.Item>
+              <NavDropdown.Item as={Link} to="/products?category=kem-bo">
+                🧈 Kem bơ
+              </NavDropdown.Item>
             </NavDropdown>
           </Nav>
-
           <Form className="d-flex me-3" onSubmit={handleSearch}>
             <Form.Control
               type="search"
@@ -76,7 +99,6 @@ const Header = () => {
               <i className="fas fa-search"></i>
             </Button>
           </Form>
-
           <Nav>
             <Nav.Link as={Link} to="/cart" className="nav-link-custom position-relative me-2">
               <i className="fas fa-shopping-cart"></i>
@@ -84,10 +106,14 @@ const Header = () => {
                 <Badge bg="danger" className="cart-badge">{totalCartItems}</Badge>
               )}
             </Nav.Link>
-
             {isAuthenticated && user ? (
               <NavDropdown
-                title={<span className="user-dropdown"><i className="bi bi-person-circle me-2"></i>{user.name}</span>}
+                title={
+                  <span className="user-dropdown">
+                    <i className="bi bi-person-circle me-2"></i>
+                    {user.name}
+                  </span>
+                }
                 id="user-dropdown"
                 className="user-dropdown-custom"
                 align="end"
@@ -99,8 +125,25 @@ const Header = () => {
               </NavDropdown>
             ) : (
               <div className="auth-buttons">
-                <Button as={Link} to="/login" variant="outline-warning" size="sm" className="me-2"><i className="fas fa-sign-in-alt me-1"></i>Đăng nhập</Button>
-                <Button as={Link} to="/register" variant="warning" size="sm"><i className="fas fa-user-plus me-1"></i>Đăng ký</Button>
+                <Button
+                  as={Link}
+                  to="/login"
+                  variant="outline-warning"
+                  size="sm"
+                  className="me-2"
+                >
+                  <i className="fas fa-sign-in-alt me-1"></i>
+                  Đăng nhập
+                </Button>
+                <Button
+                  as={Link}
+                  to="/register"
+                  variant="warning"
+                  size="sm"
+                >
+                  <i className="fas fa-user-plus me-1"></i>
+                  Đăng ký
+                </Button>
               </div>
             )}
           </Nav>

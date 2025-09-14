@@ -1,0 +1,123 @@
+.navbar-custom {
+  background: linear-gradient(135deg, var(--primary-brown) 0%, var(--light-brown) 100%) !important;
+  border-bottom: 3px solid var(--dark-brown);
+  padding: 1rem 0;
+  min-height: 80px;
+}
+
+.brand-logo {
+  color: white !important;
+  text-decoration: none !important;
+  transition: all var(--transition-normal);
+}
+
+.brand-logo:hover {
+  color: var(--cream) !important;
+  transform: scale(1.05);
+}
+
+.brand-icon {
+  font-size: 2rem;
+}
+
+.brand-text {
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.brand-highlight {
+  font-size: 0.9rem;
+  color: var(--cream) !important;
+  font-weight: 500;
+}
+
+.nav-link-custom {
+  color: white !important;
+  font-weight: 500;
+  transition: all var(--transition-normal);
+  border-radius: var(--radius);
+  margin: 0 0.25rem;
+  padding: 0.5rem 1rem !important;
+}
+
+.nav-link-custom:hover {
+  background-color: rgba(255,255,255,0.2) !important;
+  color: var(--cream) !important;
+  transform: translateY(-1px);
+}
+
+.search-form {
+  width: 300px;
+}
+
+.search-input {
+  border: 2px solid var(--cream);
+  border-right: none;
+  border-radius: var(--radius-full) 0 0 var(--radius-full);
+}
+
+.search-input:focus {
+  border-color: white;
+  box-shadow: none;
+}
+
+.search-btn {
+  border: 2px solid var(--cream);
+  border-left: none;
+  border-radius: 0 var(--radius-full) var(--radius-full) 0;
+  background-color: var(--cream);
+  color: var(--primary-brown);
+}
+
+.search-btn:hover {
+  background-color: white;
+  border-color: white;
+  color: var(--primary-brown);
+}
+
+.cart-badge {
+  top: -8px;
+  right: -8px;
+  font-size: 0.7rem;
+  padding: 0.25rem 0.5rem;
+}
+
+.user-dropdown {
+  color: white !important;
+  font-weight: 500;
+}
+
+.auth-btn-login {
+  border-color: white !important;
+  color: white !important;
+}
+
+.auth-btn-login:hover {
+  background-color: white !important;
+  color: var(--primary-brown) !important;
+  border-color: white !important;
+}
+
+.auth-btn-register {
+  background-color: var(--cream) !important;
+  border-color: var(--cream) !important;
+  color: var(--primary-brown) !important;
+}
+
+.auth-btn-register:hover {
+  background-color: white !important;
+  border-color: white !important;
+  color: var(--primary-brown) !important;
+}
+
+@media (max-width: 991px) {
+  .search-form {
+    width: 100%;
+    margin: 1rem 0;
+  }
+  
+  .auth-buttons {
+    margin-top: 1rem;
+  }
+}

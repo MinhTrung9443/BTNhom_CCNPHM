@@ -1,0 +1,42 @@
+.hero-section {
+  background: linear-gradient(135deg, #8B4513 0%, #D2691E 100%);
+  color: white;
+  position: relative;
+  width: 100vw;
+  left: 50%;
+  right: 50%;
+  margin-left: -50vw;
+  margin-right: -50vw;
+  box-sizing: border-box;
+}
+
+.hero-content {
+  padding: 80px 0;
+}
+
+.hero-title {
+  font-size: 3rem;
+  font-weight: 700;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+.hero-subtitle {
+  font-size: 1.25rem;
+  opacity: 0.9;
+  max-width: 600px;
+  margin: 0 auto 2rem auto;
+}
+
+.product-section {
+  padding: 40px 0;
+}
+
+.section-title {
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
+.section-subtitle {
+  color: #6c757d;
+  margin-bottom: 2rem;
+}

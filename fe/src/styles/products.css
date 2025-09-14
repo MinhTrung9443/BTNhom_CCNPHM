@@ -22,12 +22,12 @@
   left: 0;
   width: 50px;
   height: 3px;
-  background: linear-gradient(45deg, #007bff, #0056b3);
+  background: linear-gradient(45deg, #8B4513, #D2691E);
   border-radius: 2px;
 }
 
 .hero-section {
-  background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+  background: linear-gradient(135deg, #8B4513 0%, #D2691E 100%);
 }
 
 .stats-section small {

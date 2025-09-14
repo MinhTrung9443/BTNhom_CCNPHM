@@ -1,0 +1,47 @@
+.Timeline {
+  position: relative;
+}
+
+.TimelineItem {
+  position: relative;
+  display: flex;
+  margin-bottom: 1.5rem;
+}
+
+.TimelineIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: var(--bs-light);
+  border: 2px solid var(--bs-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 1rem;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 2;
+}
+
+.Icon {
+  font-size: 1.2rem;
+}
+
+.TimelineContent {
+  flex-grow: 1;
+  padding-top: 0.25rem;
+}
+
+.TimelineLine {
+  position: absolute;
+  left: 19px;
+  top: 40px;
+  width: 2px;
+  height: calc(100% + 0.5rem);
+  background-color: var(--bs-border-color);
+  z-index: 1;
+}
+
+.TimelineItem:last-child .TimelineLine {
+  display: none;
+}

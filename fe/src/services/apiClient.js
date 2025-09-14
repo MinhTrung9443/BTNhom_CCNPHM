@@ -9,11 +9,12 @@ const apiClient = axios.create({
   },
 });
 
+// Request interceptor - automatically add accessToken to header if it exists
 apiClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('accessToken');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    const accessToken = localStorage.getItem('accessToken');
+    if (accessToken) {
+      config.headers.Authorization = `Bearer ${accessToken}`;
     }
     return config;
   },
@@ -22,12 +23,13 @@ apiClient.interceptors.request.use(
   }
 );
 
+// Response interceptor - handle common errors
 apiClient.interceptors.response.use(
   (response) => {
     return response;
   },
   (error) => {
-    // Xử lý lỗi HTTP
+    // Handle HTTP errors
     if (error.response) {
       const { status, data } = error.response;
       
@@ -37,7 +39,7 @@ apiClient.interceptors.response.use(
           break;
         case 401:
           console.error('Unauthorized:', data.message);
-          // Có thể redirect đến trang login
+          // Can redirect to login page
           localStorage.removeItem('accessToken');
           break;
         case 403:
@@ -48,15 +50,15 @@ apiClient.interceptors.response.use(
           break;
         case 500:
           console.error('Server Error:', data.message);
-          toast.error('Lỗi server. Vui lòng thử lại sau.');
+          toast.error('Server error. Please try again later.');
           break;
         default:
           console.error('Error:', data.message);
       }
     } else if (error.request) {
-      // Lỗi network
+      // Network error
       console.error('Network Error:', error.message);
-      toast.error('Lỗi kết nối. Vui lòng kiểm tra internet.');
+      toast.error('Connection error. Please check your internet connection.');
     } else {
       console.error('Error:', error.message);
     }
