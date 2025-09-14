@@ -4,6 +4,7 @@ import { ToastContainer } from 'react-toastify'
 import { useSelector } from 'react-redux'
 import Layout from './components/layout/Layout'
 import HomePage from './pages/HomePage'
+import CartPage from './pages/CartPage'
 import ProductsPage from './pages/ProductsPage'
 import ProductDetailPage from './pages/ProductDetailPage'
 import LoginPage from './pages/auth/LoginPage'
@@ -39,7 +40,8 @@ function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
-          
+          <Route path="/cart" element={<CartPage />} />
+
           {/* Protected routes */}
           <Route
             path="/profile"

@@ -10,6 +10,7 @@ const apiService = axios.create({
 export const setupAxiosInterceptors = (store) => {
   apiService.interceptors.request.use(
     (config) => {
+      console.log(store.getState());
       const state = store.getState();
       const token = state.user?.token;
 

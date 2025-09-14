@@ -1,11 +1,12 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import apiService from '../services/apiService';
+import apiClient from '../services/apiClient';
 
 export const addItemToCart = createAsyncThunk(
   'cart/addItem',
   async (itemData, { rejectWithValue }) => {
     try {
-      const response = await apiService.post('/cart/items', itemData);
+      const response = await apiClient.post('/cart/items', itemData);
       return response.data;
     } catch (error) {
       if (error.response && error.response.data) {
@@ -21,7 +22,7 @@ export const updateItemQuantity = createAsyncThunk(
   'cart/updateQuantity',
   async ({ productId, quantity }, { rejectWithValue }) => {
     try {
-      const response = await apiService.post('/cart/items', { productId, quantity });
+      const response = await apiClient.post('/cart/items', { productId, quantity });
       return response.data;
     } catch (error) {
       if (error.response && error.response.data) {
@@ -37,7 +38,7 @@ export const removeItemFromCart = createAsyncThunk(
   'cart/removeItem',
   async (productId, { rejectWithValue }) => {
     try {
-      const response = await apiService.delete(`/cart/items/${productId}`);
+      const response = await apiClient.delete(`/cart/items/${productId}`);
       return response.data;
     } catch (error) {
       if (error.response && error.response.data) {
@@ -53,7 +54,7 @@ export const fetchCart = createAsyncThunk(
     'cart/fetchCart',
     async (_, { rejectWithValue }) => {
         try {
-            const response = await apiService.get('/cart'); 
+            const response = await apiClient.get('/cart'); 
             return response.data; 
         } catch (error) {
             if (error.response && error.response.data) {
