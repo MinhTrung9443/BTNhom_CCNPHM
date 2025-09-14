@@ -36,53 +36,70 @@ const CartPage = () => {
                     ) : (
                         <ListGroup variant="flush">
                             {cartItems.map((item) => (
-                                <ListGroup.Item key={item.productId._id} className="d-flex align-items-center p-3 mb-2 shadow-sm">
-                                    <Image
-                                        src={item.productId.images[0]}
-                                        alt={item.productId.name}
-                                        thumbnail
-                                        style={{ width: '100px', height: '100px', objectFit: 'cover' }}
-                                    />
+                                item.productId ? (
+                                    <ListGroup.Item key={item.productId._id} className="d-flex align-items-center p-3 mb-2 shadow-sm">
+                                        <Image
+                                            src={item.productId.images[0]}
+                                            alt={item.productId.name}
+                                            thumbnail
+                                            style={{ width: '100px', height: '100px', objectFit: 'cover' }}
+                                        />
 
-                                    <div className="ms-3 flex-grow-1">
-                                        <Link to={`/products/${item.productId._id}`} className="text-decoration-none text-dark">
-                                            <h5>{item.productId.name}</h5>
-                                        </Link>
-                                        <p className="mb-1 text-primary fw-bold">{item.price.toLocaleString('vi-VN')}đ</p>
-                                        <div className="d-flex align-items-center mt-2">
+                                        <div className="ms-3 flex-grow-1">
+                                            <Link to={`/products/${item.productId._id}`} className="text-decoration-none text-dark">
+                                                <h5>{item.productId.name}</h5>
+                                            </Link>
+                                            <p className="mb-1 text-primary fw-bold">{item.price.toLocaleString('vi-VN')}đ</p>
+                                            <div className="d-flex align-items-center mt-2">
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline-secondary"
+                                                    onClick={() => handleUpdateQuantity(item.productId._id, -1)}
+                                                    disabled={status === 'loading'}
+                                                >
+                                                    -
+                                                </Button>
+                                                <span className="mx-3 fw-bold">{item.quantity}</span>
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline-secondary"
+                                                    onClick={() => handleUpdateQuantity(item.productId._id, 1)}
+                                                    disabled={status === 'loading'}
+                                                >
+                                                    +
+                                                </Button>
+                                            </div>
+                                        </div>
+
+                                        <div className="ms-3 text-end">
+                                            <h6 className="mb-2">Thành tiền</h6>
+                                            <p className="fw-bold fs-5">{(item.price * item.quantity).toLocaleString('vi-VN')}đ</p>
                                             <Button
+                                                variant="outline-danger"
                                                 size="sm"
-                                                variant="outline-secondary"
-                                                onClick={() => handleUpdateQuantity(item.productId._id, -1)}
+                                                onClick={() => handleRemoveItem(item.productId._id)}
                                                 disabled={status === 'loading'}
                                             >
-                                                -
-                                            </Button>
-                                            <span className="mx-3 fw-bold">{item.quantity}</span>
-                                            <Button
-                                                size="sm"
-                                                variant="outline-secondary"
-                                                onClick={() => handleUpdateQuantity(item.productId._id, 1)}
-                                                disabled={status === 'loading'}
-                                            >
-                                                +
+                                                <i className="fas fa-trash"></i> Xóa
                                             </Button>
                                         </div>
-                                    </div>
-
-                                    <div className="ms-3 text-end">
-                                        <h6 className="mb-2">Thành tiền</h6>
-                                        <p className="fw-bold fs-5">{(item.price * item.quantity).toLocaleString('vi-VN')}đ</p>
-                                        <Button
-                                            variant="outline-danger"
-                                            size="sm"
-                                            onClick={() => handleRemoveItem(item.productId._id)}
-                                            disabled={status === 'loading'}
-                                        >
-                                            <i className="fas fa-trash"></i> Xóa
-                                        </Button>
-                                    </div>
-                                </ListGroup.Item>
+                                    </ListGroup.Item>
+                                ) : (
+                                    <ListGroup.Item key={item._id} className="d-flex align-items-center p-3 mb-2 shadow-sm">
+                                        <div className="ms-3 flex-grow-1">
+                                            <h5>Sản phẩm không còn tồn tại</h5>
+                                            <p className="mb-1 text-danger fw-bold">Vui lòng xóa khỏi giỏ hàng</p>
+                                            <Button
+                                                variant="outline-danger"
+                                                size="sm"
+                                                onClick={() => handleRemoveItem(item.productId)}
+                                                disabled={status === 'loading'}
+                                            >
+                                                <i className="fas fa-trash"></i> Xóa
+                                            </Button>
+                                        </div>
+                                    </ListGroup.Item>
+                                )
                             ))}
                         </ListGroup>
                     )}

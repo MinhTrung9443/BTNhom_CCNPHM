@@ -3,6 +3,7 @@ import { Row, Col, Alert } from 'react-bootstrap';
 import ProductCard from './ProductCard';
 import LoadingSpinner from './LoadingSpinner';
 import EmptyState from './EmptyState';
+import Pagination from './Pagination';
 
 const ProductSection = ({ 
   title, 
@@ -11,7 +12,13 @@ const ProductSection = ({
   loading = false, 
   error = null,
   showViewMore = false,
-  onViewMore
+  onViewMore,
+  // Pagination props
+  enablePagination = false,
+  currentPage = 1,
+  totalPages = 1,
+  onPageChange,
+  itemsPerPage = 4
 }) => {
   if (loading) {
     return (
@@ -69,15 +76,24 @@ const ProductSection = ({
             key={product._id} 
             xs={12} 
             sm={6} 
-            md={4} 
-            lg={3}
+            md={itemsPerPage === 8 ? 3 : 4} 
+            lg={itemsPerPage === 8 ? 3 : 3}
           >
             <ProductCard product={product} />
           </Col>
         ))}
       </Row>
 
-      {showViewMore && onViewMore && (
+      {enablePagination && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={onPageChange}
+          loading={loading}
+        />
+      )}
+
+      {showViewMore && onViewMore && !enablePagination && (
         <div className="text-center mt-4">
           <button 
             className="btn btn-outline-primary btn-lg"

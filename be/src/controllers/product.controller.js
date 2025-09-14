@@ -2,27 +2,49 @@ import { Product, Order, ProductView } from "../models/index.js";
 import { AppError } from "../utils/AppError.js";
 
 export const productController = {
-  // API lấy 8 sản phẩm mới nhất
+  // API lấy sản phẩm mới nhất với phân trang
   async getLatestProducts(req, res, next) {
     try {
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 8;
+      const skip = (page - 1) * limit;
+
+      const total = await Product.countDocuments();
       const products = await Product.find()
         .populate('categoryId', 'name')
         .sort({ createdAt: -1 })
-        .limit(8)
-        .select('name description price discount images categoryId createdAt');
+        .skip(skip)
+        .limit(limit)
+        .select('name description price discount images categoryId createdAt stock');
+
+      const totalPages = Math.ceil(total / limit);
 
       res.status(200).json({
         success: true,
-        data: products
+        data: {
+          products,
+          pagination: {
+            currentPage: page,
+            totalPages,
+            totalProducts: total,
+            hasNext: page < totalPages,
+            hasPrev: page > 1,
+            limit
+          }
+        }
       });
     } catch (error) {
       next(new AppError("Lỗi khi lấy sản phẩm mới nhất", 500));
     }
   },
 
-  // API lấy 6 sản phẩm bán chạy nhất
+  // API lấy sản phẩm bán chạy với phân trang
   async getBestSellerProducts(req, res, next) {
     try {
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 4;
+      const skip = (page - 1) * limit;
+
       // Tính toán số lượng bán của từng sản phẩm
       const bestSellers = await Order.aggregate([
         { $match: { status: { $in: ["paid", "shipped", "completed"] } } },
@@ -34,13 +56,30 @@ export const productController = {
           }
         },
         { $sort: { totalSold: -1 } },
-        { $limit: 6 }
+        { $skip: skip },
+        { $limit: limit }
       ]);
 
       const productIds = bestSellers.map(item => item._id);
       const products = await Product.find({ _id: { $in: productIds } })
         .populate('categoryId', 'name')
-        .select('name description price discount images categoryId createdAt');
+        .select('name description price discount images categoryId createdAt stock');
+
+      // Đếm tổng số sản phẩm bán chạy
+      const totalBestSellers = await Order.aggregate([
+        { $match: { status: { $in: ["paid", "shipped", "completed"] } } },
+        { $unwind: "$orderLines" },
+        {
+          $group: {
+            _id: "$orderLines.productId",
+            totalSold: { $sum: "$orderLines.quantity" }
+          }
+        },
+        { $count: "total" }
+      ]);
+
+      const total = totalBestSellers[0]?.total || 0;
+      const totalPages = Math.ceil(total / limit);
 
       // Sắp xếp lại theo thứ tự bán chạy
       const sortedProducts = bestSellers.map(seller => {
@@ -53,16 +92,30 @@ export const productController = {
 
       res.status(200).json({
         success: true,
-        data: sortedProducts
+        data: {
+          products: sortedProducts,
+          pagination: {
+            currentPage: page,
+            totalPages,
+            totalProducts: total,
+            hasNext: page < totalPages,
+            hasPrev: page > 1,
+            limit
+          }
+        }
       });
     } catch (error) {
       next(new AppError("Lỗi khi lấy sản phẩm bán chạy", 500));
     }
   },
 
-  // API lấy 8 sản phẩm được xem nhiều nhất
+  // API lấy sản phẩm được xem nhiều với phân trang
   async getMostViewedProducts(req, res, next) {
     try {
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 4;
+      const skip = (page - 1) * limit;
+
       const mostViewed = await ProductView.aggregate([
         {
           $group: {
@@ -71,13 +124,28 @@ export const productController = {
           }
         },
         { $sort: { totalViews: -1 } },
-        { $limit: 8 }
+        { $skip: skip },
+        { $limit: limit }
       ]);
 
       const productIds = mostViewed.map(item => item._id);
       const products = await Product.find({ _id: { $in: productIds } })
         .populate('categoryId', 'name')
-        .select('name description price discount images categoryId createdAt');
+        .select('name description price discount images categoryId createdAt stock');
+
+      // Đếm tổng số sản phẩm được xem
+      const totalViewed = await ProductView.aggregate([
+        {
+          $group: {
+            _id: "$productId",
+            totalViews: { $sum: "$viewCount" }
+          }
+        },
+        { $count: "total" }
+      ]);
+
+      const total = totalViewed[0]?.total || 0;
+      const totalPages = Math.ceil(total / limit);
 
       // Sắp xếp lại theo thứ tự lượt xem
       const sortedProducts = mostViewed.map(viewed => {
@@ -90,25 +158,53 @@ export const productController = {
 
       res.status(200).json({
         success: true,
-        data: sortedProducts
+        data: {
+          products: sortedProducts,
+          pagination: {
+            currentPage: page,
+            totalPages,
+            totalProducts: total,
+            hasNext: page < totalPages,
+            hasPrev: page > 1,
+            limit
+          }
+        }
       });
     } catch (error) {
-      next(new AppError("Lỗi khi lấy sản phẩm được xem nhiều nhất", 500));
+      next(new AppError("Lỗi khi lấy sản phẩm được xem nhiều", 500));
     }
   },
 
-  // API lấy 4 sản phẩm khuyến mãi cao nhất
+  // API lấy sản phẩm khuyến mãi với phân trang
   async getTopDiscountProducts(req, res, next) {
     try {
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 4;
+      const skip = (page - 1) * limit;
+
+      const total = await Product.countDocuments({ discount: { $gt: 0 } });
       const products = await Product.find({ discount: { $gt: 0 } })
         .populate('categoryId', 'name')
         .sort({ discount: -1 })
-        .limit(4)
-        .select('name description price discount images categoryId createdAt');
+        .skip(skip)
+        .limit(limit)
+        .select('name description price discount images categoryId createdAt stock');
+
+      const totalPages = Math.ceil(total / limit);
 
       res.status(200).json({
         success: true,
-        data: products
+        data: {
+          products,
+          pagination: {
+            currentPage: page,
+            totalPages,
+            totalProducts: total,
+            hasNext: page < totalPages,
+            hasPrev: page > 1,
+            limit
+          }
+        }
       });
     } catch (error) {
       next(new AppError("Lỗi khi lấy sản phẩm khuyến mãi", 500));
@@ -145,8 +241,7 @@ export const productController = {
       }
 
       // Build sort object
-      let sort = { createdAt: -1 }; // mặc định sắp xếp theo ngày tạo
-      
+      let sort = { createdAt: -1 }; // default sort
       if (sortBy) {
         switch (sortBy) {
           case 'price_asc':
@@ -161,21 +256,22 @@ export const productController = {
           case 'name_desc':
             sort = { name: -1 };
             break;
-          case 'discount_desc':
-            sort = { discount: -1 };
+          case 'newest':
+            sort = { createdAt: -1 };
+            break;
+          case 'oldest':
+            sort = { createdAt: 1 };
             break;
         }
       }
 
-      const [products, total] = await Promise.all([
-        Product.find(filter)
-          .populate('categoryId', 'name')
-          .sort(sort)
-          .skip(skip)
-          .limit(limit)
-          .select('name description price discount images categoryId createdAt'),
-        Product.countDocuments(filter)
-      ]);
+      const total = await Product.countDocuments(filter);
+      const products = await Product.find(filter)
+        .populate('categoryId', 'name')
+        .sort(sort)
+        .skip(skip)
+        .limit(limit)
+        .select('name description price discount images categoryId createdAt stock');
 
       const totalPages = Math.ceil(total / limit);
 
@@ -241,6 +337,8 @@ export const productController = {
       next(new AppError("Lỗi khi lấy chi tiết sản phẩm", 500));
     }
   },
+
+  // API lấy sản phẩm liên quan
   async getRelatedProducts(req, res, next) {
     try {
       const { id } = req.params;
@@ -267,6 +365,5 @@ export const productController = {
     } catch (error) {
       next(new AppError("Lỗi khi lấy sản phẩm liên quan", 500));
     }
-  },
-
+  }
 };

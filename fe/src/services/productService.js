@@ -1,10 +1,10 @@
 import apiClient from './apiClient';
 
 export const productService = {
-  // Get latest products (8 sản phẩm mới nhất)
-  getLatestProducts: async () => {
+  // Get latest products với phân trang
+  getLatestProducts: async (page = 1, limit = 8) => {
     try {
-      const response = await apiClient.get('/products/latest');
+      const response = await apiClient.get(`/products/latest?page=${page}&limit=${limit}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching latest products:', error);
@@ -12,10 +12,10 @@ export const productService = {
     }
   },
 
-  // Get best seller products (6 sản phẩm bán chạy)
-  getBestSellerProducts: async () => {
+  // Get best seller products với phân trang
+  getBestSellerProducts: async (page = 1, limit = 4) => {
     try {
-      const response = await apiClient.get('/products/bestsellers');
+      const response = await apiClient.get(`/products/bestsellers?page=${page}&limit=${limit}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching bestseller products:', error);
@@ -23,10 +23,10 @@ export const productService = {
     }
   },
 
-  // Get most viewed products (8 sản phẩm được xem nhiều)
-  getMostViewedProducts: async () => {
+  // Get most viewed products với phân trang
+  getMostViewedProducts: async (page = 1, limit = 4) => {
     try {
-      const response = await apiClient.get('/products/most-viewed');
+      const response = await apiClient.get(`/products/most-viewed?page=${page}&limit=${limit}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching most viewed products:', error);
@@ -34,10 +34,10 @@ export const productService = {
     }
   },
 
-  // Get top discount products (4 sản phẩm khuyến mãi cao)
-  getTopDiscountProducts: async () => {
+  // Get top discount products với phân trang
+  getTopDiscountProducts: async (page = 1, limit = 4) => {
     try {
-      const response = await apiClient.get('/products/top-discounts');
+      const response = await apiClient.get(`/products/top-discounts?page=${page}&limit=${limit}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching top discount products:', error);
