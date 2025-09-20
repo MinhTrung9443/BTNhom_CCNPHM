@@ -37,6 +37,12 @@ const userSchema = new mongoose.Schema(
       enum: ["user", "admin"],
       default: "user",
     },
+    Voucher: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Voucher",
+      },
+    ],
     passwordResetToken: String,
     passwordResetExpires: Date,
   },
