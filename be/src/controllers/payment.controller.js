@@ -23,6 +23,7 @@ const payment = async (req, res) => {
       shippingAddress,
       phoneNumber,
       recipientName,
+      selectedVoucher,
       notes,
       paymentMethod,
       totalAmount,
@@ -42,6 +43,7 @@ const payment = async (req, res) => {
       notes,
       paymentMethod,
       totalAmount,
+      selectedVoucher,
       deliveryId,
     });
 
@@ -55,6 +57,7 @@ const payment = async (req, res) => {
       message: "Lỗi khi xử lý thanh toán.",
       error: error.message,
     });
+    console.error("Payment error:", error);
   }
 };
 

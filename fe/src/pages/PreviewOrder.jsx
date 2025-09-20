@@ -5,6 +5,7 @@ import PaymentMethod from "../components/common/PaymentMethod";
 import OrderSummary from "../components/common/OrderSummary";
 import ProductCardOrder from "../components/common/ProductCardOrder";
 import DeliveryOptions from "../components/common/DeliveryOptions";
+import VoucherSelection from "../components/common/VoucherSelect";
 import { useState } from "react";
 import { useEffect } from "react";
 import { useSelector } from "react-redux";
@@ -17,6 +18,8 @@ const PreviewOrder = () => {
   const [deliveryOptions, setDeliveryOptions] = useState([]);
   const orderLines = useSelector((state) => state.order.orderLines);
   const user = useSelector((state) => state.user.user);
+  const [vouchers, setVouchers] = useState([]);
+
   const [formData, setFormData] = useState({
     orderLines: orderLines,
     recipientName: user.name || "",
@@ -24,6 +27,7 @@ const PreviewOrder = () => {
     shippingAddress: user.address || "",
     notes: "",
     paymentMethod: "",
+    selectedVoucher: null,
     totalProductAmount: orderLines.reduce(
       (acc, item) =>
         acc + item.productPrice * (1 - item.discount / 100) * item.quantity,
@@ -47,6 +51,22 @@ const PreviewOrder = () => {
     };
     fetchDeliveryOptions();
   }, []);
+
+  useEffect(() => {
+    const fetchVouchers = async () => {
+      try {
+        const response = await paymentService.getAvailableVouchers(
+          formData.totalProductAmount
+        );
+        console.log("Voucher fetch response:", response);
+        setVouchers(response);
+      } catch (error) {
+        console.error("Error fetching vouchers:", error);
+        toast.error("Lỗi khi tải voucher. Vui lòng thử lại.");
+      }
+    };
+    fetchVouchers();
+  }, [formData.totalProductAmount]); // Refetch vouchers if total product amount changes
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -88,11 +108,38 @@ const PreviewOrder = () => {
     }));
   };
 
+  const handleVoucherChange = (voucher) => {
+    setFormData((prev) => {
+      let discountAmount = 0;
+      if (voucher) {
+        discountAmount =
+          (prev.totalProductAmount * voucher.discountValue) / 100;
+        if (discountAmount > voucher.maxDiscountAmount) {
+          discountAmount = voucher.maxDiscountAmount;
+        }
+      }
+      return {
+        ...prev,
+        selectedVoucher: voucher,
+        totalAmount:
+          prev.totalProductAmount + prev.shippingFee - discountAmount,
+      };
+    });
+  };
+
+  useEffect(() => {
+    console.log("formData changed:", formData);
+  }, [formData]);
+
   return (
     <Container className="my-4">
       <h3>Xem lại đơn hàng</h3>
       <ProductCardOrder products={orderLines} />
-      <RecipientInfoForm formData={formData} onChange={handleChange} />
+      <RecipientInfoForm
+        formData={formData}
+        selectedVoucher={formData.selectedVoucher}
+        onChange={handleChange}
+      />
       <PaymentMethod
         selected={formData.paymentMethod}
         onChange={handleChange}
@@ -103,9 +150,13 @@ const PreviewOrder = () => {
         selected={formData.deliveryId}
         onChange={handleDeliveryChange}
       />
+
+      <VoucherSelection vouchers={vouchers} onChange={handleVoucherChange} />
+
       <OrderSummary
         subtotal={formData.totalProductAmount}
         shippingFee={formData.shippingFee}
+        selectedVoucher={formData.selectedVoucher}
       />
 
       <button className="btn btn-primary mt-4" onClick={handleSubmit}>

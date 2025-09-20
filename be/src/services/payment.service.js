@@ -1,8 +1,9 @@
 import Product from "../models/Product.js";
-import Order from "../models/Order.js";
+import Order, { ORDER_STATUS } from "../models/Order.js";
 import Cart from "../models/Cart.js";
 import Payment from "../models/Payment.js";
 import Delivery from "../models/Delivery.js";
+import Voucher from "../models/Voucher.js";
 
 // Lấy thông tin đơn vị vận chuyển
 export const getDeliveryOptions = async () => {
@@ -19,14 +20,12 @@ export const checkProductsAvailability = async (products) => {
         ...item,
         available: true,
         stock: product.stock,
-        product: product,
       });
     } else {
       result.push({
         ...item,
         available: false,
         stock: product ? product.stock : 0,
-        product: product,
       });
     }
   }
@@ -42,6 +41,7 @@ export const createOrder = async ({
   recipientName,
   notes,
   paymentMethod,
+  selectedVoucher,
   totalAmount,
   deliveryId,
 }) => {
@@ -56,11 +56,12 @@ export const createOrder = async ({
         notes,
         totalAmount,
         deliveryId,
+        selectedVoucher,
       });
-    // case "vnpay":
+    // case "VNPAY":
     //   return await handleVNPAYPayment(...);
-    // case "momo":
-    //   return await handleMOMOPayment(...);
+    // case "BANK":
+    //   return await handleBankPayment(...);
     default:
       throw new Error("Phương thức thanh toán không hợp lệ hoặc chưa hỗ trợ.");
   }
@@ -76,6 +77,7 @@ const handleCODPayment = async ({
   notes,
   totalAmount,
   deliveryId,
+  selectedVoucher,
 }) => {
   // Kiểm tra tồn kho lần cuối trước khi tạo đơn hàng
   for (const ol of orderLines) {
@@ -101,10 +103,26 @@ const handleCODPayment = async ({
     phoneNumber,
     recipientName,
     notes,
+    voucher: selectedVoucher ? selectedVoucher._id : null,
     totalAmount,
-    status: "pending",
+    status: ORDER_STATUS.NEW,
     paymentId: payment._id,
-    deliveryId: deliveryId,
+    payment: {
+      paymentMethod: "COD",
+      status: "pending",
+    },
+    deliveryId,
+    timeline: [
+      {
+        status: ORDER_STATUS.NEW,
+        description: "Đơn hàng mới được tạo",
+        performedBy: {
+          userId,
+          userType: "user",
+        },
+        timestamp: new Date(),
+      },
+    ],
   });
 
   // Giảm tồn kho sản phẩm
@@ -126,6 +144,14 @@ const handleCODPayment = async ({
       },
     }
   );
+
+  // Cập nhật voucher đã sử dụng nếu có
+  if (selectedVoucher) {
+    await Voucher.updateOne(
+      { _id: selectedVoucher._id },
+      { $set: { isUsed: true } }
+    );
+  }
 
   return order;
 };

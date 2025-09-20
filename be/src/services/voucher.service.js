@@ -6,13 +6,14 @@ import mongoose from "mongoose";
 const voucherService = {
   getAvailableVouchers: async (userId, totalAmount) => {
     // Lấy ngày hiện tại
-    const currentDate = new Date();
     const vouchers = await Voucher.find({
-      startDate: { $lte: currentDate },
-      endDate: { $gte: currentDate },
+      userId: userId,
       minPurchaseAmount: { $lte: totalAmount },
+      startDate: { $lte: new Date() },
+      endDate: { $gte: new Date() },
       isUsed: false,
     });
+    console.log("Available Vouchers:", vouchers);
     return vouchers;
   },
 };

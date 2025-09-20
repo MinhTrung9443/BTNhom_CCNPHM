@@ -37,6 +37,21 @@ const paymentService = {
       throw error;
     }
   },
+
+  getAvailableVouchers: async (totalAmount) => {
+    ``;
+    try {
+      const response = await apiClient.get("/vouchers/voucher-available", {
+        params: {
+          totalAmount,
+        },
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching available vouchers:", error);
+      throw error;
+    }
+  },
 };
 
 export default paymentService;

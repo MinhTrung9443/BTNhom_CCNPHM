@@ -105,26 +105,28 @@ const orderSchema = new mongoose.Schema(
       },
       transactionId: { type: String },
     },
-    
+
+    voucher: { type: mongoose.Schema.Types.ObjectId, ref: "Voucher" },
+
     // Timestamps cho các trạng thái
     confirmedAt: { type: Date },
     preparingAt: { type: Date },
     shippingAt: { type: Date },
     deliveredAt: { type: Date },
-    
+
     // Thông tin hủy đơn
     cancelledAt: { type: Date },
     cancelledBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     cancelledReason: { type: String },
     cancellationRequestedAt: { type: Date },
     cancellationRequestReason: { type: String },
-    
+
     // Cờ đánh dấu đơn hàng có thể hủy (trong vòng 30 phút)
     canCancel: { type: Boolean, default: true },
-    
+
     // Timeline theo dõi lịch sử thay đổi trạng thái
     timeline: [timelineEntrySchema],
-    
+
     // Ghi chú nội bộ
     internalNotes: { type: String },
   },
