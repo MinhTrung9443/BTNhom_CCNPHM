@@ -6,6 +6,8 @@ const voucherSchema = new mongoose.Schema({
   discountValue: { type: Number, required: true },
   userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   isUsed: { type: Boolean, default: false },
+  minPurchaseAmount: { type: Number, required: true },
+  maxDiscountAmount: { type: Number, required: true },
   startDate: { type: Date, required: true },
   endDate: { type: Date, required: true },
   createdAt: { type: Date, default: Date.now },
