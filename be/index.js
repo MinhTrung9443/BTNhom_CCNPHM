@@ -9,6 +9,7 @@ import productRoutes from "./src/routes/product.route.js";
 import orderRoutes from "./src/routes/order.route.js";
 import uploadRoutes from "./src/routes/upload.route.js";
 import voucherRoutes from "./src/routes/voucher.route.js";
+import reviewRoutes from "./src/routes/review.route.js";
 import logger from "./src/utils/logger.js";
 import { notFound, errorHandler } from "./src/middlewares/error.js";
 import cartRoutes from "./src/routes/cart.route.js";
@@ -51,6 +52,7 @@ app.use("/api/orders", orderRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/vouchers", voucherRoutes);
+app.use("/api/reviews", reviewRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

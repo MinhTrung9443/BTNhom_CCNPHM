@@ -4,10 +4,16 @@ import { Container, Row, Col, Card, Badge, Button, Form, Alert } from 'react-boo
 import { productService } from '../services/productService';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import ProductSection from '../components/common/ProductSection';
+import ProductReviews from '../components/review/ProductReviews';
+import ReviewForm from '../components/review/ReviewForm';
+import { Modal } from 'react-bootstrap';
+import { useSelector } from 'react-redux';
 
 // Import Swiper React components
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Thumbs, FreeMode } from 'swiper/modules';
+import { getEligibleProducts } from '../redux/reviewSlice';
+import { useDispatch } from 'react-redux';
 
 // Import Swiper styles
 import 'swiper/css';
@@ -31,8 +37,19 @@ const ProductDetailPage = () => {
   // State cho các tương tác người dùng
   const [quantity, setQuantity] = useState(1);
   const [thumbsSwiper, setThumbsSwiper] = useState(null);
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const { user } = useSelector((state) => state.user);
+  const { eligibleProducts } = useSelector((state) => state.reviews);
+  const dispatch = useDispatch();
+
+  const handleReviewSubmit = () => {
+    setShowReviewModal(false);
+  };
 
   useEffect(() => {
+    if (user) {
+      dispatch(getEligibleProducts(user._id));
+    }
     // Tự động cuộn lên đầu trang khi chuyển sản phẩm
     window.scrollTo(0, 0);
 
@@ -198,6 +215,33 @@ const ProductDetailPage = () => {
 
               </Card.Body>
             </Card>
+          </Col>
+        </Row>
+
+        {user && (
+          <Button onClick={() => setShowReviewModal(true)} className="my-3">
+            Viết đánh giá
+          </Button>
+        )}
+
+        <Modal show={showReviewModal} onHide={() => setShowReviewModal(false)}>
+          <Modal.Header closeButton>
+            <Modal.Title>Viết đánh giá cho {product.name}</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <ReviewForm
+              productId={product._id}
+              orderId={eligibleProducts.find(p => p.product._id === product._id)?.orderId}
+              onReviewSubmit={handleReviewSubmit}
+            />
+          </Modal.Body>
+        </Modal>
+
+        <hr className="my-5" />
+
+        <Row>
+          <Col>
+            <ProductReviews productId={id} />
           </Col>
         </Row>
         

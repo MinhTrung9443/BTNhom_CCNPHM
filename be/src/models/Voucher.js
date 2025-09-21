@@ -10,6 +10,12 @@ const voucherSchema = new mongoose.Schema({
   maxDiscountAmount: { type: Number, required: true },
   startDate: { type: Date, required: true },
   endDate: { type: Date, required: true },
+  source: {
+    type: String,
+    enum: ["admin", "review", "promotion"],
+    default: "admin"
+  },
+  sourceId: { type: mongoose.Schema.Types.ObjectId }, // Review ID if from review
   createdAt: { type: Date, default: Date.now },
 });
 

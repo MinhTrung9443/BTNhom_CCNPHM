@@ -121,6 +121,7 @@ const Header = () => {
               >
                 <NavDropdown.Item as={Link} to="/profile"><i className="bi bi-person-lines-fill me-2"></i>Thông tin cá nhân</NavDropdown.Item>
                 <NavDropdown.Item as={Link} to="/orders"><i className="fas fa-shopping-bag me-2"></i>Đơn hàng của tôi</NavDropdown.Item>
+                <NavDropdown.Item as={Link} to="/my-reviews"><i className="fas fa-star me-2"></i>Đánh giá của tôi</NavDropdown.Item>
                 <NavDropdown.Divider />
                 <NavDropdown.Item onClick={handleLogout} className="text-danger"><i className="bi bi-box-arrow-right me-2"></i>Đăng xuất</NavDropdown.Item>
               </NavDropdown>

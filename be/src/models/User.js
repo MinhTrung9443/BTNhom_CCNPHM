@@ -38,6 +38,8 @@ const userSchema = new mongoose.Schema(
       default: "user",
     },
     vouchers: [{ type: mongoose.Schema.Types.ObjectId, ref: "Voucher" }],
+    reviews: [{ type: mongoose.Schema.Types.ObjectId, ref: "Review" }],
+    reviewVouchers: [{ type: mongoose.Schema.Types.ObjectId, ref: "Voucher" }],
     passwordResetToken: String,
     passwordResetExpires: Date,
   },

@@ -9,6 +9,9 @@ const productSchema = new mongoose.Schema(
     images: [{ type: String }],
     stock: { type: Number, required: true, default: 0 },
     categoryId: { type: mongoose.Schema.Types.ObjectId, ref: "Category" },
+    reviews: [{ type: mongoose.Schema.Types.ObjectId, ref: "Review" }],
+    averageRating: { type: Number, default: 0 },
+    totalReviews: { type: Number, default: 0 },
   },
   { timestamps: true }
 );

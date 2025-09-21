@@ -7,12 +7,14 @@ import ProductView from "./ProductView.js";
 import Cart from "./Cart.js";
 import Delivery from "./Delivery.js";
 import Voucher from "./Voucher.js";
+import Review from "./Review.js";
 export {
   User,
   OTP,
   Product,
   Order,
   Voucher,
+  Review,
   ProductView,
   Category,
   Cart,

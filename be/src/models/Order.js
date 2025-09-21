@@ -92,19 +92,6 @@ const orderSchema = new mongoose.Schema(
     recipientName: { type: String, required: true },
     notes: { type: String },
     paymentId: { type: mongoose.Schema.Types.ObjectId, ref: "Payment" },
-    payment: {
-      paymentMethod: {
-        type: String,
-        enum: ["VNPAY", "COD", "BANK"],
-        required: true,
-      },
-      status: {
-        type: String,
-        enum: ["pending", "completed", "failed"],
-        default: "pending",
-      },
-      transactionId: { type: String },
-    },
     
     // Timestamps cho các trạng thái
     confirmedAt: { type: Date },

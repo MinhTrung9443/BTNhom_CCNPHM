@@ -4,7 +4,7 @@ import Col from 'react-bootstrap/Col';
 import Button from 'react-bootstrap/Button';
 import Image from 'react-bootstrap/Image';
 import Badge from 'react-bootstrap/Badge';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import OrderStatusBadge from './OrderStatusBadge';
 import styles from './OrderCard.module.css';
 
@@ -101,8 +101,10 @@ const OrderCard = ({ order, onCancel }) => {
                     className="rounded me-2"
                   />
                   <div className="flex-grow-1">
-                    <div className="fw-medium">{item.productName}</div>
-                    <small className="text-muted">
+                    <Link to={`/products/${item.productId}`} className="text-decoration-none text-dark fw-medium">
+                      {item.productName}
+                    </Link>
+                    <small className="text-muted d-block">
                       {formatCurrency(item.productPrice)} x {item.quantity}
                     </small>
                   </div>

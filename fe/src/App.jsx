@@ -17,6 +17,7 @@ import OrderDetailPage from './pages/OrderDetailPage'
 import OrderStatsPage from './pages/OrderStatsPage'
 import PreviewOrder from './pages/PreviewOrder'
 import IntroPage from "./pages/IntroPage";
+import UserReviewsPage from './pages/UserReviewsPage';
 
 // Protected Route component
 const ProtectedRoute = ({ children }) => {
@@ -76,6 +77,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <OrderDetailPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/my-reviews"
+            element={
+              <ProtectedRoute>
+                <UserReviewsPage />
               </ProtectedRoute>
             }
           />

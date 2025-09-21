@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useSelector, useDispatch } from 'react-redux';
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
@@ -8,12 +9,16 @@ import Button from 'react-bootstrap/Button';
 import Image from 'react-bootstrap/Image';
 import Badge from 'react-bootstrap/Badge';
 import Alert from 'react-bootstrap/Alert';
+import Modal from 'react-bootstrap/Modal';
 import { toast } from 'react-toastify';
 import { getOrderDetail, cancelOrder } from '../services/orderService';
+import { getEligibleProducts, getUserReviews } from '../redux/reviewSlice';
 import OrderStatusBadge from '../components/order/OrderStatusBadge';
 import OrderTimeline from '../components/order/OrderTimeline';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import ErrorState from '../components/common/ErrorState';
+import ReviewForm from '../components/review/ReviewForm';
+import StarRating from '../components/review/StarRating';
 
 const OrderDetailPage = () => {
   const { orderId } = useParams();
@@ -22,6 +27,12 @@ const OrderDetailPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isCancelling, setIsCancelling] = useState(false);
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+
+  const dispatch = useDispatch();
+  const { user } = useSelector((state) => state.user);
+  const { eligibleProducts, byUser: userReviews } = useSelector((state) => state.reviews);
 
   const fetchOrderDetail = async () => {
     try {
@@ -45,6 +56,28 @@ const OrderDetailPage = () => {
       fetchOrderDetail();
     }
   }, [orderId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (user) {
+      dispatch(getEligibleProducts(user._id));
+      dispatch(getUserReviews(user._id));
+    }
+  }, [user, dispatch]);
+
+  const handleShowReviewModal = (product, existingReview = null) => {
+    setSelectedProduct({ ...product, existingReview });
+    setShowReviewModal(true);
+  };
+
+  const handleReviewSubmit = () => {
+    setShowReviewModal(false);
+    setSelectedProduct(null);
+    if (user) {
+      dispatch(getEligibleProducts(user._id));
+      dispatch(getUserReviews(user._id));
+    }
+    fetchOrderDetail(); // Refresh order details to show updated review status
+  };
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('vi-VN', {
@@ -237,26 +270,63 @@ const OrderDetailPage = () => {
                   <h5 className="mb-0">Ordered Items</h5>
                 </Card.Header>
                 <Card.Body>
-                  {order.orderLines.map((item, index) => (
-                    <div key={index} className="d-flex align-items-center mb-3 pb-3 border-bottom">
-                      <Image
-                        src={item.productImage}
-                        alt={item.productName}
-                        width={80}
-                        height={80}
-                        className="rounded me-3"
-                      />
-                      <div className="flex-grow-1">
-                        <h6 className="mb-1">{item.productName}</h6>
-                        <div className="text-muted">
-                          {formatCurrency(item.productPrice)} x {item.quantity}
+                  {order.orderLines.map((item) => {
+                    const review = userReviews.find(
+                      (r) => r.productId?._id === item.productId && r.orderId === order._id
+                    );
+                    const hasReviewed = !!review;
+                    const canReview = order.status === 'delivered' && !hasReviewed;
+                    const canEdit = hasReviewed && review.editCount === 0;
+
+                    return (
+                      <div key={item.productId} className="d-flex align-items-center mb-3 pb-3 border-bottom">
+                        <Image
+                          src={item.productImage}
+                          alt={item.productName}
+                          width={80}
+                          height={80}
+                          className="rounded me-3"
+                        />
+                        <div className="flex-grow-1">
+                          <Link to={`/products/${item.productId}`} className="text-decoration-none text-dark">
+                            <h6 className="mb-1">{item.productName}</h6>
+                          </Link>
+                          <div className="text-muted">
+                            {formatCurrency(item.productPrice)} x {item.quantity}
+                          </div>
+                          {canReview && (
+                            <Button
+                              variant="outline-primary"
+                              size="sm"
+                              className="mt-2"
+                              onClick={() => handleShowReviewModal(item)}
+                            >
+                              Viết đánh giá
+                            </Button>
+                          )}
+                          {hasReviewed && (
+                            <div className="mt-2">
+                              <StarRating rating={review.rating} readOnly />
+                              <p className="mb-1 fst-italic">"{review.comment}"</p>
+                              {canEdit && (
+                                <Button
+                                  variant="link"
+                                  size="sm"
+                                  className="p-0"
+                                  onClick={() => handleShowReviewModal(item, review)}
+                                >
+                                  Chỉnh sửa
+                                </Button>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        <div className="text-end">
+                          <strong>{formatCurrency(item.productPrice * item.quantity)}</strong>
                         </div>
                       </div>
-                      <div className="text-end">
-                        <strong>{formatCurrency(item.productPrice * item.quantity)}</strong>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
 
                   <div className="text-end pt-3">
                     <h5>
@@ -296,6 +366,24 @@ const OrderDetailPage = () => {
           </Row>
         </Col>
       </Row>
+
+      <Modal show={showReviewModal} onHide={() => setShowReviewModal(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title>
+            {selectedProduct?.existingReview ? 'Chỉnh sửa đánh giá' : 'Viết đánh giá'} cho {selectedProduct?.productName}
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {selectedProduct && (
+            <ReviewForm
+              productId={selectedProduct.productId}
+              orderId={order._id}
+              existingReview={selectedProduct.existingReview}
+              onReviewSubmit={handleReviewSubmit}
+            />
+          )}
+        </Modal.Body>
+      </Modal>
     </Container>
   );
 };
