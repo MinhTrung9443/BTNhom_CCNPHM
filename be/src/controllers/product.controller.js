@@ -1,6 +1,6 @@
 import { Product, Order, ProductView } from "../models/index.js";
 import { AppError } from "../utils/AppError.js";
-
+import Review from '../models/Review.js';
 export const productController = {
   // API lấy sản phẩm mới nhất với phân trang
   async getLatestProducts(req, res, next) {
@@ -351,10 +351,10 @@ export const productController = {
 
       // 2. Tìm các sản phẩm liên quan
       const relatedProducts = await Product.find({
-        categoryId: currentProduct.categoryId, // Cùng danh mục
-        _id: { $ne: id }                       // Loại trừ chính sản phẩm hiện tại
+        categoryId: currentProduct.categoryId,
+        _id: { $ne: id }                      
       })
-      .limit(4) // Giới hạn 4 sản phẩm
+      .limit(4) 
       .populate('categoryId', 'name')
       .select('name price discount images categoryId stock');
 
@@ -365,5 +365,50 @@ export const productController = {
     } catch (error) {
       next(new AppError("Lỗi khi lấy sản phẩm liên quan", 500));
     }
+  },
+
+  async recordProductView (req, res) {
+  try {
+    const { id: productId } = req.params;
+    const userId = req.user.id; 
+
+    await ProductView.findOneAndUpdate(
+      { userId, productId },
+      { $inc: { viewCount: 1 }, lastViewedAt: new Date() },
+      { upsert: true, new: true }
+    );
+
+    res.status(200).json({ message: 'Đã ghi nhận lượt xem' });
+  } catch (error) {
+    console.error('Lỗi ghi nhận lượt xem:', error);
+    res.status(200).json({ message: 'OK' }); 
   }
+  },
+
+  async getProductById (req, res) {
+  try {
+    const { id } = req.params;
+    const product = await Product.findById(id).populate('categoryId').populate('reviews'); 
+
+    if (!product) {
+      return res.status(404).json({ message: 'Sản phẩm không tồn tại' });
+    }
+    const buyerCount = await Order.distinct('userId', {
+      'items.productId': id,
+      'status': 'completed'
+    }).countDocuments();
+    const reviewerCount = await Review.distinct('userId', {
+      'productId': id
+    }).countDocuments();
+
+    res.status(200).json({
+      ...product.toObject(),
+      buyerCount,
+      reviewerCount,
+    });
+
+  } catch (error) {
+    res.status(500).json({ message: 'Lỗi server', error });
+  }
+}
 };

@@ -18,7 +18,7 @@ import OrderStatsPage from './pages/OrderStatsPage'
 import PreviewOrder from './pages/PreviewOrder'
 import IntroPage from "./pages/IntroPage";
 import UserReviewsPage from './pages/UserReviewsPage';
-
+import FavoritesPage from './pages/FavoritesPage';
 // Protected Route component
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated } = useSelector((state) => state.user)
@@ -87,6 +87,14 @@ function App() {
                 <UserReviewsPage />
               </ProtectedRoute>
             }
+          />
+          <Route 
+            path="/favorites" 
+            element={
+              <ProtectedRoute>
+                <FavoritesPage />
+              </ProtectedRoute>
+            } 
           />
           
           {/* Catch all route */}

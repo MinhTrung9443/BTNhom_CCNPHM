@@ -42,9 +42,28 @@ const userSlice = createSlice({
       state.user = updatedUser;
       localStorage.setItem('user', JSON.stringify(updatedUser));
     },
+    updateUserFavorites: (state, action) => {
+      // Chỉ thực hiện khi người dùng đã đăng nhập
+      if (state.user && state.user.favorites) {
+        const { productId, add } = action.payload;
+
+        if (add) {
+          // Thêm productId vào mảng favorites (dùng push hoặc unshift)
+          // Kiểm tra để không thêm trùng lặp
+          if (!state.user.favorites.includes(productId)) {
+            state.user.favorites.push(productId);
+          }
+        } else {
+          // Xóa productId khỏi mảng favorites
+          state.user.favorites = state.user.favorites.filter(
+            (id) => id !== productId
+          );
+        }
+      }
+    },
   },
 });
 
-export const { loginSuccess, logoutSuccess, updateUser } = userSlice.actions;
+export const { loginSuccess, logoutSuccess, updateUser, updateUserFavorites  } = userSlice.actions;
 
 export default userSlice.reducer;

@@ -8,7 +8,7 @@ import ProductReviews from '../components/review/ProductReviews';
 import ReviewForm from '../components/review/ReviewForm';
 import { Modal } from 'react-bootstrap';
 import { useSelector } from 'react-redux';
-
+import FavoriteButton from '../components/product/FavoriteButton.jsx';
 // Import Swiper React components
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Thumbs, FreeMode } from 'swiper/modules';
@@ -28,7 +28,7 @@ const ProductDetailPage = () => {
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  
+
   // State cho sản phẩm liên quan
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [relatedLoading, setRelatedLoading] = useState(true);
@@ -50,43 +50,37 @@ const ProductDetailPage = () => {
     if (user) {
       dispatch(getEligibleProducts(user._id));
     }
-    // Tự động cuộn lên đầu trang khi chuyển sản phẩm
     window.scrollTo(0, 0);
 
     const fetchAllData = async () => {
       try {
-        // Bắt đầu tải dữ liệu, reset trạng thái
         setLoading(true);
         setRelatedLoading(true);
         setError(null);
         setRelatedError(null);
         setQuantity(1); // Reset số lượng về 1 cho sản phẩm mới
 
-        // 1. Tải dữ liệu sản phẩm chính
         const productResponse = await productService.getProductById(id);
         setProduct(productResponse.data);
 
-        // 2. Tải dữ liệu sản phẩm liên quan
         const relatedResponse = await productService.getRelatedProducts(id);
         setRelatedProducts(relatedResponse.data);
 
       } catch (err) {
         console.error("Error fetching page data:", err);
-        // Nếu sản phẩm chính chưa tải được thì đây là lỗi nghiêm trọng
         if (!product) {
           setError(err.message || 'Không thể tải thông tin sản phẩm.');
-        } else { // Ngược lại, chỉ là lỗi tải sản phẩm liên quan
+        } else { 
           setRelatedError(err.message || 'Lỗi khi tải sản phẩm liên quan.');
         }
       } finally {
-        // Hoàn tất tải dữ liệu
         setLoading(false);
         setRelatedLoading(false);
       }
     };
 
     fetchAllData();
-  }, [id]); // useEffect sẽ chạy lại mỗi khi `id` trên URL thay đổi
+  }, [id]);
 
   const handleQuantityChange = (amount) => {
     const newQuantity = quantity + amount;
@@ -95,7 +89,6 @@ const ProductDetailPage = () => {
     }
   };
 
-  // Các trạng thái hiển thị chính
   if (loading) return <LoadingSpinner />;
   if (error) return <Container className="py-5"><Alert variant="danger">{error}</Alert></Container>;
   if (!product) return <Container className="py-5"><Alert variant="warning">Không tìm thấy sản phẩm.</Alert></Container>;
@@ -103,11 +96,21 @@ const ProductDetailPage = () => {
   // Tính toán giá sau khi giảm
   const discountedPrice = product.discount > 0 ? product.price * (1 - product.discount / 100) : product.price;
 
+  const logView = () => {
+    let viewed = JSON.parse(localStorage.getItem('recentlyViewed')) || [];
+    viewed = viewed.filter(productId => productId !== id);
+    viewed.unshift(id);
+    if (viewed.length > 10) viewed.pop();
+    localStorage.setItem('recentlyViewed', JSON.stringify(viewed));
+
+    if (user) {
+      productService.logProductView(id);
+    }
+  }
   return (
     <div className="product-detail-page">
       <Container className="py-5">
         <Row>
-          {/* Cột hình ảnh sản phẩm với Swiper */}
           <Col md={6}>
             <Swiper
               style={{ '--swiper-navigation-color': '#fff', '--swiper-pagination-color': '#fff' }}
@@ -158,7 +161,7 @@ const ProductDetailPage = () => {
                   </Link>
                 )}
                 <h1 className="product-detail-title">{product.name}</h1>
-                
+
                 <div className="d-flex align-items-center my-3">
                   <h2 className="current-price text-primary fw-bold mb-0">
                     {discountedPrice.toLocaleString('vi-VN')}đ
@@ -190,27 +193,29 @@ const ProductDetailPage = () => {
                     <strong>Số lượng:</strong>
                     <div className="input-group w-auto ms-3" style={{ maxWidth: '120px' }}>
                       <Button variant="outline-secondary" onClick={() => handleQuantityChange(-1)} disabled={quantity <= 1}>-</Button>
-                      <Form.Control 
-                        type="text" 
-                        className="text-center" 
-                        value={quantity} 
-                        readOnly 
+                      <Form.Control
+                        type="text"
+                        className="text-center"
+                        value={quantity}
+                        readOnly
                       />
                       <Button variant="outline-secondary" onClick={() => handleQuantityChange(1)} disabled={quantity >= product.stock}>+</Button>
                     </div>
                   </div>
                 )}
 
-                <div className="d-grid gap-2">
-                   <Button 
-                      variant="warning" 
-                      size="lg" 
-                      disabled={product.stock === 0}
-                      // onClick={() => addToCart(product, quantity)} // Logic thêm vào giỏ hàng sẽ ở đây
-                    >
-                     <i className="fas fa-cart-plus me-2"></i>
-                     {product.stock > 0 ? 'Thêm vào giỏ hàng' : 'Đã hết hàng'}
-                   </Button>
+                <div className="d-flex gap-2">
+                  <Button
+                    variant="warning"
+                    size="lg"
+                    disabled={product.stock === 0}
+                    className="flex-grow-1" 
+                  >
+                    <i className="fas fa-cart-plus me-2"></i>
+                    {product.stock > 0 ? 'Thêm vào giỏ hàng' : 'Đã hết hàng'}
+                  </Button>
+
+                  <FavoriteButton productId={product._id} />
                 </div>
 
               </Card.Body>
@@ -244,13 +249,12 @@ const ProductDetailPage = () => {
             <ProductReviews productId={id} />
           </Col>
         </Row>
-        
-        {/* Phần sản phẩm liên quan */}
+
         <hr className="my-5" />
-        
+
         <Row>
           <Col>
-            <ProductSection 
+            <ProductSection
               title="Sản phẩm liên quan"
               subtitle="Có thể bạn cũng sẽ thích"
               products={relatedProducts}

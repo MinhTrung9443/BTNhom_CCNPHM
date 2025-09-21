@@ -40,6 +40,7 @@ const userSchema = new mongoose.Schema(
     vouchers: [{ type: mongoose.Schema.Types.ObjectId, ref: "Voucher" }],
     reviews: [{ type: mongoose.Schema.Types.ObjectId, ref: "Review" }],
     reviewVouchers: [{ type: mongoose.Schema.Types.ObjectId, ref: "Voucher" }],
+    favorites: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product'}],
     passwordResetToken: String,
     passwordResetExpires: Date,
   },
