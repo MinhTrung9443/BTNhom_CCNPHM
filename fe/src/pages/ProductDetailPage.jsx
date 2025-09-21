@@ -5,6 +5,7 @@ import { productService } from '../services/productService';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import ProductSection from '../components/common/ProductSection';
 import ProductReviews from '../components/review/ProductReviews';
+import RecentlyViewedSection from '../components/common/RecentlyViewedSection.jsx';
 import ReviewForm from '../components/review/ReviewForm';
 import { Modal } from 'react-bootstrap';
 import { useSelector } from 'react-redux';
@@ -65,7 +66,7 @@ const ProductDetailPage = () => {
 
         const relatedResponse = await productService.getRelatedProducts(id);
         setRelatedProducts(relatedResponse.data);
-
+        logView(id);
       } catch (err) {
         console.error("Error fetching page data:", err);
         if (!product) {
@@ -77,6 +78,23 @@ const ProductDetailPage = () => {
         setLoading(false);
         setRelatedLoading(false);
       }
+    };
+      const logView = (productId) => {
+      // 1. Luôn ghi vào localStorage
+      let viewedIds = JSON.parse(localStorage.getItem('recentlyViewed')) || [];
+      // Xóa ID cũ nếu có để đưa lên đầu
+      viewedIds = viewedIds.filter(item => item !== productId);
+      // Thêm ID mới vào đầu mảng
+      viewedIds.unshift(productId);
+      // Giới hạn chỉ lưu 10 sản phẩm gần nhất
+      const limitedViewedIds = viewedIds.slice(0, 10);
+      localStorage.setItem('recentlyViewed', JSON.stringify(limitedViewedIds));
+
+      // 2. Nếu người dùng đã đăng nhập, gọi API để đồng bộ
+      // Đây là một cuộc gọi "fire-and-forget", không cần chờ nó hoàn thành
+      productService.logProductView(productId).catch(err => {
+        console.warn("Could not sync recently viewed product:", err);
+      });
     };
 
     fetchAllData();
@@ -95,18 +113,6 @@ const ProductDetailPage = () => {
 
   // Tính toán giá sau khi giảm
   const discountedPrice = product.discount > 0 ? product.price * (1 - product.discount / 100) : product.price;
-
-  const logView = () => {
-    let viewed = JSON.parse(localStorage.getItem('recentlyViewed')) || [];
-    viewed = viewed.filter(productId => productId !== id);
-    viewed.unshift(id);
-    if (viewed.length > 10) viewed.pop();
-    localStorage.setItem('recentlyViewed', JSON.stringify(viewed));
-
-    if (user) {
-      productService.logProductView(id);
-    }
-  }
   return (
     <div className="product-detail-page">
       <Container className="py-5">
@@ -263,6 +269,8 @@ const ProductDetailPage = () => {
             />
           </Col>
         </Row>
+        <hr className="my-5" />
+                <RecentlyViewedSection currentProductId={id} />
       </Container>
     </div>
   );

@@ -217,22 +217,22 @@ export const productController = {
       const page = parseInt(req.query.page) || 1;
       const limit = parseInt(req.query.limit) || 12;
       const skip = (page - 1) * limit;
-      
+
       const { category, minPrice, maxPrice, search, sortBy } = req.query;
 
       // Build filter object
       const filter = {};
-      
+
       if (category) {
         filter.categoryId = category;
       }
-      
+
       if (minPrice || maxPrice) {
         filter.price = {};
         if (minPrice) filter.price.$gte = parseFloat(minPrice);
         if (maxPrice) filter.price.$lte = parseFloat(maxPrice);
       }
-      
+
       if (search) {
         filter.$or = [
           { name: { $regex: search, $options: 'i' } },
@@ -311,7 +311,7 @@ export const productController = {
         // User đã đăng nhập
         await ProductView.findOneAndUpdate(
           { userId, productId: id },
-          { 
+          {
             $inc: { viewCount: 1 },
             lastViewedAt: new Date()
           },
@@ -321,7 +321,7 @@ export const productController = {
         // User chưa đăng nhập (guest)
         await ProductView.findOneAndUpdate(
           { userId: null, productId: id },
-          { 
+          {
             $inc: { viewCount: 1 },
             lastViewedAt: new Date()
           },
@@ -352,11 +352,11 @@ export const productController = {
       // 2. Tìm các sản phẩm liên quan
       const relatedProducts = await Product.find({
         categoryId: currentProduct.categoryId,
-        _id: { $ne: id }                      
+        _id: { $ne: id }
       })
-      .limit(4) 
-      .populate('categoryId', 'name')
-      .select('name price discount images categoryId stock');
+        .limit(4)
+        .populate('categoryId', 'name')
+        .select('name price discount images categoryId stock');
 
       res.status(200).json({
         success: true,
@@ -367,48 +367,62 @@ export const productController = {
     }
   },
 
-  async recordProductView (req, res) {
-  try {
-    const { id: productId } = req.params;
-    const userId = req.user.id; 
+  async recordProductView(req, res) {
+    try {
+      const { id: productId } = req.params;
+      const userId = req.user.id;
 
-    await ProductView.findOneAndUpdate(
-      { userId, productId },
-      { $inc: { viewCount: 1 }, lastViewedAt: new Date() },
-      { upsert: true, new: true }
-    );
+      await ProductView.findOneAndUpdate(
+        { userId, productId },
+        { $inc: { viewCount: 1 }, lastViewedAt: new Date() },
+        { upsert: true, new: true }
+      );
 
-    res.status(200).json({ message: 'Đã ghi nhận lượt xem' });
-  } catch (error) {
-    console.error('Lỗi ghi nhận lượt xem:', error);
-    res.status(200).json({ message: 'OK' }); 
-  }
+      res.status(200).json({ message: 'Đã ghi nhận lượt xem' });
+    } catch (error) {
+      console.error('Lỗi ghi nhận lượt xem:', error);
+      res.status(200).json({ message: 'OK' });
+    }
   },
 
-  async getProductById (req, res) {
-  try {
-    const { id } = req.params;
-    const product = await Product.findById(id).populate('categoryId').populate('reviews'); 
+  async getProductById(req, res) {
+    try {
+      const { id } = req.params;
+      const product = await Product.findById(id).populate('categoryId').populate('reviews');
 
-    if (!product) {
-      return res.status(404).json({ message: 'Sản phẩm không tồn tại' });
+      if (!product) {
+        return res.status(404).json({ message: 'Sản phẩm không tồn tại' });
+      }
+      const buyerCount = await Order.distinct('userId', {
+        'items.productId': id,
+        'status': 'completed'
+      }).countDocuments();
+      const reviewerCount = await Review.distinct('userId', {
+        'productId': id
+      }).countDocuments();
+
+      res.status(200).json({
+        ...product.toObject(),
+        buyerCount,
+        reviewerCount,
+      });
+
+    } catch (error) {
+      res.status(500).json({ message: 'Lỗi server', error });
     }
-    const buyerCount = await Order.distinct('userId', {
-      'items.productId': id,
-      'status': 'completed'
-    }).countDocuments();
-    const reviewerCount = await Review.distinct('userId', {
-      'productId': id
-    }).countDocuments();
-
-    res.status(200).json({
-      ...product.toObject(),
-      buyerCount,
-      reviewerCount,
-    });
-
-  } catch (error) {
-    res.status(500).json({ message: 'Lỗi server', error });
-  }
-}
+  },
+  
+  async getProductsByIds(req, res, next) {
+    try {
+      const { ids } = req.body;
+      if (!Array.isArray(ids)) {
+        return next(new AppError("IDs must be an array", 400));
+      }
+      const products = await Product.find({ '_id': { $in: ids } })
+        .select('name price discount images stock');
+      res.status(200).json({ success: true, data: products });
+    } catch (error) {
+      next(new AppError("Lỗi khi lấy sản phẩm theo IDs", 500));
+    }
+  },
 };

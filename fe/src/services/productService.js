@@ -81,4 +81,10 @@ export const productService = {
       throw error;
     }
   },
+  logProductView: (productId) => {
+    return apiClient.post(`/products/${productId}/view`);
+  },
+
+  getProductsByIds: (ids) => apiClient.post('/products/by-ids', { ids }),
+
 };
