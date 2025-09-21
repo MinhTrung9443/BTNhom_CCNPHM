@@ -297,7 +297,7 @@ export const productController = {
   async getProductDetail(req, res, next) {
     try {
       const { id } = req.params;
-      const userId = req.user?.id; // từ middleware auth (nếu user đã đăng nhập)
+      const userId = req.user?.id;
 
       const product = await Product.findById(id)
         .populate('categoryId', 'name description');
@@ -306,9 +306,22 @@ export const productController = {
         return next(new AppError("Không tìm thấy sản phẩm", 404));
       }
 
-      // Cập nhật lượt xem
+      const successfulOrderStatuses = ['completed', 'shipped', 'delivered', 'paid'];
+      const buyerCountPromise = Order.distinct('userId', {
+        'orderLines.productId': id, 
+        'status': { $in: successfulOrderStatuses }
+      }).countDocuments();
+
+      const reviewerCountPromise = Review.distinct('userId', {
+        'productId': id
+      }).countDocuments();
+      
+      const [buyerCount, reviewerCount] = await Promise.all([
+          buyerCountPromise, 
+          reviewerCountPromise
+      ]);
+
       if (userId) {
-        // User đã đăng nhập
         await ProductView.findOneAndUpdate(
           { userId, productId: id },
           {
@@ -318,7 +331,6 @@ export const productController = {
           { upsert: true, new: true }
         );
       } else {
-        // User chưa đăng nhập (guest)
         await ProductView.findOneAndUpdate(
           { userId: null, productId: id },
           {
@@ -331,7 +343,11 @@ export const productController = {
 
       res.status(200).json({
         success: true,
-        data: product
+        data: {
+          ...product.toObject(),
+          buyerCount,          
+          reviewerCount,   
+        }
       });
     } catch (error) {
       next(new AppError("Lỗi khi lấy chi tiết sản phẩm", 500));
@@ -411,7 +427,7 @@ export const productController = {
       res.status(500).json({ message: 'Lỗi server', error });
     }
   },
-  
+
   async getProductsByIds(req, res, next) {
     try {
       const { ids } = req.body;

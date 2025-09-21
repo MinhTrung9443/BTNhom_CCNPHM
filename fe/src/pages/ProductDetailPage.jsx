@@ -10,13 +10,12 @@ import ReviewForm from '../components/review/ReviewForm';
 import { Modal } from 'react-bootstrap';
 import { useSelector } from 'react-redux';
 import FavoriteButton from '../components/product/FavoriteButton.jsx';
-// Import Swiper React components
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Thumbs, FreeMode } from 'swiper/modules';
 import { getEligibleProducts } from '../redux/reviewSlice';
 import { useDispatch } from 'react-redux';
-
-// Import Swiper styles
+import { addItemToCart  } from '../redux/cartSlice'; 
+import { toast } from 'react-toastify';
 import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/thumbs';
@@ -46,6 +45,18 @@ const ProductDetailPage = () => {
   const handleReviewSubmit = () => {
     setShowReviewModal(false);
   };
+  const handleAddToCart = () => {
+    if (!product) return;
+
+    dispatch(addItemToCart ({ productId: product._id, quantity }))
+      .unwrap()
+      .then(() => {
+        toast.success(`Đã thêm "${product.name}" vào giỏ hàng!`);
+      })
+      .catch((error) => {
+        toast.error(error.message || 'Thêm vào giỏ hàng thất bại!');
+      });
+  };
 
   useEffect(() => {
     if (user) {
@@ -71,7 +82,7 @@ const ProductDetailPage = () => {
         console.error("Error fetching page data:", err);
         if (!product) {
           setError(err.message || 'Không thể tải thông tin sản phẩm.');
-        } else { 
+        } else {
           setRelatedError(err.message || 'Lỗi khi tải sản phẩm liên quan.');
         }
       } finally {
@@ -79,7 +90,7 @@ const ProductDetailPage = () => {
         setRelatedLoading(false);
       }
     };
-      const logView = (productId) => {
+    const logView = (productId) => {
       // 1. Luôn ghi vào localStorage
       let viewedIds = JSON.parse(localStorage.getItem('recentlyViewed')) || [];
       // Xóa ID cũ nếu có để đưa lên đầu
@@ -215,7 +226,8 @@ const ProductDetailPage = () => {
                     variant="warning"
                     size="lg"
                     disabled={product.stock === 0}
-                    className="flex-grow-1" 
+                    className="flex-grow-1"
+                    onClick={handleAddToCart}
                   >
                     <i className="fas fa-cart-plus me-2"></i>
                     {product.stock > 0 ? 'Thêm vào giỏ hàng' : 'Đã hết hàng'}
@@ -223,7 +235,19 @@ const ProductDetailPage = () => {
 
                   <FavoriteButton productId={product._id} />
                 </div>
+                <div className="d-flex align-items-center mt-3 justify-content-start">
+                  <div className="me-4"> 
+                    <i className="fas fa-comment-dots me-2 text-primary"></i>
+                    <span className="fw-bold">{product.reviewerCount || 0}</span>
+                    <span className="ms-1">Đánh giá</span>
+                  </div>
 
+                  <div>
+                    <i className="fas fa-shopping-basket me-2 text-success"></i>
+                    <span className="fw-bold">{product.buyerCount || 0}</span>
+                    <span className="ms-1">Lượt mua</span>
+                  </div>
+                </div>
               </Card.Body>
             </Card>
           </Col>
@@ -270,7 +294,7 @@ const ProductDetailPage = () => {
           </Col>
         </Row>
         <hr className="my-5" />
-                <RecentlyViewedSection currentProductId={id} />
+        <RecentlyViewedSection currentProductId={id} />
       </Container>
     </div>
   );
