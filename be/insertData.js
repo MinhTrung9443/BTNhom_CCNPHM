@@ -3,6 +3,8 @@ import mongoose from 'mongoose';
 import Category from './src/models/Category.js';
 import Product from './src/models/Product.js';
 import User from './src/models/User.js';
+import Coupon from './src/models/Coupon.js';
+import LoyaltyPoints from './src/models/LoyaltyPoints.js';
 
 // Kết nối MongoDB
 mongoose.connect('mongodb://localhost:27017/auth_db');
@@ -13,12 +15,17 @@ const insertTestData = async () => {
     await Category.deleteMany({});
     await Product.deleteMany({});
     await User.deleteMany({});
+    await Coupon.deleteMany({});
+    await LoyaltyPoints.deleteMany({});
 
     // Thêm users
     const users = await User.insertMany([
-        { name: 'Test User 1', email: 'user1@example.com', password: 'password123', phone: '1234567890', address: '123 Main St', isVerified: true, role: 'user' },
-        { name: 'Test User 2', email: 'user2@example.com', password: 'password123', phone: '0987654321', address: '456 Oak Ave', isVerified: true, role: 'user' },
-        { name: 'Admin User', email: 'admin@example.com', password: 'adminpassword', phone: '1112223333', address: '789 Pine Ln', isVerified: true, role: 'admin' },
+      
+        { name: 'Test User 1', email: 'user1@example.com', password: '$2b$10$vjAr9cfZqqrY9lyue38Dv.2a3.o4SBVXplYa/dV3EXxjP.HjG.Uye', phone: '1234567890', address: '123 Main St', isVerified: true, role: 'user' },
+        { name: 'Test User 2', email: 'user2@example.com', password: '$2b$10$vjAr9cfZqqrY9lyue38Dv.2a3.o4SBVXplYa/dV3EXxjP.HjG.Uye', phone: '0987654321', address: '456 Oak Ave', isVerified: true, role: 'user' },
+        { name: 'Admin User', email: 'admin@example.com', password: '$2b$10$vjAr9cfZqqrY9lyue38Dv.2a3.o4SBVXplYa/dV3EXxjP.HjG.Uye', phone: '1112223333', address: '789 Pine Ln', isVerified: true, role: 'admin' },
+        { name: 'Super Admin', email: 'superadmin@example.com', password: '$2b$10$vjAr9cfZqqrY9lyue38Dv.2a3.o4SBVXplYa/dV3EXxjP.HjG.Uye', phone: '5556667777', address: '999 Admin Blvd', isVerified: true, role: 'admin' },
+        { name: 'cogifi3476@anysilo.com', email: 'cogifi3476@anysilo.com', password: '$2b$10$vjAr9cfZqqrY9lyue38Dv.2a3.o4SBVXplYa/dV3EXxjP.HjG.Uye', phone: '5556667777', address: '999 Admin Blvd', isVerified: true, role: 'user' },
     ]);
     console.log('Users inserted:', users.length);
 
@@ -247,12 +254,139 @@ const insertTestData = async () => {
     ]);
 
     console.log('Products inserted:', products.length);
+
+    // Thêm coupons
+    const coupons = await Coupon.insertMany([
+      {
+        code: "WELCOME10",
+        name: "Chào mừng thành viên mới",
+        description: "Giảm giá 10% cho đơn hàng đầu tiên",
+        discountType: "percentage",
+        discountValue: 10,
+        minimumOrderValue: 200000,
+        maximumDiscountAmount: 50000,
+        usageLimit: 100,
+        userUsageLimit: 1,
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+        isActive: true,
+        isPublic: true,
+        createdBy: users[2]._id // Admin user
+      },
+      {
+        code: "SALE20",
+        name: "Khuyến mãi đặc biệt",
+        description: "Giảm giá 20% cho tất cả sản phẩm",
+        discountType: "percentage",
+        discountValue: 20,
+        minimumOrderValue: 500000,
+        maximumDiscountAmount: 100000,
+        usageLimit: 50,
+        userUsageLimit: 1,
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000), // 15 days from now
+        isActive: true,
+        isPublic: true,
+        createdBy: users[2]._id
+      },
+      {
+        code: "BANHPIA50",
+        name: "Giảm giá bánh pía",
+        description: "Giảm 50.000đ cho bánh pía",
+        discountType: "fixed",
+        discountValue: 50000,
+        minimumOrderValue: 150000,
+        usageLimit: 30,
+        userUsageLimit: 2,
+        applicableCategories: [categories[0]._id], // Bánh pía category
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 20 * 24 * 60 * 60 * 1000), // 20 days from now
+        isActive: true,
+        isPublic: true,
+        createdBy: users[2]._id
+      },
+      {
+        code: "VIP15",
+        name: "Ưu đãi VIP",
+        description: "Giảm giá 15% cho khách hàng VIP",
+        discountType: "percentage",
+        discountValue: 15,
+        minimumOrderValue: 300000,
+        maximumDiscountAmount: 75000,
+        usageLimit: null, // unlimited
+        userUsageLimit: 5,
+        allowedUsers: [users[0]._id, users[1]._id], // Only for test users
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000), // 60 days from now
+        isActive: true,
+        isPublic: false,
+        createdBy: users[2]._id
+      }
+    ]);
+
+    console.log('Coupons inserted:', coupons.length);
+
+    // Thêm loyalty points cho users
+    const loyaltyPoints = await LoyaltyPoints.insertMany([
+      // Points earned by user1
+      {
+        userId: users[0]._id,
+        points: 100,
+        transactionType: "earned",
+        description: "Chào mừng gia nhập hệ thống",
+        pointsValue: 1000, // 100 points = 1000 VND
+        isActive: true
+      },
+      {
+        userId: users[0]._id,
+        points: 50,
+        transactionType: "bonus",
+        description: "Thưởng đăng ký thành viên",
+        pointsValue: 500,
+        isActive: true
+      },
+      // Points earned by user2
+      {
+        userId: users[1]._id,
+        points: 200,
+        transactionType: "earned",
+        description: "Mua hàng lần đầu",
+        pointsValue: 2000,
+        isActive: true
+      },
+      // Points redeemed by user1
+      {
+        userId: users[0]._id,
+        points: -30,
+        transactionType: "redeemed",
+        description: "Đổi điểm mua voucher",
+        pointsValue: 300,
+        isActive: true
+      }
+    ]);
+
+    console.log('Loyalty points inserted:', loyaltyPoints.length);
+
+    // Update user loyalty points
+    await User.updateOne(
+      { _id: users[0]._id },
+      { loyaltyPoints: 120 } // 100 + 50 - 30 = 120
+    );
+
+    await User.updateOne(
+      { _id: users[1]._id },
+      { loyaltyPoints: 200 }
+    );
+
+    console.log('User loyalty points updated successfully!');
     console.log('Test data inserted successfully!');
-    
+
     // Hiển thị thống kê
     console.log('\n=== THỐNG KÊ DỮ LIỆU ===');
     console.log(`Total Categories: ${categories.length}`);
     console.log(`Total Products: ${products.length}`);
+    console.log(`Total Coupons: ${coupons.length}`);
+    console.log(`Total Loyalty Points Transactions: ${loyaltyPoints.length}`);
     
     console.log('\n=== DANH SÁCH CATEGORIES ===');
     categories.forEach((cat, index) => {

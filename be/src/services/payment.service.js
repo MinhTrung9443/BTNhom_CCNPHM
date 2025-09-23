@@ -3,6 +3,8 @@ import Order from "../models/Order.js";
 import Cart from "../models/Cart.js";
 import Payment from "../models/Payment.js";
 import Delivery from "../models/Delivery.js";
+import { loyaltyPointsService } from "./loyaltyPoints.service.js";
+import logger from "../utils/logger.js";
 
 // Lấy thông tin đơn vị vận chuyển
 export const getDeliveryOptions = async () => {
@@ -126,6 +128,22 @@ const handleCODPayment = async ({
       },
     }
   );
+
+  // === LOYALTY POINTS INTEGRATION ===
+  try {
+    // Award loyalty points for the completed order
+    await loyaltyPointsService.awardPointsForOrder(
+      userId,
+      order._id,
+      totalAmount,
+      `Đặt hàng thành công - ${orderLines.length} sản phẩm`
+    );
+
+    logger.info(`Awarded loyalty points for order ${order._id} by user ${userId}`);
+  } catch (error) {
+    logger.error(`Failed to award loyalty points for order ${order._id}: ${error.message}`);
+    // Don't fail the order creation if loyalty points awarding fails
+  }
 
   return order;
 };

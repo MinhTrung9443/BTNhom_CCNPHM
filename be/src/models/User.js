@@ -43,6 +43,11 @@ const userSchema = new mongoose.Schema(
     favorites: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product'}],
     passwordResetToken: String,
     passwordResetExpires: Date,
+    loyaltyPoints: {
+      type: Number,
+      default: 0,
+      min: 0
+    },
   },
   { timestamps: true }
 );

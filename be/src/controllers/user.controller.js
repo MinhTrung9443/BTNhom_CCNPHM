@@ -2,6 +2,9 @@ import * as userService from '../services/user.service.js';
 import User from '../models/User.js';
 import Product from '../models/Product.js';
 import ProductView from '../models/ProductView.js';
+import { loyaltyPointsService } from '../services/loyaltyPoints.service.js';
+import logger from '../utils/logger.js';
+
 const getMe = (req, res) => {
     res.status(200).json({
         success: true,
@@ -91,4 +94,95 @@ const getRecentlyViewed = async (req, res) => {
         res.status(500).json({ message: 'Lỗi server', error });
     }
 };
-export { getMe, updateMe, getFavorites, toggleFavorite, getRecentlyViewed };
+
+// === LOYALTY POINTS FUNCTIONALITY ===
+
+const getUserLoyaltyPoints = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const availablePoints = await loyaltyPointsService.getUserAvailablePoints(userId);
+    const redemptionOptions = loyaltyPointsService.getRedemptionOptions(availablePoints);
+
+    res.json({
+      success: true,
+      message: 'Lấy thông tin điểm thành công',
+      data: {
+        availablePoints,
+        redemptionOptions
+      }
+    });
+
+  } catch (error) {
+    logger.error(`Lỗi get user loyalty points: ${error.message}`);
+    res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+const redeemPoints = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { pointsToRedeem, discountValue } = req.body;
+
+    if (!pointsToRedeem || !discountValue) {
+      return res.status(400).json({ message: 'Vui lòng nhập đầy đủ thông tin' });
+    }
+
+    // Redeem points
+    const transaction = await loyaltyPointsService.redeemPointsForDiscount(
+      userId,
+      pointsToRedeem,
+      discountValue
+    );
+
+    // Get updated points
+    const availablePoints = await loyaltyPointsService.getUserAvailablePoints(userId);
+
+    res.json({
+      success: true,
+      message: `Đã đổi ${pointsToRedeem} điểm thành ${discountValue.toLocaleString('vi-VN')} VNĐ`,
+      data: {
+        transaction,
+        availablePoints
+      }
+    });
+
+  } catch (error) {
+    logger.error(`Lỗi redeem points: ${error.message}`);
+    res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+const getPointsHistory = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { page = 1, limit = 10 } = req.query;
+
+    const history = await loyaltyPointsService.getUserPointsHistory(
+      userId,
+      parseInt(page),
+      parseInt(limit)
+    );
+
+    res.json({
+      success: true,
+      message: 'Lấy lịch sử điểm thành công',
+      data: history
+    });
+
+  } catch (error) {
+    logger.error(`Lỗi get points history: ${error.message}`);
+    res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+export { getMe, updateMe, getFavorites, toggleFavorite, getRecentlyViewed, getUserLoyaltyPoints, redeemPoints, getPointsHistory };

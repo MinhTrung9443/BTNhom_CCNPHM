@@ -8,6 +8,8 @@ import Cart from "./Cart.js";
 import Delivery from "./Delivery.js";
 import Voucher from "./Voucher.js";
 import Review from "./Review.js";
+import Coupon from "./Coupon.js";
+import LoyaltyPoints from "./LoyaltyPoints.js";
 export {
   User,
   OTP,
@@ -19,4 +21,6 @@ export {
   Category,
   Cart,
   Delivery,
+  Coupon,
+  LoyaltyPoints,
 };

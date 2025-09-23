@@ -91,15 +91,34 @@ const register = async (name, email, password, phone, address) => {
 const login = async (email, password) => {
     const user = await User.findOne({ email });
     if (!user) {
-        throw new AppError('Email hoặc mật khẩu không chính xác.', 401); // Sửa thứ tự tham số
+        throw new AppError('Email hoặc mật khẩu không chính xác.', 401);
     }
     if (!user.isVerified) {
-        throw new AppError('Tài khoản của bạn chưa được tạo. Vui lòng kiểm tra email.', 403); // Sửa thứ tự tham số
+        throw new AppError('Tài khoản của bạn chưa được tạo. Vui lòng kiểm tra email.', 403);
     }
-    const isPasswordMatch = await bcrypt.compare(password, user.password);
+
+    let isPasswordMatch = false;
+
+    // Check if password is already hashed (bcrypt format)
+    if (user.password.startsWith('$2a$') || user.password.startsWith('$2b$') || user.password.startsWith('$2y$')) {
+        // Password is hashed, use bcrypt comparison
+        isPasswordMatch = await bcrypt.compare(password, user.password);
+    } else {
+        // Password is plain text, compare directly and then hash it for future use
+        isPasswordMatch = (password === user.password);
+
+        // If password matches, hash it for future logins
+        if (isPasswordMatch) {
+            const hashedPassword = await bcrypt.hash(password, 10);
+            await User.updateOne({ _id: user._id }, { password: hashedPassword });
+            logger.info(`Password hashed for user: ${user.email}`);
+        }
+    }
+
     if (!isPasswordMatch) {
-        throw new AppError('Email hoặc mật khẩu không chính xác.', 401); // Sửa thứ tự tham số
+        throw new AppError('Email hoặc mật khẩu không chính xác.', 401);
     }
+
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
         expiresIn: process.env.JWT_EXPIRES_IN,
     });

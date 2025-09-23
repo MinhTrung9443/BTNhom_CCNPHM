@@ -119,10 +119,40 @@ const Header = () => {
                 className="user-dropdown-custom"
                 align="end"
               >
+                  {user.role === 'user' && (
+                    <>
                 <NavDropdown.Item as={Link} to="/profile"><i className="bi bi-person-lines-fill me-2"></i>Thông tin cá nhân</NavDropdown.Item>
                 <NavDropdown.Item as={Link} to="/orders"><i className="fas fa-shopping-bag me-2"></i>Đơn hàng của tôi</NavDropdown.Item>
                 <NavDropdown.Item as={Link} to="/my-reviews"><i className="fas fa-star me-2"></i>Đánh giá của tôi</NavDropdown.Item>
                 <NavDropdown.Item as={Link} to="/favorites"><i className="fas fa-heart me-2"></i>Sản phẩm yêu thích</NavDropdown.Item>
+                </>  )}
+                {/* Admin Menu */}
+                {user.role === 'admin' && (
+                  <>
+                    <NavDropdown.Divider />
+                    <NavDropdown.Item as={Link} to="/admin">
+                      <i className="fas fa-tachometer-alt me-2"></i>
+                      Bảng điều khiển
+                    </NavDropdown.Item>
+                    <NavDropdown.Item as={Link} to="/admin/products">
+                      <i className="fas fa-box me-2"></i>
+                      Quản lý sản phẩm
+                    </NavDropdown.Item>
+                    <NavDropdown.Item as={Link} to="/admin/orders">
+                      <i className="fas fa-shopping-cart me-2"></i>
+                      Quản lý đơn hàng
+                    </NavDropdown.Item>
+                    <NavDropdown.Item as={Link} to="/admin/customers">
+                      <i className="fas fa-users me-2"></i>
+                      Quản lý khách hàng
+                    </NavDropdown.Item>
+                    <NavDropdown.Item as={Link} to="/admin/reports">
+                      <i className="fas fa-chart-line me-2"></i>
+                      Báo cáo doanh thu
+                    </NavDropdown.Item>
+                  </>
+                )}
+
                 <NavDropdown.Divider />
                 <NavDropdown.Item onClick={handleLogout} className="text-danger"><i className="bi bi-box-arrow-right me-2"></i>Đăng xuất</NavDropdown.Item>
               </NavDropdown>

@@ -8,6 +8,7 @@ import 'bootstrap-icons/font/bootstrap-icons.css'
 import 'react-toastify/dist/ReactToastify.css'
 import './styles/bootstrap-custom.css'
 import './styles/index.css'
+import './styles/admin.css'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

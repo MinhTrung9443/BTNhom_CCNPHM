@@ -19,6 +19,14 @@ import PreviewOrder from './pages/PreviewOrder'
 import IntroPage from "./pages/IntroPage";
 import UserReviewsPage from './pages/UserReviewsPage';
 import FavoritesPage from './pages/FavoritesPage';
+import ProtectedAdminRoute from './components/ProtectedAdminRoute'
+import AdminDashboard from './pages/AdminDashboard'
+import AdminProducts from './pages/admin/AdminProducts'
+import AdminOrders from './pages/admin/AdminOrders'
+import AdminCustomers from './pages/admin/AdminCustomers'
+import AdminPromotions from './pages/admin/AdminPromotions'
+import AdminReports from './pages/admin/AdminReports'
+import AdminDelivery from './pages/admin/AdminDelivery'
 // Protected Route component
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated } = useSelector((state) => state.user)
@@ -45,7 +53,65 @@ function App() {
           <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
           <Route path="/preview-order" element={<PreviewOrder />} />
           <Route path="/cart" element={<CartPage />} />
-        <Route path="/intro" element={<IntroPage />} />
+          <Route path="/intro" element={<IntroPage />} />
+
+          {/* Admin routes */}
+          <Route
+            path="/admin"
+            element={
+              <ProtectedAdminRoute>
+                <AdminDashboard />
+              </ProtectedAdminRoute>
+            }
+          />
+          <Route
+            path="/admin/products"
+            element={
+              <ProtectedAdminRoute>
+                <AdminProducts />
+              </ProtectedAdminRoute>
+            }
+          />
+          <Route
+            path="/admin/orders"
+            element={
+              <ProtectedAdminRoute>
+                <AdminOrders />
+              </ProtectedAdminRoute>
+            }
+          />
+          <Route
+            path="/admin/customers"
+            element={
+              <ProtectedAdminRoute>
+                <AdminCustomers />
+              </ProtectedAdminRoute>
+            }
+          />
+          <Route
+            path="/admin/promotions"
+            element={
+              <ProtectedAdminRoute>
+                <AdminPromotions />
+              </ProtectedAdminRoute>
+            }
+          />
+          <Route
+            path="/admin/reports"
+            element={
+              <ProtectedAdminRoute>
+                <AdminReports />
+              </ProtectedAdminRoute>
+            }
+          />
+          <Route
+            path="/admin/delivery"
+            element={
+              <ProtectedAdminRoute>
+                <AdminDelivery />
+              </ProtectedAdminRoute>
+            }
+          />
 
           {/* Protected routes */}
           <Route
