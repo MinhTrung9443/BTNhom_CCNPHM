@@ -126,9 +126,13 @@ couponSchema.virtual('isExpired').get(function() {
 // Virtual for checking if coupon is valid (active, not expired, within usage limits)
 couponSchema.virtual('isValid').get(function() {
   const now = new Date();
+  // Use start of day for current date to avoid timezone issues
+  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+
   return this.isActive &&
-         now >= this.startDate &&
-         now <= this.endDate &&
+         this.startDate <= endOfDay && // Allow coupons that start today
+         this.endDate >= startOfDay && // Allow coupons that end today
          (this.usageLimit === null || this.usedCount < this.usageLimit);
 });
 

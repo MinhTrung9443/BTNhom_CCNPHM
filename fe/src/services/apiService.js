@@ -10,12 +10,14 @@ const apiService = axios.create({
 export const setupAxiosInterceptors = (store) => {
   apiService.interceptors.request.use(
     (config) => {
-      console.log(store.getState());
+      console.log('Redux state:', store.getState());
       const state = store.getState();
-      const token = state.user?.token;
+      const token = state.user?.accessToken;
 
       if (token) {
         config.headers['Authorization'] = `Bearer ${token}`;
+      } else {
+        console.log('No token found in Redux state');
       }
       return config;
     },

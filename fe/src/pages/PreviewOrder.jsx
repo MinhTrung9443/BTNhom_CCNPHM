@@ -5,6 +5,7 @@ import PaymentMethod from "../components/common/PaymentMethod";
 import OrderSummary from "../components/common/OrderSummary";
 import ProductCardOrder from "../components/common/ProductCardOrder";
 import DeliveryOptions from "../components/common/DeliveryOptions";
+import VoucherComponent from "../components/common/VoucherComponent";
 import { useState } from "react";
 import { useEffect } from "react";
 import { useSelector } from "react-redux";
@@ -17,6 +18,7 @@ const PreviewOrder = () => {
   const [deliveryOptions, setDeliveryOptions] = useState([]);
   const orderLines = useSelector((state) => state.order.orderLines);
   const user = useSelector((state) => state.user.user);
+  const [appliedVoucher, setAppliedVoucher] = useState(null);
   const [formData, setFormData] = useState({
     orderLines: orderLines,
     recipientName: user.name || "",
@@ -32,6 +34,8 @@ const PreviewOrder = () => {
     deliveryId: null,
     shippingFee: 0,
     totalAmount: 0,
+    voucherCode: null,
+    discountAmount: 0,
   });
 
   useEffect(() => {
@@ -84,7 +88,27 @@ const PreviewOrder = () => {
       ...prev,
       deliveryId: deliveryId,
       shippingFee: shippingFee,
-      totalAmount: prev.totalProductAmount + shippingFee,
+      totalAmount: prev.totalProductAmount + shippingFee - (appliedVoucher?.discountAmount || 0),
+    }));
+  };
+
+  const handleVoucherApplied = (voucher) => {
+    setAppliedVoucher(voucher);
+    setFormData((prev) => ({
+      ...prev,
+      voucherCode: voucher.code,
+      discountAmount: voucher.discountAmount,
+      totalAmount: prev.totalProductAmount + prev.shippingFee - voucher.discountAmount,
+    }));
+  };
+
+  const handleVoucherRemoved = () => {
+    setAppliedVoucher(null);
+    setFormData((prev) => ({
+      ...prev,
+      voucherCode: null,
+      discountAmount: 0,
+      totalAmount: prev.totalProductAmount + prev.shippingFee,
     }));
   };
 
@@ -103,9 +127,18 @@ const PreviewOrder = () => {
         selected={formData.deliveryId}
         onChange={handleDeliveryChange}
       />
+
+      <VoucherComponent
+        onVoucherApplied={handleVoucherApplied}
+        onVoucherRemoved={handleVoucherRemoved}
+        appliedVoucher={appliedVoucher}
+      />
+
       <OrderSummary
         subtotal={formData.totalProductAmount}
         shippingFee={formData.shippingFee}
+        discountAmount={formData.discountAmount}
+        voucherCode={formData.voucherCode}
       />
 
       <button className="btn btn-primary mt-4" onClick={handleSubmit}>

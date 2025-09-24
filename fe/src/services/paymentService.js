@@ -18,7 +18,11 @@ const paymentService = {
     try {
       const response = await apiClient.post(
         `/payments/payment-${orderData.paymentMethod}`,
-        orderData
+        {
+          ...orderData,
+          voucherCode: orderData.voucherCode,
+          discountAmount: orderData.discountAmount,
+        }
       );
       return response.data;
     } catch (error) {

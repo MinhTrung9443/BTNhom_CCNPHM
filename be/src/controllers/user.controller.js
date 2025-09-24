@@ -2,8 +2,14 @@ import * as userService from '../services/user.service.js';
 import User from '../models/User.js';
 import Product from '../models/Product.js';
 import ProductView from '../models/ProductView.js';
+import Coupon from '../models/Coupon.js';
+import LoyaltyPoints from '../models/LoyaltyPoints.js';
+import Cart from '../models/Cart.js';
+import Order from '../models/Order.js';
 import { loyaltyPointsService } from '../services/loyaltyPoints.service.js';
+import { couponService } from '../services/coupon.service.js';
 import logger from '../utils/logger.js';
+import AppError from '../utils/AppError.js';
 
 const getMe = (req, res) => {
     res.status(200).json({
@@ -185,4 +191,135 @@ const getPointsHistory = async (req, res) => {
   }
 };
 
-export { getMe, updateMe, getFavorites, toggleFavorite, getRecentlyViewed, getUserLoyaltyPoints, redeemPoints, getPointsHistory };
+// === COUPON FUNCTIONALITY ===
+
+const getUserAvailableCoupons = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Get user's cart to check applicable products
+    const cart = await Cart.findOne({ userId }).populate('items.productId');
+    const cartItems = cart ? cart.items : [];
+
+    const availableCoupons = await couponService.getAvailableCoupons(userId, cartItems);
+
+    res.json({
+      success: true,
+      message: 'Lấy danh sách mã giảm giá thành công',
+      data: availableCoupons
+    });
+
+  } catch (error) {
+    logger.error(`Lỗi get available coupons: ${error.message}`);
+    res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+const getUserCouponHistory = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { page = 1, limit = 10, status } = req.query;
+
+    let filter = { userId };
+
+    if (status === 'used') {
+      filter.usedAt = { $ne: null };
+    } else if (status === 'unused') {
+      filter.usedAt = null;
+    }
+
+    const [coupons, total] = await Promise.all([
+      Coupon.find(filter)
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(parseInt(limit))
+        .populate('applicableProducts', 'name')
+        .populate('applicableCategories', 'name'),
+      Coupon.countDocuments(filter)
+    ]);
+
+    res.json({
+      success: true,
+      message: 'Lấy lịch sử mã giảm giá thành công',
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages: Math.ceil(total / limit),
+        totalCoupons: total,
+        hasNext: page * limit < total,
+        hasPrev: page > 1
+      },
+      data: coupons
+    });
+
+  } catch (error) {
+    logger.error(`Lỗi get user coupon history: ${error.message}`);
+    res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+const getUserStats = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const [
+      totalOrders,
+      totalSpent,
+      totalPoints,
+      availablePoints,
+      usedCoupons,
+      availableCoupons
+    ] = await Promise.all([
+      Order.countDocuments({ userId }),
+      Order.aggregate([
+        { $match: { userId: userId } },
+        { $group: { _id: null, total: { $sum: '$totalAmount' } } }
+      ]),
+      LoyaltyPoints.getUserTotalPoints(userId),
+      loyaltyPointsService.getUserAvailablePoints(userId),
+      Coupon.countDocuments({ userId, usedAt: { $ne: null } }),
+      Coupon.countDocuments({ userId, usedAt: null })
+    ]);
+
+    const spent = totalSpent[0]?.total || 0;
+
+    res.json({
+      success: true,
+      message: 'Lấy thống kê người dùng thành công',
+      data: {
+        totalOrders,
+        totalSpent: spent,
+        totalPoints,
+        availablePoints,
+        usedCoupons,
+        availableCoupons
+      }
+    });
+
+  } catch (error) {
+    logger.error(`Lỗi get user stats: ${error.message}`);
+    res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+export {
+  getMe,
+  updateMe,
+  getFavorites,
+  toggleFavorite,
+  getRecentlyViewed,
+  getUserLoyaltyPoints,
+  redeemPoints,
+  getPointsHistory,
+  getUserAvailableCoupons,
+  getUserCouponHistory,
+  getUserStats
+};

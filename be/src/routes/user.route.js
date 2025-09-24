@@ -18,4 +18,11 @@ router.get('/loyalty-points', userController.getUserLoyaltyPoints);
 router.post('/redeem-points', userController.redeemPoints);
 router.get('/points-history', userController.getPointsHistory);
 
+// Coupon routes
+router.get('/available-coupons', userController.getUserAvailableCoupons);
+router.get('/coupon-history', userController.getUserCouponHistory);
+
+// User stats
+router.get('/stats', userController.getUserStats);
+
 export default router;

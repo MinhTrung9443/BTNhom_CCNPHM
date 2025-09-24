@@ -19,6 +19,7 @@ import PreviewOrder from './pages/PreviewOrder'
 import IntroPage from "./pages/IntroPage";
 import UserReviewsPage from './pages/UserReviewsPage';
 import FavoritesPage from './pages/FavoritesPage';
+import UserLoyaltyDashboard from './components/UserLoyaltyDashboard';
 import ProtectedAdminRoute from './components/ProtectedAdminRoute'
 import AdminDashboard from './pages/AdminDashboard'
 import AdminProducts from './pages/admin/AdminProducts'
@@ -154,15 +155,23 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route 
-            path="/favorites" 
+          <Route
+            path="/favorites"
             element={
               <ProtectedRoute>
                 <FavoritesPage />
               </ProtectedRoute>
-            } 
+            }
           />
-          
+          <Route
+            path="/loyalty"
+            element={
+              <ProtectedRoute>
+                <UserLoyaltyDashboard />
+              </ProtectedRoute>
+            }
+          />
+
           {/* Catch all route */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

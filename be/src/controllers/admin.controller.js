@@ -164,10 +164,16 @@ export const adminController = {
       let filter = {};
       if (status === 'active') {
         filter.isActive = true;
-        filter.startDate = { $lte: new Date() };
-        filter.endDate = { $gte: new Date() };
+        // Use start of day for current date to avoid timezone issues
+        const now = new Date();
+        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+        filter.startDate = { $lte: endOfDay };
+        filter.endDate = { $gte: startOfDay };
       } else if (status === 'expired') {
-        filter.endDate = { $lt: new Date() };
+        const now = new Date();
+        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        filter.endDate = { $lt: startOfDay };
       } else if (status === 'inactive') {
         filter.isActive = false;
       }
@@ -303,6 +309,38 @@ export const adminController = {
       });
     } catch (error) {
       logger.error(`Lỗi lấy thống kê mã giảm giá: ${error.message}`);
+      next(new AppError(error.message, 500));
+    }
+  },
+
+  // Public method to get active promotions for banner display
+  getActivePromotions: async (req, res, next) => {
+    try {
+      const { limit = 5 } = req.query;
+
+      // Get current date for filtering active promotions
+      const now = new Date();
+      const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+
+      const activePromotions = await Coupon.find({
+        isActive: true,
+        startDate: { $lte: endOfDay },
+        endDate: { $gte: startOfDay }
+      })
+        .sort({ createdAt: -1 })
+        .limit(parseInt(limit))
+        .select('name code discountType discountValue description startDate endDate')
+        .populate('applicableProducts', 'name')
+        .populate('applicableCategories', 'name');
+
+      res.json({
+        success: true,
+        message: 'Lấy danh sách khuyến mãi thành công',
+        data: activePromotions
+      });
+    } catch (error) {
+      logger.error(`Lỗi lấy danh sách khuyến mãi: ${error.message}`);
       next(new AppError(error.message, 500));
     }
   },

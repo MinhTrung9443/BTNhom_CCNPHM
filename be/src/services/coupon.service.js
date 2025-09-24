@@ -153,11 +153,15 @@ export const couponService = {
   // Get available coupons for user
   getAvailableCoupons: async (userId, cartItems = []) => {
     try {
+      // Use start of day for current date to avoid timezone issues
       const now = new Date();
+      const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+
       const coupons = await Coupon.find({
         isActive: true,
-        startDate: { $lte: now },
-        endDate: { $gte: now },
+        startDate: { $lte: endOfDay }, // Allow coupons that start today
+        endDate: { $gte: startOfDay }, // Allow coupons that end today
         $or: [
           { isPublic: true },
           { allowedUsers: userId }

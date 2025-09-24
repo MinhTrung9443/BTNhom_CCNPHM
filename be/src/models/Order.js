@@ -114,6 +114,10 @@ const orderSchema = new mongoose.Schema(
     
     // Ghi chú nội bộ
     internalNotes: { type: String },
+
+    // Thông tin voucher
+    voucherCode: { type: String },
+    discountAmount: { type: Number, default: 0 },
   },
   { timestamps: true }
 );

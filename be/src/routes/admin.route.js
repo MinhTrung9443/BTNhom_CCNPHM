@@ -4,6 +4,10 @@ import { protect, restrictTo } from "../middlewares/auth.js";
 
 const router = express.Router();
 
+// === PUBLIC PROMOTION ROUTES ===
+// These routes are public and don't require authentication
+router.get('/promotions/active', adminController.getActivePromotions);
+
 // All admin routes require authentication and admin role
 router.use(protect);
 router.use(restrictTo('admin'));

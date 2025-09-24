@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { productService } from '../services/productService';
 import ProductSection from '../components/common/ProductSection';
 import LoadingSpinner from '../components/common/LoadingSpinner';
+import PromotionBanner from '../components/common/PromotionBanner';
+
 import './HomePage.css';
 
 const HomePage = () => {
@@ -164,21 +166,12 @@ const HomePage = () => {
   return (
     <div className="homepage">
       {/* Hero Section */}
-      <section className="hero-section page-section">
-        <div className="hero-content text-center py-5">
-          <Container className="container-spacing">
-            <h1 className="hero-title mb-4">
-              🏺 Đặc Sản Sóc Trăng Chính Gốc
-            </h1>
-            <p className="hero-subtitle mb-4">
-              Khám phá hương vị truyền thống đậm đà từ vùng đất Sóc Trăng
-            </p>
-            <button className="btn btn-warning btn-lg">
-              Khám phá ngay
-            </button>
-          </Container>
-        </div>
-      </section>
+      
+
+      {/* Promotion Banner - Show active promotions */}
+      <PromotionBanner />
+
+
 
       {/* Latest Products - 8 sản phẩm với phân trang */}
       <section className="latest-products page-section">

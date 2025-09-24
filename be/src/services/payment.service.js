@@ -46,6 +46,8 @@ export const createOrder = async ({
   paymentMethod,
   totalAmount,
   deliveryId,
+  voucherCode = null,
+  discountAmount = 0,
 }) => {
   switch (paymentMethod) {
     case "COD":
@@ -58,6 +60,8 @@ export const createOrder = async ({
         notes,
         totalAmount,
         deliveryId,
+        voucherCode,
+        discountAmount,
       });
     // case "vnpay":
     //   return await handleVNPAYPayment(...);
@@ -78,6 +82,8 @@ const handleCODPayment = async ({
   notes,
   totalAmount,
   deliveryId,
+  voucherCode = null,
+  discountAmount = 0,
 }) => {
   // Kiểm tra tồn kho lần cuối trước khi tạo đơn hàng
   for (const ol of orderLines) {
@@ -95,8 +101,8 @@ const handleCODPayment = async ({
     status: "pending",
   });
 
-  // Tạo đơn hàng
-  const order = await Order.create({
+  // Tạo đơn hàng với thông tin voucher
+  const orderData = {
     userId,
     orderLines,
     shippingAddress,
@@ -107,7 +113,15 @@ const handleCODPayment = async ({
     status: "pending",
     paymentId: payment._id,
     deliveryId: deliveryId,
-  });
+  };
+
+  // Thêm thông tin voucher nếu có
+  if (voucherCode && discountAmount > 0) {
+    orderData.voucherCode = voucherCode;
+    orderData.discountAmount = discountAmount;
+  }
+
+  const order = await Order.create(orderData);
 
   // Giảm tồn kho sản phẩm
   for (const ol of orderLines) {
