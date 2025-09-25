@@ -15,7 +15,6 @@ router.get('/recently-viewed', userController.getRecentlyViewed);
 
 // Loyalty points routes
 router.get('/loyalty-points', userController.getUserLoyaltyPoints);
-router.post('/redeem-points', userController.redeemPoints);
 router.get('/points-history', userController.getPointsHistory);
 
 export default router;

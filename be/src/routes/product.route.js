@@ -13,5 +13,5 @@ router.get("/", productController.getAllProducts);
 router.post("/by-ids", productController.getProductsByIds);
 router.get("/:id/related", productController.getRelatedProducts);
 router.get("/:id", productController.getProductDetail);
-router.post('/:id/view', protect, productController.recordProductView);
+// router.post('/:id/view', protect, productController.recordProductView);
 export default router;

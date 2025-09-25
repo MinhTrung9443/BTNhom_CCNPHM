@@ -2,17 +2,13 @@
 import voucherService from "../services/voucher.service.js";
 
 export const voucherController = {
-  getAvailableVouchers: async (req, res, next) => {
-    try {
-      const userId = req.user.id;
-      const totalAmount = req.body.totalAmount;
-      const vouchers = await voucherService.getAvailableVouchers(
-        userId,
-        totalAmount
-      );
-      res.json(vouchers);
-    } catch (error) {
-      next(error);
-    }
+  getMyVouchers: async (req, res, next) => {
+    const userId = req.user.id;
+    const vouchers = await voucherService.getMyVouchers(userId);
+    res.json({
+        success: true,
+        message: 'Lấy danh sách voucher thành công.',
+        data: vouchers,
+    });
   },
 };

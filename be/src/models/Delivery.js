@@ -1,15 +1,17 @@
 import mongoose from "mongoose";
 
-const Delivery = new mongoose.Schema({
+const deliverySchema = new mongoose.Schema({
   type: {
     type: String,
     enum: ["express", "regular", "standard"],
     default: "regular",
+    required: true
   },
   name: {
     type: String,
     required: true,
     enum: ["Giao hỏa tốc", "Giao thường", "Giao chuẩn"],
+    trim: true
   },
   price: {
     type: Number,
@@ -24,7 +26,22 @@ const Delivery = new mongoose.Schema({
       "Giao hàng trong 3-5 ngày làm việc.",
       "Giao hàng trong 5-7 ngày làm việc.",
     ],
+    trim: true
   },
-});
+  estimatedDays: {
+    type: Number,
+    required: true,
+    min: 1
+  },
+  isActive: {
+    type: Boolean,
+    default: true
+  }
+}, { timestamps: true });
 
-export default mongoose.model("Delivery", Delivery);
+// Indexes for better performance
+deliverySchema.index({ type: 1 });
+deliverySchema.index({ isActive: 1 });
+deliverySchema.index({ price: 1 });
+
+export default mongoose.model("Delivery", deliverySchema);

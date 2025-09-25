@@ -64,8 +64,29 @@ export const loyaltyPointsService = {
   // Get user's available points
   getUserAvailablePoints: async (userId) => {
     try {
-      const totalPoints = await LoyaltyPoints.getUserTotalPoints(userId);
-      return totalPoints;
+      const result = await LoyaltyPoints.aggregate([
+        {
+          $match: {
+            userId,
+            $or: [{ expiryDate: null }, { expiryDate: { $gt: new Date() } }],
+          },
+        },
+        {
+          $group: {
+            _id: '$userId',
+            totalPoints: {
+              $sum: {
+                $cond: [
+                  { $in: ['$transactionType', ['earned', 'bonus', 'refund']] },
+                  '$points',
+                  { $multiply: ['$points', -1] },
+                ],
+              },
+            },
+          },
+        },
+      ]);
+      return result[0]?.totalPoints || 0;
     } catch (error) {
       logger.error(`Lỗi get user available points: ${error.message}`);
       throw new AppError('Lỗi lấy thông tin điểm', 500);
@@ -75,7 +96,17 @@ export const loyaltyPointsService = {
   // Get user's points history with pagination
   getUserPointsHistory: async (userId, page = 1, limit = 10) => {
     try {
-      return await LoyaltyPoints.getUserPointsHistory(userId, page, limit);
+      const skip = (page - 1) * limit;
+      const history = await LoyaltyPoints.find({ userId })
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit);
+      const total = await LoyaltyPoints.countDocuments({ userId });
+      return {
+        history,
+        totalPages: Math.ceil(total / limit),
+        currentPage: page,
+      };
     } catch (error) {
       logger.error(`Lỗi get user points history: ${error.message}`);
       throw new AppError('Lỗi lấy lịch sử điểm', 500);

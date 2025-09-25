@@ -5,6 +5,6 @@ import { protect } from "../middlewares/auth.js";
 const router = express.Router();
 
 // Public routes
-router.get("/voucher-available",protect ,voucherController.getAvailableVouchers);
+router.get("/my-vouchers", protect, voucherController.getMyVouchers);
     
 export default router;

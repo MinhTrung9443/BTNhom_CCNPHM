@@ -1,4 +1,7 @@
 import User from "../models/User.js";
+import Product from '../models/Product.js';
+import ProductView from '../models/ProductView.js';
+import Favorite from '../models/Favorite.js';
 import { AppError } from "../utils/AppError.js";
 
 const updateUserProfile = async (userId, updateData, file) => {
@@ -19,27 +22,63 @@ const updateUserProfile = async (userId, updateData, file) => {
     throw new AppError(400, "Không có thông tin hợp lệ để cập nhật.");
   }
 
-  console.log("Final updates object:", updates);
-
-  // Kiểm tra tài liệu cũ
-  const oldUser = await User.findById(userId).select("-password");
-  console.log("Old user data before update:", oldUser);
-
-  // Thực hiện cập nhật
   const user = await User.findByIdAndUpdate(userId, updates, {
     new: true,
     runValidators: true,
-    upsert: false,
   }).select("-password");
 
   if (!user) {
-    console.log("User not found for ID:", userId);
     throw new AppError(404, "Không tìm thấy người dùng để cập nhật.");
   }
 
-  // Kiểm tra tài liệu mới
-  console.log("New user data after update:", user);
   return user;
 };
 
-export { updateUserProfile };
+const toggleFavorite = async (userId, productId) => {
+  const product = await Product.findById(productId);
+  if (!product) {
+    throw new AppError('Sản phẩm không tồn tại', 404);
+  }
+
+  const existingFavorite = await Favorite.findOne({ userId, productId });
+
+  if (existingFavorite) {
+    await Favorite.findByIdAndDelete(existingFavorite._id);
+    return { favorited: false };
+  } else {
+    await Favorite.create({ userId, productId });
+    return { favorited: true };
+  }
+};
+
+const getFavorites = async (userId) => {
+  const favorites = await Favorite.find({ userId }).populate({
+    path: 'productId',
+    select: 'name price images discount',
+  });
+  return favorites.map(fav => fav.productId);
+};
+
+const getRecentlyViewed = async (userId) => {
+  const views = await ProductView.find({ userId })
+    .sort({ lastViewedAt: -1 })
+    .limit(10)
+    .populate({
+      path: 'productId',
+      select: 'name price images discount',
+      model: 'Product'
+    });
+
+  const uniqueProducts = [];
+  const seenProductIds = new Set();
+  for (const view of views) {
+    if (view.productId && !seenProductIds.has(view.productId._id.toString())) {
+      uniqueProducts.push(view.productId);
+      seenProductIds.add(view.productId._id.toString());
+    }
+  }
+  return uniqueProducts;
+};
+
+
+export { updateUserProfile, toggleFavorite, getFavorites, getRecentlyViewed };

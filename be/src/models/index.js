@@ -7,8 +7,9 @@ import ProductView from "./ProductView.js";
 import Cart from "./Cart.js";
 import Delivery from "./Delivery.js";
 import Voucher from "./Voucher.js";
+import UserVoucher from "./UserVoucher.js";
 import Review from "./Review.js";
-import Coupon from "./Coupon.js";
+import Favorite from "./Favorite.js";
 import LoyaltyPoints from "./LoyaltyPoints.js";
 export {
   User,
@@ -16,11 +17,12 @@ export {
   Product,
   Order,
   Voucher,
+  UserVoucher,
   Review,
   ProductView,
   Category,
   Cart,
   Delivery,
-  Coupon,
   LoyaltyPoints,
+  Favorite
 };

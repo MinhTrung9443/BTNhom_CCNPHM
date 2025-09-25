@@ -3,12 +3,7 @@ import {
     upsertCartItem,
     getCart,
     removeItemFromCart,
-    applyCoupon,
-    removeCoupon,
-    getAvailableCoupons,
-    getUserLoyaltyPoints,
-    redeemPoints,
-    getPointsHistory
+    updateCartItemQuantity
 } from '../controllers/cartController.js';
 import { protect } from '../middlewares/auth.js';
 
@@ -20,15 +15,6 @@ router.use(protect);
 router.post('/items', upsertCartItem);
 router.get('/', getCart);
 router.delete('/items/:productId', removeItemFromCart);
-
-// Coupon management
-router.post('/apply-coupon', applyCoupon);
-router.delete('/remove-coupon', removeCoupon);
-router.get('/available-coupons', getAvailableCoupons);
-
-// Loyalty points management
-router.get('/loyalty-points', getUserLoyaltyPoints);
-router.post('/redeem-points', redeemPoints);
-router.get('/points-history', getPointsHistory);
+router.put('/items', updateCartItemQuantity);
 
 export default router;

@@ -7,10 +7,12 @@ const orderLineSchema = new mongoose.Schema(
       ref: "Product",
       required: true,
     },
+    productCode: { type: String, required: true },
     productName: { type: String, required: true },
     productImage: { type: String },
     productPrice: { type: Number, required: true },
     quantity: { type: Number, required: true },
+    lineTotal: { type: Number, required: true }, // productPrice * quantity
   },
   { _id: false }
 );
@@ -22,6 +24,7 @@ const ORDER_STATUS = {
   PREPARING: "preparing", // 3. Shop đang chuẩn bị hàng
   SHIPPING: "shipping", // 4. Đang giao hàng
   DELIVERED: "delivered", // 5. Đã giao thành công
+  COMPLETED: "completed", // Đơn hàng hoàn tất
   CANCELLED: "cancelled", // 6. Hủy đơn hàng
   CANCELLATION_REQUESTED: "cancellation_requested", // Yêu cầu hủy đơn
 };
@@ -86,13 +89,36 @@ const orderSchema = new mongoose.Schema(
       ref: "Delivery",
     },
     orderLines: [orderLineSchema],
+    subtotal: { type: Number, required: true },
+    shippingFee: { type: Number, required: true },
+    discount: { type: Number, default: 0 },
+    pointsApplied: { type: Number, default: 0 },
     totalAmount: { type: Number, required: true },
-    shippingAddress: { type: String, required: true },
-    phoneNumber: { type: String, required: true },
-    recipientName: { type: String, required: true },
+    voucherCode: { type: String, default: null },
+    shippingAddress: {
+      recipientName: { type: String, required: true },
+      phoneNumber: { type: String, required: true },
+      street: { type: String, required: true },
+      ward: { type: String, required: true },
+      district: { type: String, required: true },
+      province: { type: String, required: true },
+    },
     notes: { type: String },
-    paymentId: { type: mongoose.Schema.Types.ObjectId, ref: "Payment" },
-    
+    payment: { 
+      amount : { type: Number },
+      paymentMethod: {
+        type: String,
+        enum: ["VNPAY", "COD", "BANK"],
+        required: true,
+      },
+      status : { type: String,
+        enum: ["pending", "completed", "failed"],
+        default: "pending",
+      },
+      transactionId : { type: String },
+      createdAt: { type: Date, default: Date.now }, 
+      updatedAt: { type: Date},
+    },
     // Timestamps cho các trạng thái
     confirmedAt: { type: Date },
     preparingAt: { type: Date },
@@ -117,6 +143,20 @@ const orderSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+// Indexes for better performance
+orderSchema.index({ userId: 1 });
+orderSchema.index({ status: 1 });
+orderSchema.index({ createdAt: -1 });
+orderSchema.index({ deliveryId: 1 });
+orderSchema.index({ phoneNumber: 1 });
+orderSchema.index({ canCancel: 1 });
+
+// Compound indexes
+orderSchema.index({ userId: 1, status: 1 });
+orderSchema.index({ userId: 1, createdAt: -1 });
+orderSchema.index({ status: 1, createdAt: -1 });
+orderSchema.index({ userId: 1, status: 1, createdAt: -1 });
 
 export default mongoose.model("Order", orderSchema);
 export { ORDER_STATUS };

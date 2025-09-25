@@ -158,9 +158,8 @@ export const getOrderDetail = async (orderId, userId = null) => {
 
     const order = await Order.findOne(filter)
       .populate('userId', 'name email phone')
-      .populate('deliveryId')
-      .populate('paymentId')
-      ;
+      .populate('deliveryId', 'name price description') // Populate with specific fields
+      .lean(); // Use lean for faster queries
 
     if (!order) {
       throw new Error("Không tìm thấy đơn hàng");

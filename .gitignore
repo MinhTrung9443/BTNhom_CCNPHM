@@ -1,1 +1,5 @@
 /node_modules
+.kiro
+.qoder
+.clinerules
+digest.txt
