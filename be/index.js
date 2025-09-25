@@ -26,17 +26,7 @@ if (process.env.NODE_ENV !== "production") {
 
 // CORS configuration
 app.use(
-  cors({
-    origin: [
-      "http://localhost:3001",
-      "http://localhost:3000",
-      "http://localhost:3002",
-      "http://localhost:3003",
-    ],
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"],
-    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
-  })
+  cors()
 );
 app.use(express.json());
 app.use("/uploads", express.static("uploads"));

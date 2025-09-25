@@ -41,16 +41,50 @@ const LoginPage = () => {
       const response = await authService.login(formData.email, formData.password);
       console.log('Login response:', response);
       const { user, token } = response.data;
+      console.log('Login user:', user);
+
+      // Check if user is admin and show notification
+      if (user.role === 'admin') {
+        toast.error(
+          '🔒 Tài khoản quản trị viên không thể truy cập ứng dụng khách hàng này. Vui lòng sử dụng giao diện quản trị dành riêng cho admin.',
+          {
+            position: 'top-center',
+            autoClose: 7000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+          }
+        );
+        setIsLoading(false);
+        return; // Prevent login for admin users
+      }
 
       dispatch(loginSuccess({ user, token }));
-
-      toast.success(`Chào mừng trở lại, ${user.name}!`);
-
       navigate('/');
 
     } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Có lỗi xảy ra.';
-      toast.error(errorMessage);
+      console.log('=== LOGIN ERROR DEBUG ===');
+      console.log('Full error object:', error);
+      console.log('Error response:', error.response);
+      console.log('Error response data:', error.response?.data);
+      console.log('Error message:', error.response?.data?.message);
+      console.log('========================');
+      
+      const errorMessage = error.response?.data?.message || 'Có lỗi xảy ra khi đăng nhập.';
+      console.log('Final error message for toast:', errorMessage);
+      
+      // Test if toast is working
+      console.log('Attempting to show toast error...');
+      toast.error(errorMessage, {
+        position: 'top-center',
+        autoClose: 6000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+      console.log('Toast error called');
     } finally {
       setIsLoading(false);
     }
@@ -94,6 +128,7 @@ const LoginPage = () => {
     setErrors(newErrors);
     return isValid;
   };
+
 
   return (
     <Container className="min-vh-100 d-flex align-items-center">

@@ -40,12 +40,12 @@ const OrderTimeline = ({ timeline }) => {
 
   const getUserTypeText = (userType, userName) => {
     if (userType === 'system') {
-      return userName || 'System';
+      return userName || 'Hệ thống';
     }
     if (userType === 'admin') {
-      return 'Admin';
+      return 'Nhân viên';
     }
-    return 'Customer';
+    return 'Khách hàng';
   };
 
   return (

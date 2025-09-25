@@ -54,37 +54,54 @@ const Header = () => {
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="me-auto">
-              <Nav.Link as={Link} to="/intro" className="nav-link-custom">
+            <Nav.Link as={Link} to="/" className="nav-link-custom">
               <i className="fas fa-home me-1"></i>
               Trang chủ
             </Nav.Link>
-            <Nav.Link as={Link} to="/" className="nav-link-custom">
-              <i className="fas fa-birthday-cake me-1"></i>
-              Sản phẩm
+            
+            <Nav.Link as={Link} to="/intro" className="nav-link-custom">
+              <i className="fas fa-info-circle me-1"></i>
+              Giới thiệu
             </Nav.Link>
-          
-            <NavDropdown title={<span><i className="fas fa-list me-1"></i>Danh mục</span>} id="category-dropdown" className="nav-dropdown-custom">
+            
+            <NavDropdown 
+              title={
+                <span className="d-flex align-items-center">
+                  <i className="fas fa-list me-2"></i>
+                  <span>Danh mục</span>
+                </span>
+              } 
+              id="category-dropdown" 
+              className="nav-dropdown-custom"
+            >
               <NavDropdown.Item as={Link} to="/products?category=pia-dau-xanh">
-                🟢 Bánh pía đậu xanh
+                <span className="category-emoji">🟢</span>
+                <span>Bánh pía đậu xanh</span>
               </NavDropdown.Item>
               <NavDropdown.Item as={Link} to="/products?category=pia-thit">
-                🟤 Bánh pía thịt
+                <span className="category-emoji">🟤</span>
+                <span>Bánh pía thịt</span>
               </NavDropdown.Item>
               <NavDropdown.Item as={Link} to="/products?category=pia-trung">
-                🟡 Bánh pía trứng
+                <span className="category-emoji">🟡</span>
+                <span>Bánh pía trứng</span>
               </NavDropdown.Item>
               <NavDropdown.Item as={Link} to="/products?category=pia-dua">
-                🥥 Bánh pía dừa
+                <span className="category-emoji">🥥</span>
+                <span>Bánh pía dừa</span>
               </NavDropdown.Item>
               <NavDropdown.Divider />
               <NavDropdown.Item as={Link} to="/products?category=banh-in">
-                🥮 Bánh ín
+                <span className="category-emoji">🥮</span>
+                <span>Bánh ín</span>
               </NavDropdown.Item>
               <NavDropdown.Item as={Link} to="/products?category=banh-cam">
-                🟠 Bánh cam
+                <span className="category-emoji">🟠</span>
+                <span>Bánh cam</span>
               </NavDropdown.Item>
               <NavDropdown.Item as={Link} to="/products?category=kem-bo">
-                🧈 Kem bơ
+                <span className="category-emoji">🧈</span>
+                <span>Kem bơ</span>
               </NavDropdown.Item>
             </NavDropdown>
           </Nav>
@@ -110,51 +127,41 @@ const Header = () => {
             {isAuthenticated && user ? (
               <NavDropdown
                 title={
-                  <span className="user-dropdown">
+                  <span className="user-dropdown d-flex align-items-center">
                     <i className="bi bi-person-circle me-2"></i>
-                    {user.name}
+                    <span className="user-name">{user.name}</span>
                   </span>
                 }
                 id="user-dropdown"
                 className="user-dropdown-custom"
                 align="end"
               >
-                  {user.role === 'user' && (
-                    <>
-                <NavDropdown.Item as={Link} to="/profile"><i className="bi bi-person-lines-fill me-2"></i>Thông tin cá nhân</NavDropdown.Item>
-                <NavDropdown.Item as={Link} to="/orders"><i className="fas fa-shopping-bag me-2"></i>Đơn hàng của tôi</NavDropdown.Item>
-                <NavDropdown.Item as={Link} to="/my-reviews"><i className="fas fa-star me-2"></i>Đánh giá của tôi</NavDropdown.Item>
-                <NavDropdown.Item as={Link} to="/favorites"><i className="fas fa-heart me-2"></i>Sản phẩm yêu thích</NavDropdown.Item>
-                </>  )}
-                {/* Admin Menu */}
-                {user.role === 'admin' && (
-                  <>
-                    <NavDropdown.Divider />
-                    <NavDropdown.Item as={Link} to="/admin">
-                      <i className="fas fa-tachometer-alt me-2"></i>
-                      Bảng điều khiển
-                    </NavDropdown.Item>
-                    <NavDropdown.Item as={Link} to="/admin/products">
-                      <i className="fas fa-box me-2"></i>
-                      Quản lý sản phẩm
-                    </NavDropdown.Item>
-                    <NavDropdown.Item as={Link} to="/admin/orders">
-                      <i className="fas fa-shopping-cart me-2"></i>
-                      Quản lý đơn hàng
-                    </NavDropdown.Item>
-                    <NavDropdown.Item as={Link} to="/admin/customers">
-                      <i className="fas fa-users me-2"></i>
-                      Quản lý khách hàng
-                    </NavDropdown.Item>
-                    <NavDropdown.Item as={Link} to="/admin/reports">
-                      <i className="fas fa-chart-line me-2"></i>
-                      Báo cáo doanh thu
-                    </NavDropdown.Item>
-                  </>
-                )}
+                {/* User Menu Items */}
+                <NavDropdown.Item as={Link} to="/profile">
+                  <i className="bi bi-person-lines-fill me-2"></i>
+                  <span>Thông tin cá nhân</span>
+                </NavDropdown.Item>
+                <NavDropdown.Item as={Link} to="/orders">
+                  <i className="fas fa-shopping-bag me-2"></i>
+                  <span>Đơn hàng của tôi</span>
+                </NavDropdown.Item>
+                
+                <NavDropdown.Divider />
+                
+                <NavDropdown.Item as={Link} to="/my-reviews">
+                  <i className="fas fa-star me-2"></i>
+                  <span>Đánh giá của tôi</span>
+                </NavDropdown.Item>
+                <NavDropdown.Item as={Link} to="/favorites">
+                  <i className="fas fa-heart me-2"></i>
+                  <span>Sản phẩm yêu thích</span>
+                </NavDropdown.Item>
 
                 <NavDropdown.Divider />
-                <NavDropdown.Item onClick={handleLogout} className="text-danger"><i className="bi bi-box-arrow-right me-2"></i>Đăng xuất</NavDropdown.Item>
+                <NavDropdown.Item onClick={handleLogout} className="text-danger">
+                  <i className="bi bi-box-arrow-right me-2"></i>
+                  <span>Đăng xuất</span>
+                </NavDropdown.Item>
               </NavDropdown>
             ) : (
               <div className="auth-buttons">
