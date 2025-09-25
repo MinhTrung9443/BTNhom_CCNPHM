@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Navbar, Container, Nav, NavDropdown, Form, Button, Badge } from 'react-bootstrap';
 import { Link, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import { fetchCart, clearCart } from '../../redux/cartSlice';
+import { fetchCart, clearCartState } from '../../redux/cartSlice';
 import { logoutSuccess } from '../../redux/userSlice';
 import authService from '../../services/authService';
 import './../../styles/header-footer.css';
@@ -27,6 +27,7 @@ const Header = () => {
       console.error('Logout failed on server:', error);
     } finally {
       dispatch(logoutSuccess());
+      dispatch(clearCartState()); // Clear cart state on logout
       navigate('/');
     }
   };

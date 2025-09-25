@@ -1,6 +1,43 @@
 import apiClient from './apiClient';
 
 /**
+ * Preview order with current selections
+ * @param {object} orderData - Order preview data
+ * @param {array} orderData.orderLines - Array of product selections [{productId, quantity}]
+ * @param {object} orderData.shippingAddress - Optional delivery address {province, district, ward, street, phoneNumber, recipientName}
+ * @param {string} orderData.voucherCode - Optional discount code
+ * @param {string} orderData.shippingMethod - Optional shipping preference (express, regular, standard)
+ * @param {object} orderData.payment - Optional payment method object
+ * @param {string} orderData.payment.paymentMethod - Payment method (VNPAY, COD, BANK)
+ * @param {number} orderData.pointsToApply - Optional loyalty points amount
+ * @returns {Promise<{success: boolean, message: string, data: {previewOrder: object}}>}
+ */
+export const previewOrder = async (orderData) => {
+  const response = await apiClient.post('/orders/preview', orderData);
+  return response.data;
+};
+
+/**
+ * Create final order with confirmed details
+ * @param {object} orderData - Complete order data with previewOrder
+ * @param {object} orderData.previewOrder - The complete preview order object from preview API
+ * @param {array} orderData.previewOrder.orderLines - Array with full product details
+ * @param {object} orderData.previewOrder.shippingAddress - Complete shipping address
+ * @param {number} orderData.previewOrder.subtotal - Subtotal amount
+ * @param {string} orderData.previewOrder.shippingMethod - Shipping method
+ * @param {number} orderData.previewOrder.shippingFee - Shipping fee
+ * @param {number} orderData.previewOrder.discount - Discount amount
+ * @param {number} orderData.previewOrder.pointsApplied - Points applied
+ * @param {number} orderData.previewOrder.totalAmount - Total amount
+ * @param {string|null} orderData.previewOrder.voucherCode - Voucher code or null
+ * @returns {Promise<{success: boolean, message: string, data: object}>}
+ */
+export const createOrder = async (orderData) => {
+  const response = await apiClient.post('/orders', orderData);
+  return response.data;
+};
+
+/**
  * Get the current user's orders
  * @param {object} params - Query parameters
  * @param {number} params.page - Current page (default: 1)

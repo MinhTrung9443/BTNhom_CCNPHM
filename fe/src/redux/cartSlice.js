@@ -1,13 +1,14 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import apiService from '../services/apiService';
-import apiClient from '../services/apiClient';
+import cartService from '../services/cartService';
 
 export const addItemToCart = createAsyncThunk(
   'cart/addItem',
-  async (itemData, { rejectWithValue }) => {
+  async (itemData, { rejectWithValue, dispatch }) => {
     try {
-      const response = await apiClient.post('/cart/items', itemData);
-      return response.data;
+      await cartService.addToCart(itemData);
+      // After adding, fetch the updated cart
+      const cartData = await cartService.getCart();
+      return cartData;
     } catch (error) {
       if (error.response && error.response.data) {
         return rejectWithValue(error.response.data);
@@ -22,8 +23,10 @@ export const updateItemQuantity = createAsyncThunk(
   'cart/updateQuantity',
   async ({ productId, quantity }, { rejectWithValue }) => {
     try {
-      const response = await apiClient.post('/cart/items', { productId, quantity });
-      return response.data;
+      await cartService.updateCartItem({ productId, quantity });
+      // After updating, fetch the updated cart
+      const cartData = await cartService.getCart();
+      return cartData;
     } catch (error) {
       if (error.response && error.response.data) {
         return rejectWithValue(error.response.data);
@@ -38,8 +41,10 @@ export const removeItemFromCart = createAsyncThunk(
   'cart/removeItem',
   async (productId, { rejectWithValue }) => {
     try {
-      const response = await apiClient.delete(`/cart/items/${productId}`);
-      return response.data;
+      await cartService.removeFromCart(productId);
+      // After removing, fetch the updated cart
+      const cartData = await cartService.getCart();
+      return cartData;
     } catch (error) {
       if (error.response && error.response.data) {
         return rejectWithValue(error.response.data);
@@ -54,8 +59,8 @@ export const fetchCart = createAsyncThunk(
     'cart/fetchCart',
     async (_, { rejectWithValue }) => {
         try {
-            const response = await apiClient.get('/cart'); 
-            return response.data; 
+            const cartData = await cartService.getCart();
+            return cartData;
         } catch (error) {
             if (error.response && error.response.data) {
                 return rejectWithValue(error.response.data);
@@ -71,12 +76,16 @@ const cartSlice = createSlice({
         items: [],
         status: 'idle',
         error: null,
+        cartId: null,
+        userId: null,
     },
     reducers: {
-        clearCart: (state) => {
+        clearCartState: (state) => {
             state.items = [];
             state.status = 'idle';
             state.error = null;
+            state.cartId = null;
+            state.userId = null;
         },
     },
     extraReducers: (builder) => {
@@ -86,8 +95,10 @@ const cartSlice = createSlice({
                 (action) => action.type.endsWith('/fulfilled'),
                 (state, action) => {
                     state.status = 'succeeded';
-                    if (action.payload && action.payload.items) {
-                        state.items = action.payload.items;
+                    if (action.payload) {
+                        state.items = action.payload.items || [];
+                        state.cartId = action.payload._id;
+                        state.userId = action.payload.userId;
                     }
                     state.error = null;
                 }
@@ -108,6 +119,6 @@ const cartSlice = createSlice({
     },
 });
 
-export const { clearCart } = cartSlice.actions;
+export const { clearCartState } = cartSlice.actions;
 
 export default cartSlice.reducer;

@@ -12,7 +12,6 @@ import { useSelector } from 'react-redux';
 import FavoriteButton from '../components/product/FavoriteButton.jsx';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Thumbs, FreeMode } from 'swiper/modules';
-import { getEligibleProducts } from '../redux/reviewSlice';
 import { useDispatch } from 'react-redux';
 import { addItemToCart  } from '../redux/cartSlice'; 
 import { toast } from 'react-toastify';
@@ -59,9 +58,6 @@ const ProductDetailPage = () => {
   };
 
   useEffect(() => {
-    if (user) {
-      dispatch(getEligibleProducts(user._id));
-    }
     window.scrollTo(0, 0);
 
     const fetchAllData = async () => {
@@ -77,7 +73,6 @@ const ProductDetailPage = () => {
 
         const relatedResponse = await productService.getRelatedProducts(id);
         setRelatedProducts(relatedResponse.data);
-        logView(id);
       } catch (err) {
         console.error("Error fetching page data:", err);
         if (!product) {
@@ -89,23 +84,6 @@ const ProductDetailPage = () => {
         setLoading(false);
         setRelatedLoading(false);
       }
-    };
-    const logView = (productId) => {
-      // 1. Luôn ghi vào localStorage
-      let viewedIds = JSON.parse(localStorage.getItem('recentlyViewed')) || [];
-      // Xóa ID cũ nếu có để đưa lên đầu
-      viewedIds = viewedIds.filter(item => item !== productId);
-      // Thêm ID mới vào đầu mảng
-      viewedIds.unshift(productId);
-      // Giới hạn chỉ lưu 10 sản phẩm gần nhất
-      const limitedViewedIds = viewedIds.slice(0, 10);
-      localStorage.setItem('recentlyViewed', JSON.stringify(limitedViewedIds));
-
-      // 2. Nếu người dùng đã đăng nhập, gọi API để đồng bộ
-      // Đây là một cuộc gọi "fire-and-forget", không cần chờ nó hoàn thành
-      productService.logProductView(productId).catch(err => {
-        console.warn("Could not sync recently viewed product:", err);
-      });
     };
 
     fetchAllData();

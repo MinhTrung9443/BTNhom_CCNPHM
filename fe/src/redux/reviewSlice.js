@@ -36,17 +36,7 @@ export const createReview = createAsyncThunk(
   }
 );
 
-export const getEligibleProducts = createAsyncThunk(
-  'reviews/getEligibleProducts',
-  async (userId, { rejectWithValue }) => {
-    try {
-      const response = await api.get(`/reviews/eligible-products/${userId}`);
-      return response.data.products;
-    } catch (error) {
-      return rejectWithValue(error.response.data);
-    }
-  }
-);
+
 
 export const updateReview = createAsyncThunk(
   'reviews/updateReview',
@@ -112,17 +102,6 @@ const reviewSlice = createSlice({
       })
       .addCase(createReview.rejected, (state, action) => {
         state.ui.submitting = false;
-        state.ui.error = action.payload;
-      })
-      .addCase(getEligibleProducts.pending, (state) => {
-        state.ui.loading = true;
-      })
-      .addCase(getEligibleProducts.fulfilled, (state, action) => {
-        state.ui.loading = false;
-        state.eligibleProducts = action.payload;
-      })
-      .addCase(getEligibleProducts.rejected, (state, action) => {
-        state.ui.loading = false;
         state.ui.error = action.payload;
       })
       .addCase(updateReview.pending, (state) => {

@@ -1,6 +1,41 @@
 import apiService from './apiService.js';
+import apiClient from './apiClient.js';
 
 export const couponService = {
+  // Get user's available vouchers for order preview
+  getUserVouchers: async () => {
+    try {
+      const response = await apiClient.get('/vouchers/my-vouchers');
+      return response;
+    } catch (error) {
+      console.error('Error fetching user vouchers:', error);
+      throw error;
+    }
+  },
+  
+  getApplicableVouchers: async (payload) => {
+    try {
+      const response = await apiClient.post('/vouchers/applicable-vouchers', payload);
+      return response.data; // Return data directly
+    } catch (error) {
+      console.error('Error fetching applicable vouchers:', error);
+      throw error;
+    }
+  },
+
+  // Validate voucher against order total
+  validateVoucher: async (voucherCode, orderTotal) => {
+    try {
+      const response = await apiClient.post('/vouchers/validate', {
+        code: voucherCode,
+        orderTotal
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error validating voucher:', error);
+      throw error;
+    }
+  },
   // Get all coupons with pagination and filters
   getAllCoupons: async (params = {}) => {
     try {
@@ -54,5 +89,8 @@ export const couponService = {
       console.error('Error fetching coupon stats:', error);
       throw error;
     }
-  }
+  },
 };
+
+// Export default for consistency with other services
+export default couponService;

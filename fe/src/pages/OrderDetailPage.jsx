@@ -12,7 +12,7 @@ import Alert from 'react-bootstrap/Alert';
 import Modal from 'react-bootstrap/Modal';
 import { toast } from 'react-toastify';
 import { getOrderDetail, cancelOrder } from '../services/orderService';
-import { getEligibleProducts, getUserReviews } from '../redux/reviewSlice';
+import {  getUserReviews } from '../redux/reviewSlice';
 import OrderStatusBadge from '../components/order/OrderStatusBadge';
 import OrderTimeline from '../components/order/OrderTimeline';
 import LoadingSpinner from '../components/common/LoadingSpinner';
@@ -59,7 +59,6 @@ const OrderDetailPage = () => {
 
   useEffect(() => {
     if (user) {
-      dispatch(getEligibleProducts(user._id));
       dispatch(getUserReviews(user._id));
     }
   }, [user, dispatch]);
@@ -73,7 +72,6 @@ const OrderDetailPage = () => {
     setShowReviewModal(false);
     setSelectedProduct(null);
     if (user) {
-      dispatch(getEligibleProducts(user._id));
       dispatch(getUserReviews(user._id));
     }
     fetchOrderDetail(); // Refresh order details to show updated review status

@@ -37,6 +37,8 @@ const orderLinePreviewSchema = Joi.object({
   productImage: Joi.string().required(),
   quantity: Joi.number().integer().min(1).required(),
   productPrice: Joi.number().required(),
+  discount: Joi.number().required(),
+  productActualPrice: Joi.number().required(),
   lineTotal: Joi.number().required(),
 });
 export const previewOrder = {
@@ -66,6 +68,7 @@ export const placeOrder = {
       pointsApplied: Joi.number().required(),
       totalAmount: Joi.number().required(),
       voucherCode: Joi.string().allow(null),
+      paymentMethod: Joi.string().valid("VNPAY", "COD", "BANK").required(),
     }).required(),
   }),
 };

@@ -18,7 +18,7 @@ const calculateShippingFee = async (shippingMethod) => {
 };
 
 
-export const previewOrder = async (userId, { orderLines, shippingAddress, voucherCode, shippingMethod, pointsToApply = 0 }) => {
+export const previewOrder = async (userId, { orderLines, shippingAddress, voucherCode, shippingMethod, pointsToApply = 0, paymentMethod }) => {
   if (!orderLines || orderLines.length === 0) {
     throw new AppError('Vui lòng chọn sản phẩm để xem trước', 400);
   }
@@ -43,15 +43,20 @@ export const previewOrder = async (userId, { orderLines, shippingAddress, vouche
       continue;
     }
 
-    const lineTotal = product.price * line.quantity;
+    const discountPerProduct = product.discount || 0;
+    const productActualPrice = product.price * (1 - discountPerProduct / 100);
+    const lineTotal = productActualPrice * line.quantity;
+
     subtotal += lineTotal;
     processedOrderLines.push({
       productId: product._id,
-      productCode: product.code, // Assuming 'code' is a field in your Product model
+      productCode: product.code,
       productName: product.name,
-      productImage: product.images[0], // Assuming 'images' is an array
+      productImage: product.images[0],
       productPrice: product.price,
       quantity: line.quantity,
+      discount: discountPerProduct,
+      productActualPrice,
       lineTotal,
     });
   }
@@ -127,7 +132,8 @@ export const previewOrder = async (userId, { orderLines, shippingAddress, vouche
     shippingMethod: shippingMethod,
     pointsApplied,
     totalAmount,
-    voucherCode: appliedVoucherCode
+    voucherCode: appliedVoucherCode,
+    paymentMethod: paymentMethod,
   };
 
 
@@ -145,6 +151,7 @@ const _verifyOrderPreview = async (userId, clientPreview) => {
     voucherCode: clientPreview.voucherCode,
     shippingMethod: clientPreview.shippingMethod,
     pointsToApply: clientPreview.pointsApplied,
+    paymentMethod: clientPreview.paymentMethod, // Pass it through
   });
 
   const changes = [];
@@ -183,7 +190,7 @@ const _verifyOrderPreview = async (userId, clientPreview) => {
       }
 
       // Compare critical fields within each line item
-      const lineFields = ['productName', 'productPrice', 'quantity', 'lineTotal','productCode','productImage'];
+      const lineFields = ['productName', 'productPrice', 'quantity', 'lineTotal','productCode','productImage', 'discount', 'productActualPrice'];
       for (const field of lineFields) {
         if (clientLine[field] !== serverLine[field]) {
           changes.push({
@@ -197,7 +204,7 @@ const _verifyOrderPreview = async (userId, clientPreview) => {
       }
     });
   }
-
+  console.log(changes);
   // 3. If any changes were found, throw a detailed error
   if (changes.length > 0) {
     throw new AppError('Một vài sản phẩm trong đơn hàng vừa được cập nhật. Vui lòng thực hiện lại.', 409);
@@ -242,14 +249,14 @@ const _executePostOrderActions = async (order) => {
 export const placeOrder = async (userId, { previewOrder: clientPreview }) => {
   // Step 1: Verify the client's preview against a fresh server-side calculation.
   const serverPreview = await _verifyOrderPreview(userId, clientPreview);
-
+  console.log('Server Preview:', serverPreview);
   // Step 2: Create the order using the *trusted* server-side preview data.
   const newOrder = await Order.create({
     ...serverPreview,
     userId: userId, // Explicitly add the userId from the authenticated session
     status: 'new',
     payment: {
-      paymentMethod: 'COD', // Corrected field name
+      paymentMethod: serverPreview.paymentMethod, // Use the verified payment method
       amount: serverPreview.totalAmount,
       status: 'pending',
       createdAt: new Date(),

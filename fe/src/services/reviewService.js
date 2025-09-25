@@ -20,9 +20,5 @@ const updateReview = async (reviewId, reviewData) => {
   return response.data;
 };
 
-const getEligibleProducts = async (userId) => {
-  const response = await api.get(`/reviews/eligible-products/${userId}`);
-  return response.data;
-};
 
-export { getProductReviews, createReview, getUserReviews, updateReview, getEligibleProducts };
+export { getProductReviews, createReview, getUserReviews, updateReview };

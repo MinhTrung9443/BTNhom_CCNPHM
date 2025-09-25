@@ -182,7 +182,6 @@ export const getOrderStats = async (userId = null) => {
         $group: {
           _id: '$status',
           count: { $sum: 1 },
-          totalAmount: { $sum: '$totalAmount' }
         }
       }
     ]);
@@ -191,14 +190,12 @@ export const getOrderStats = async (userId = null) => {
     for (const status of Object.values(ORDER_STATUS)) {
       result[status] = {
         count: 0,
-        totalAmount: 0
       };
     }
 
     stats.forEach(stat => {
       result[stat._id] = {
         count: stat.count,
-        totalAmount: stat.totalAmount
       };
     });
 

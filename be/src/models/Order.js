@@ -12,23 +12,24 @@ const orderLineSchema = new mongoose.Schema(
     productImage: { type: String },
     productPrice: { type: Number, required: true },
     quantity: { type: Number, required: true },
-    lineTotal: { type: Number, required: true }, // productPrice * quantity
+    discount: { type: Number, required: true, default: 0 },
+    productActualPrice: { type: Number, required: true },
+    lineTotal: { type: Number, required: true }, // productActualPrice * quantity
   },
   { _id: false }
 );
 
 // Định nghĩa enum cho các trạng thái đơn hàng
 const ORDER_STATUS = {
-  NEW: "new", // 1. Đơn hàng mới
-  CONFIRMED: "confirmed", // 2. Đã xác nhận
-  PREPARING: "preparing", // 3. Shop đang chuẩn bị hàng
-  SHIPPING: "shipping", // 4. Đang giao hàng
-  DELIVERED: "delivered", // 5. Đã giao thành công
-  COMPLETED: "completed", // Đơn hàng hoàn tất
-  CANCELLED: "cancelled", // 6. Hủy đơn hàng
-  CANCELLATION_REQUESTED: "cancellation_requested", // Yêu cầu hủy đơn
+  NEW: "new", // 1. Đơn hàng mới -> sẽ ở tab Chờ xác nhận
+  CONFIRMED: "confirmed", // 2. Đã xác nhận -> sẽ ở tab vận chuyển
+  PREPARING: "preparing", // 3. Shop đang chuẩn bị hàng -> sẽ ở tab vận chuyển
+  SHIPPING: "shipping", // 4. Đang giao hàng -> sẽ ở tab chờ giao hàng
+  DELIVERED: "delivered", // 5. Đã giao thành công -> sẽ ở tab chờ giao hàng
+  COMPLETED: "completed", // Đơn hàng hoàn tất (tức khi khách hàng đã bấm đã nhận hàng-> sẽ ở tab hoàn thành
+  CANCELLED: "cancelled", // 6. Hủy đơn hàng -> sẽ ở tab đã hủy?
+  CANCELLATION_REQUESTED: "cancellation_requested", // 7. Yêu cầu hủy đơn -> sẽ ở tab Chờ giao hàng?
 };
-
 // Schema cho timeline entry
 const timelineEntrySchema = new mongoose.Schema(
   {

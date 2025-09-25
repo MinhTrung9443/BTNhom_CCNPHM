@@ -11,10 +11,13 @@ const getInitialUser = () => {
   }
 };
 
+const initialUser = getInitialUser();
+
 const initialState = {
-  user: getInitialUser(),
+  user: initialUser,
   accessToken: localStorage.getItem('accessToken') || null,
   isAuthenticated: !!localStorage.getItem('accessToken'),
+  loyaltyPoints: initialUser?.loyaltyPoints || 0, // Điểm tích lũy của user
 };
 
 const userSlice = createSlice({
@@ -26,6 +29,7 @@ const userSlice = createSlice({
       state.user = user;
       state.accessToken = token;
       state.isAuthenticated = true;
+      state.loyaltyPoints = user.loyaltyPoints || 0;
       localStorage.setItem('user', JSON.stringify(user));
       localStorage.setItem('accessToken', token);
     },
@@ -33,6 +37,7 @@ const userSlice = createSlice({
       state.user = null;
       state.accessToken = null;
       state.isAuthenticated = false;
+      state.loyaltyPoints = 0;
       localStorage.removeItem('user');
       localStorage.removeItem('accessToken');
     },
@@ -40,6 +45,12 @@ const userSlice = createSlice({
       // Merge new user data with existing user data
       const updatedUser = { ...state.user, ...action.payload };
       state.user = updatedUser;
+      
+      // Update loyaltyPoints if provided
+      if (action.payload.loyaltyPoints !== undefined) {
+        state.loyaltyPoints = action.payload.loyaltyPoints;
+      }
+      
       localStorage.setItem('user', JSON.stringify(updatedUser));
     },
     updateUserFavorites: (state, action) => {
@@ -61,9 +72,19 @@ const userSlice = createSlice({
         }
       }
     },
+    updateLoyaltyPoints: (state, action) => {
+      // Cập nhật điểm tích lũy
+      state.loyaltyPoints = action.payload;
+      
+      // Cập nhật trong user object nếu có
+      if (state.user) {
+        state.user.loyaltyPoints = action.payload;
+        localStorage.setItem('user', JSON.stringify(state.user));
+      }
+    },
   },
 });
 
-export const { loginSuccess, logoutSuccess, updateUser, updateUserFavorites  } = userSlice.actions;
+export const { loginSuccess, logoutSuccess, updateUser, updateUserFavorites, updateLoyaltyPoints } = userSlice.actions;
 
 export default userSlice.reducer;

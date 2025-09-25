@@ -3,6 +3,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { Button, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import userService  from '../../services/userService';
 import { updateUserFavorites } from '../../redux/userSlice'; 
+import { toast } from 'react-toastify';
 
 const FavoriteButton = ({ productId }) => {
   const { user, isAuthenticated } = useSelector((state) => state.user);
@@ -34,6 +35,7 @@ const FavoriteButton = ({ productId }) => {
       setIsFavorited(response.data.favorited);
       
       dispatch(updateUserFavorites({ productId, add: response.data.favorited }));
+      toast.success(response.data.message);
 
     } catch (error) {
       console.error('Lỗi khi thay đổi trạng thái yêu thích:', error);

@@ -2,6 +2,7 @@ import React from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { ToastContainer } from 'react-toastify'
 import { useSelector } from 'react-redux'
+import ErrorBoundary from './components/common/ErrorBoundary'
 import Layout from './components/layout/Layout'
 import HomePage from './pages/HomePage'
 import CartPage from './pages/CartPage'
@@ -15,7 +16,8 @@ import ProfilePage from './pages/ProfilePage'
 import OrdersPage from './pages/OrdersPage'
 import OrderDetailPage from './pages/OrderDetailPage'
 import OrderStatsPage from './pages/OrderStatsPage'
-import PreviewOrder from './pages/PreviewOrder'
+import OrderPreviewPage from './pages/OrderPreviewPage'
+import OrderSuccessPage from './pages/OrderSuccessPage'
 import IntroPage from "./pages/IntroPage";
 import UserReviewsPage from './pages/UserReviewsPage';
 import FavoritesPage from './pages/FavoritesPage';
@@ -34,7 +36,8 @@ const ProtectedRoute = ({ children }) => {
 function App() {
   return (
     <BrowserRouter>
-      <Layout>
+      <ErrorBoundary>
+        <Layout>
         <Routes>
           {/* Public routes */}
           <Route path="/" element={<HomePage />} />
@@ -44,7 +47,8 @@ function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
-          <Route path="/preview-order" element={<PreviewOrder />} />
+          <Route path="/order-preview" element={<OrderPreviewPage />} />
+          <Route path="/order-success" element={<OrderSuccessPage />} />
           <Route path="/cart" element={<CartPage />} />
           <Route path="/intro" element={<IntroPage />} />
 
@@ -103,7 +107,8 @@ function App() {
           {/* Catch all route */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-      </Layout>
+        </Layout>
+      </ErrorBoundary>
 
       <ToastContainer
         position="top-center"
