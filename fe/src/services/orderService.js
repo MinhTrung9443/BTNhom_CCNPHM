@@ -1,4 +1,16 @@
 import apiClient from './apiClient';
+import { isValidOrderStatus } from '../utils/orderConstants';
+
+/**
+ * Validate order status before API calls
+ * @param {string} status - Order status to validate
+ * @throws {Error} If status is invalid
+ */
+const validateOrderStatus = (status) => {
+  if (status && !isValidOrderStatus(status)) {
+    throw new Error(`Invalid order status: ${status}. Must be one of: new, confirmed, preparing, shipping, delivered, cancelled, cancellation_requested`);
+  }
+};
 
 /**
  * Preview order with current selections
@@ -48,6 +60,11 @@ export const createOrder = async (orderData) => {
  */
 export const getUserOrders = async (params = {}) => {
   const { page = 1, limit = 10, status, search } = params;
+  
+  // Validate status if provided
+  if (status) {
+    validateOrderStatus(status);
+  }
   
   const queryParams = new URLSearchParams({
     page: page.toString(),

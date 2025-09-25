@@ -1,13 +1,68 @@
 .OrderCard {
   border-left: 4px solid var(--bs-primary);
-  transition: box-shadow 0.2s ease-in-out;
+  transition: all 0.2s ease-in-out;
+  position: relative;
 }
 
 .OrderCard:hover {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+}
+
+.OrderCard.border-warning {
+  border-left-color: var(--bs-warning);
+}
+
+.OrderCard.border-info {
+  border-left-color: var(--bs-info);
+}
+
+.OrderCard.border-primary {
+  border-left-color: var(--bs-primary);
+}
+
+.OrderCard.border-secondary {
+  border-left-color: var(--bs-secondary);
+}
+
+.OrderCard.border-success {
+  border-left-color: var(--bs-success);
+}
+
+.OrderCard.border-danger {
+  border-left-color: var(--bs-danger);
 }
 
 .ProductList {
-  max-height: 200px;
+  max-height: 300px;
   overflow-y: auto;
+}
+
+.ProductList::-webkit-scrollbar {
+  width: 6px;
+}
+
+.ProductList::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.ProductList::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.ProductList::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+@media (max-width: 768px) {
+  .OrderCard {
+    border-left: none;
+    border-top: 4px solid var(--bs-primary);
+  }
+  
+  .ProductList {
+    max-height: 200px;
+  }
 }

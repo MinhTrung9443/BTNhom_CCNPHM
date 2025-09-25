@@ -26,7 +26,7 @@ export const updateOrderStatus = async (orderId, newStatus, updateData = {}, per
     }
 
     // Cập nhật canCancel flag
-    if (newStatus === ORDER_STATUS.PREPARING) {
+    if (newStatus === ORDER_STATUS.PROCESSING) {
       updateFields.canCancel = false; // Không thể hủy trực tiếp khi shop đang chuẩn bị
     }
 
@@ -47,12 +47,13 @@ export const updateOrderStatus = async (orderId, newStatus, updateData = {}, per
     throw error;
   }
 };
+// TODO: nếu là phương thức khác COD thì không auto confirm, thanh toán thành công thì tự chuyển sang confirmed
 export const autoConfirmOrders = async () => {
   try {
     const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
     
     const ordersToConfirm = await Order.find({
-      status: ORDER_STATUS.NEW,
+      status: ORDER_STATUS.PENDING,
       createdAt: { $lte: thirtyMinutesAgo }
     });
 
@@ -63,7 +64,7 @@ export const autoConfirmOrders = async () => {
           userType: 'system',
           userName: 'System Auto-Confirm'
         };
-        await updateOrderStatus(order._id, ORDER_STATUS.CONFIRMED, {}, performedBy);
+        await updateOrderStatus(order._id, ORDER_STATUS.PROCESSING, {}, performedBy);
         confirmedCount++;
       } catch (error) {
         logger.error(`Lỗi auto-confirm đơn hàng ${order._id}: ${error.message}`);
@@ -83,13 +84,12 @@ export const autoConfirmOrders = async () => {
 /////////////////////////////
 export const isValidStatusTransition = (currentStatus, newStatus) => {
   const validTransitions = {
-    [ORDER_STATUS.NEW]: [ORDER_STATUS.CONFIRMED, ORDER_STATUS.CANCELLED],
-    [ORDER_STATUS.CONFIRMED]: [ORDER_STATUS.PREPARING, ORDER_STATUS.CANCELLED],
-    [ORDER_STATUS.PREPARING]: [ORDER_STATUS.SHIPPING, ORDER_STATUS.CANCELLATION_REQUESTED],
-    [ORDER_STATUS.SHIPPING]: [ORDER_STATUS.DELIVERED],
-    [ORDER_STATUS.CANCELLATION_REQUESTED]: [ORDER_STATUS.CANCELLED, ORDER_STATUS.PREPARING],
-    [ORDER_STATUS.DELIVERED]: [], // Không thể chuyển từ trạng thái đã giao
-    [ORDER_STATUS.CANCELLED]: [] // Không thể chuyển từ trạng thái đã hủy
+    [ORDER_STATUS.PENDING]: [ORDER_STATUS.PROCESSING, ORDER_STATUS.CANCELLED],
+    [ORDER_STATUS.PROCESSING]: [ORDER_STATUS.SHIPPING, ORDER_STATUS.CANCELLED],
+    [ORDER_STATUS.SHIPPING]: [ORDER_STATUS.COMPLETED, ORDER_STATUS.RETURN_REFUND],
+    [ORDER_STATUS.COMPLETED]: [],
+    [ORDER_STATUS.CANCELLED]: [],
+    [ORDER_STATUS.RETURN_REFUND]: [],
   };
 
   return validTransitions[currentStatus]?.includes(newStatus) || false;
@@ -97,11 +97,9 @@ export const isValidStatusTransition = (currentStatus, newStatus) => {
 
 export const getTimestampField = (status) => {
   const timestampMap = {
-    [ORDER_STATUS.CONFIRMED]: 'confirmedAt',
-    [ORDER_STATUS.PREPARING]: 'preparingAt',
+    [ORDER_STATUS.PROCESSING]: 'confirmedAt',
     [ORDER_STATUS.SHIPPING]: 'shippingAt',
-    [ORDER_STATUS.DELIVERED]: 'deliveredAt',
-    [ORDER_STATUS.CANCELLED]: 'cancelledAt'
+    [ORDER_STATUS.CANCELLED]: 'cancelledAt',
   };
 
   return timestampMap[status];
@@ -208,13 +206,12 @@ export const getOrderStats = async (userId = null) => {
 
 export const createTimelineEntry = (status, performedBy = null, metadata = {}) => {
   const statusDescriptions = {
-    [ORDER_STATUS.NEW]: 'Đơn hàng mới được tạo',
-    [ORDER_STATUS.CONFIRMED]: 'Đơn hàng đã được xác nhận',
-    [ORDER_STATUS.PREPARING]: 'Shop đang chuẩn bị hàng',
+    [ORDER_STATUS.PENDING]: 'Đơn hàng đang chờ xác nhận',
+    [ORDER_STATUS.PROCESSING]: 'Đơn hàng đã được xác nhận và đang được chuẩn bị',
     [ORDER_STATUS.SHIPPING]: 'Đơn hàng đang được giao',
-    [ORDER_STATUS.DELIVERED]: 'Đơn hàng đã được giao thành công',
+    [ORDER_STATUS.COMPLETED]: 'Đơn hàng đã hoàn thành',
     [ORDER_STATUS.CANCELLED]: 'Đơn hàng đã bị hủy',
-    [ORDER_STATUS.CANCELLATION_REQUESTED]: 'Yêu cầu hủy đơn hàng'
+    [ORDER_STATUS.RETURN_REFUND]: 'Đơn hàng bị trả lại hoặc yêu cầu hoàn tiền',
   };
 
   const entry = {
@@ -236,11 +233,6 @@ export const createTimelineEntry = (status, performedBy = null, metadata = {}) =
     entry.metadata.reason = metadata.cancelledReason;
   }
 
-  if (status === ORDER_STATUS.CANCELLATION_REQUESTED && metadata.cancellationRequestReason) {
-    entry.description += ` - Lý do: ${metadata.cancellationRequestReason}`;
-    entry.metadata.reason = metadata.cancellationRequestReason;
-  }
-
   if (status === ORDER_STATUS.SHIPPING) {
     entry.description = 'Đơn hàng đang được giao đến bạn';
     if (metadata.trackingNumber) {
@@ -253,17 +245,6 @@ export const createTimelineEntry = (status, performedBy = null, metadata = {}) =
     }
     if (metadata.estimatedDelivery) {
       entry.metadata.estimatedDelivery = metadata.estimatedDelivery;
-    }
-  }
-
-  if (status === ORDER_STATUS.DELIVERED) {
-    entry.description = 'Đơn hàng đã được giao thành công';
-    if (metadata.actualDelivery) {
-      entry.metadata.actualDelivery = metadata.actualDelivery;
-    }
-    if (metadata.location) {
-      entry.description += ` tại ${metadata.location}`;
-      entry.metadata.location = metadata.location;
     }
   }
 

@@ -6,14 +6,27 @@
   position: relative;
   display: flex;
   margin-bottom: 1.5rem;
+  transition: all 0.2s ease-in-out;
+}
+
+.TimelineItem:hover {
+  transform: translateX(2px);
+}
+
+.LatestItem {
+  background: linear-gradient(90deg, rgba(13, 110, 253, 0.05), transparent);
+  padding: 0.5rem;
+  border-radius: 8px;
+  margin: -0.5rem;
+  margin-bottom: 1rem;
 }
 
 .TimelineIcon {
-  width: 40px;
-  height: 40px;
+  width: 50px;
+  height: 50px;
   border-radius: 50%;
   background-color: var(--bs-light);
-  border: 2px solid var(--bs-primary);
+  border: 3px solid var(--bs-primary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -21,27 +34,108 @@
   flex-shrink: 0;
   position: relative;
   z-index: 2;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease-in-out;
+}
+
+.TimelineIcon:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .Icon {
-  font-size: 1.2rem;
+  font-size: 1.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .TimelineContent {
   flex-grow: 1;
   padding-top: 0.25rem;
+  min-height: 50px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .TimelineLine {
   position: absolute;
-  left: 19px;
-  top: 40px;
-  width: 2px;
+  left: 24px;
+  top: 50px;
+  width: 3px;
   height: calc(100% + 0.5rem);
-  background-color: var(--bs-border-color);
+  background: linear-gradient(to bottom, var(--bs-border-color), transparent);
   z-index: 1;
+  border-radius: 2px;
 }
 
 .TimelineItem:last-child .TimelineLine {
   display: none;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .TimelineIcon {
+    width: 40px;
+    height: 40px;
+    margin-right: 0.75rem;
+  }
+  
+  .Icon {
+    font-size: 1.2rem;
+  }
+  
+  .TimelineLine {
+    left: 19px;
+    top: 40px;
+    width: 2px;
+  }
+  
+  .LatestItem {
+    margin: -0.25rem;
+    margin-bottom: 1rem;
+    padding: 0.25rem;
+  }
+}
+
+/* Animation for new items */
+.TimelineItem {
+  animation: slideInLeft 0.3s ease-out;
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Status-specific styling */
+.TimelineItem[data-status="completed"] .TimelineIcon {
+  background: linear-gradient(135deg, #d4edda, #c3e6cb);
+}
+
+.TimelineItem[data-status="cancelled"] .TimelineIcon {
+  background: linear-gradient(135deg, #f8d7da, #f5c6cb);
+}
+
+.TimelineItem[data-status="shipping"] .TimelineIcon {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+  50% {
+    box-shadow: 0 4px 16px rgba(108, 117, 125, 0.3);
+  }
+  100% {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
 }

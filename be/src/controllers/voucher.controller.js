@@ -13,7 +13,6 @@ export const voucherController = {
   },
 
   getApplicableVouchers: async (req, res, next) => {
-    try {
       const userId = req.user.id;
       const { orderLines } = req.body;
       const vouchers = await voucherService.getApplicableVouchers(userId, orderLines);
@@ -22,8 +21,5 @@ export const voucherController = {
         message: 'Lấy danh sách voucher có thể áp dụng thành công.',
         data: vouchers,
       });
-    } catch (error) {
-      next(error);
-    }
   },
 };

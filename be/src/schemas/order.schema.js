@@ -4,13 +4,12 @@ const getUserOrders = {
     page: Joi.number().integer().min(1),
     limit: Joi.number().integer().min(1),
     status: Joi.string().valid(
-      'new',
-      'confirmed',
-      'preparing',
-      'shipping',
-      'delivered',
-      'cancelled',
-      'cancellation_requested'
+      "pending",
+      "processing",
+      "shipping",
+      "completed",
+      "cancelled",
+      "return_refund"
     ),
     search: Joi.string().allow(''),
   }),

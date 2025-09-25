@@ -19,16 +19,14 @@ const orderLineSchema = new mongoose.Schema(
   { _id: false }
 );
 
-// Định nghĩa enum cho các trạng thái đơn hàng
+// Định nghĩa các trạng thái đơn hàng để quản lý vòng đời và phân loại trên UI
 const ORDER_STATUS = {
-  NEW: "new", // 1. Đơn hàng mới -> sẽ ở tab Chờ xác nhận
-  CONFIRMED: "confirmed", // 2. Đã xác nhận -> sẽ ở tab vận chuyển
-  PREPARING: "preparing", // 3. Shop đang chuẩn bị hàng -> sẽ ở tab vận chuyển
-  SHIPPING: "shipping", // 4. Đang giao hàng -> sẽ ở tab chờ giao hàng
-  DELIVERED: "delivered", // 5. Đã giao thành công -> sẽ ở tab chờ giao hàng
-  COMPLETED: "completed", // Đơn hàng hoàn tất (tức khi khách hàng đã bấm đã nhận hàng-> sẽ ở tab hoàn thành
-  CANCELLED: "cancelled", // 6. Hủy đơn hàng -> sẽ ở tab đã hủy?
-  CANCELLATION_REQUESTED: "cancellation_requested", // 7. Yêu cầu hủy đơn -> sẽ ở tab Chờ giao hàng?
+  PENDING: "pending", // Chờ xác nhận -> Tab: Chờ xác nhận
+  PROCESSING: "processing", // Đã xác nhận, đang chuẩn bị -> Tab: Vận chuyển
+  SHIPPING: "shipping", // Đang giao hàng, Đã giao,Yêu cầu hủy  -> Tab: Chờ giao hàng
+  COMPLETED: "completed", // Hoàn thành (khi khách bấm nhận hàng) -> Tab: Đã giao hàng
+  CANCELLED: "cancelled", // chưa thanh toán, Đã hủy (Trước khi giao hàng) -> Tab: Đã hủy
+  RETURN_REFUND: "return_refund", // Giao hàng không thành công, Trả hàng/Hoàn tiền (Sau khi giao hàng) -> Tab: Đã hủy
 };
 // Schema cho timeline entry
 const timelineEntrySchema = new mongoose.Schema(
@@ -83,7 +81,7 @@ const orderSchema = new mongoose.Schema(
     status: {
       type: String,
       enum: Object.values(ORDER_STATUS),
-      default: ORDER_STATUS.NEW,
+      default: ORDER_STATUS.PENDING,
     },
     deliveryId: {
       type: mongoose.Schema.Types.ObjectId,
