@@ -1,9 +1,28 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { Container, Row, Col } from 'react-bootstrap'
+import { useSelector } from 'react-redux'
 import Sidebar from './Sidebar'
 import Header from './Header'
+import socketService from '../../services/socketService'
 
 const Layout = ({ children }) => {
+  const { isAuthenticated, token } = useSelector((state) => state.auth)
+
+  useEffect(() => {
+    if (isAuthenticated && token) {
+      // Connect to WebSocket when admin is authenticated
+      socketService.connect(token)
+    } else {
+      // Disconnect when not authenticated
+      socketService.disconnect()
+    }
+
+    // Cleanup on unmount
+    return () => {
+      socketService.disconnect()
+    }
+  }, [isAuthenticated, token])
+
   return (
     <div className="admin-layout">
       <Header />
