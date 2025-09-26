@@ -22,27 +22,6 @@ const adminService = {
     return api.get('/admin/users/stats')
   },
 
-  // Coupon Management
-  getAllCoupons: (params = {}) => {
-    return api.get('/admin/coupons', { params })
-  },
-
-  createCoupon: (couponData) => {
-    return api.post('/admin/coupons', couponData)
-  },
-
-  updateCoupon: (couponId, couponData) => {
-    return api.put(`/admin/coupons/${couponId}`, couponData)
-  },
-
-  deleteCoupon: (couponId) => {
-    return api.delete(`/admin/coupons/${couponId}`)
-  },
-
-  getCouponStats: () => {
-    return api.get('/admin/coupons/stats')
-  },
-
   // Loyalty Points Management
   getAllLoyaltyPoints: (params = {}) => {
     return api.get('/admin/loyalty-points', { params })

@@ -166,6 +166,7 @@ const OrdersPage = () => {
   };
 
   const getTabOrderCount = (tabKey) => {
+    
     if (tabKey === 'all') {
       return Object.values(stats || {}).reduce((sum, stat) => sum + (stat?.count || 0), 0);
     }

@@ -12,7 +12,6 @@ import Modal from 'react-bootstrap/Modal';
 import Breadcrumb from 'react-bootstrap/Breadcrumb';
 import { toast } from 'react-toastify';
 import { getOrderDetail, cancelOrder } from '../services/orderService';
-import { getUserReviews } from '../services/reviewService';
 import OrderStatusBadge from '../components/order/OrderStatusBadge';
 import OrderTimeline from '../components/order/OrderTimeline';
 import LoadingSpinner from '../components/common/LoadingSpinner';
@@ -28,7 +27,6 @@ const OrderDetailPage = () => {
   const [order, setOrder] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [userReviews, setUserReviews] = useState([]);
   const [isCancelling, setIsCancelling] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -51,23 +49,10 @@ const OrderDetailPage = () => {
     }
   };
 
-  const fetchUserReviews = async () => {
-    try {
-      // Get user info from localStorage or context
-      const userInfo = JSON.parse(localStorage.getItem('user') || '{}');
-      if (userInfo._id) {
-        const response = await getUserReviews(userInfo._id);
-        setUserReviews(response.data || []);
-      }
-    } catch (error) {
-      console.error('Failed to fetch user reviews:', error);
-    }
-  };
 
   useEffect(() => {
     if (orderId) {
       fetchOrderDetail();
-      fetchUserReviews();
     }
   }, [orderId]);
 
@@ -79,7 +64,6 @@ const OrderDetailPage = () => {
   const handleReviewSubmit = () => {
     setShowReviewModal(false);
     setSelectedProduct(null);
-    fetchUserReviews();
     fetchOrderDetail(); // Refresh order details to show updated review status
   };
 
@@ -221,7 +205,7 @@ const OrderDetailPage = () => {
           Quản lý đơn hàng
         </Breadcrumb.Item>
         <Breadcrumb.Item active>
-          Đơn hàng #{order._id.slice(-8)}
+          Chi tiết đơn hàng #{order._id.slice(-8)}
         </Breadcrumb.Item>
       </Breadcrumb>
 
@@ -238,7 +222,7 @@ const OrderDetailPage = () => {
                 <i className="fas fa-arrow-left me-2"></i>
                 Quay lại
               </Button>
-              <h2 className="d-inline mb-0">Đơn hàng #{order._id.slice(-8)}</h2>
+              <h2 className="d-inline mb-0">Chi tiết đơn hàng #{order._id.slice(-8)}</h2>
             </div>
             <div className="d-flex gap-2 align-items-center">
               <OrderStatusBadge status={order.status} showIcon={true} />
@@ -363,11 +347,9 @@ const OrderDetailPage = () => {
                 </Card.Header>
                 <Card.Body>
                   {order.orderLines.map((item) => {
-                    const review = userReviews.find(
-                      (r) => r.productId?._id === item.productId && r.orderId === order._id
-                    );
+                    const review = item.review;
                     const hasReviewed = !!review;
-                    const canReview = order.status === 'delivered' && !hasReviewed;
+                    const canReview = order.status === 'completed' && !hasReviewed;
                     const canEdit = hasReviewed && review.editCount === 0;
 
                     return (

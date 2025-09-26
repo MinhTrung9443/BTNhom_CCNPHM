@@ -26,14 +26,63 @@ const ORDER_STATUS = {
   SHIPPING: "shipping", // Đang giao hàng, Đã giao,Yêu cầu hủy  -> Tab: Chờ giao hàng
   COMPLETED: "completed", // Hoàn thành (khi khách bấm nhận hàng) -> Tab: Đã giao hàng
   CANCELLED: "cancelled", // chưa thanh toán, Đã hủy (Trước khi giao hàng) -> Tab: Đã hủy
-  RETURN_REFUND: "return_refund", // Giao hàng không thành công, Trả hàng/Hoàn tiền (Sau khi giao hàng) -> Tab: Đã hủy
+  RETURN_REFUND: "return_refund", // Giao hàng không thành công, Trả hàng/Hoàn tiền (Sau khi giao hàng) -> Tab: Trả hàng/Hoàn tiền
+};
+
+const DETAILED_ORDER_STATUS = {
+  // PENDING
+  NEW: "new", // Đơn hàng đã được đặt
+
+  // PROCESSING
+  CONFIRMED: "confirmed", // Đơn hàng đã xác nhận
+  PREPARING: "preparing", // Người bán đang chuẩn bị hàng
+
+  // SHIPPING
+  SHIPPING_IN_PROGRESS: "shipping_in_progress", // Đang giao hàng
+  DELIVERED: "delivered", // Đã giao
+  CANCELLATION_REQUESTED: "cancellation_requested", // Yêu cầu hủy
+
+  // COMPLETED
+  COMPLETED: "completed", // Hoàn thành (khách đã nhận hàng)
+
+  // CANCELLED
+  PAYMENT_OVERDUE: "payment_overdue", // Quá hạn thanh toán
+  CANCELLED: "cancelled", // Đã hủy (trước khi shop chuẩn bị)
+
+  // RETURN_REFUND
+  DELIVERY_FAILED: "delivery_failed", // Giao hàng không thành công
+  RETURN_REQUESTED: "return_requested", // Yêu cầu trả hàng/hoàn tiền
+  REFUNDED: "refunded", // Đã hoàn tiền
+};
+
+const STATUS_MAP = {
+  [ORDER_STATUS.PENDING]: [DETAILED_ORDER_STATUS.NEW],
+  [ORDER_STATUS.PROCESSING]: [
+    DETAILED_ORDER_STATUS.CONFIRMED,
+    DETAILED_ORDER_STATUS.PREPARING,
+  ],
+  [ORDER_STATUS.SHIPPING]: [
+    DETAILED_ORDER_STATUS.SHIPPING_IN_PROGRESS,
+    DETAILED_ORDER_STATUS.DELIVERED,
+    DETAILED_ORDER_STATUS.CANCELLATION_REQUESTED,
+  ],
+  [ORDER_STATUS.COMPLETED]: [DETAILED_ORDER_STATUS.COMPLETED],
+  [ORDER_STATUS.CANCELLED]: [
+    DETAILED_ORDER_STATUS.PAYMENT_OVERDUE,
+    DETAILED_ORDER_STATUS.CANCELLED,
+  ],
+  [ORDER_STATUS.RETURN_REFUND]: [
+    DETAILED_ORDER_STATUS.DELIVERY_FAILED,
+    DETAILED_ORDER_STATUS.RETURN_REQUESTED,
+    DETAILED_ORDER_STATUS.REFUNDED,
+  ],
 };
 // Schema cho timeline entry
 const timelineEntrySchema = new mongoose.Schema(
   {
     status: {
       type: String,
-      enum: Object.values(ORDER_STATUS),
+      enum: Object.values(DETAILED_ORDER_STATUS),
       required: true,
     },
     timestamp: {
@@ -80,8 +129,8 @@ const orderSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: Object.values(ORDER_STATUS),
-      default: ORDER_STATUS.PENDING,
+      enum: Object.values(DETAILED_ORDER_STATUS),
+      default: DETAILED_ORDER_STATUS.NEW,
     },
     deliveryId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -158,4 +207,4 @@ orderSchema.index({ status: 1, createdAt: -1 });
 orderSchema.index({ userId: 1, status: 1, createdAt: -1 });
 
 export default mongoose.model("Order", orderSchema);
-export { ORDER_STATUS };
+export { ORDER_STATUS, DETAILED_ORDER_STATUS, STATUS_MAP };

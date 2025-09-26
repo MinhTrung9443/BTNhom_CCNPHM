@@ -1,4 +1,5 @@
-import Order, { ORDER_STATUS } from "../models/Order.js";
+import Order, { ORDER_STATUS, DETAILED_ORDER_STATUS, STATUS_MAP } from "../models/Order.js";
+import Review from '../models/Review.js';
 import logger from "../utils/logger.js";
 
 // cron
@@ -26,7 +27,7 @@ export const updateOrderStatus = async (orderId, newStatus, updateData = {}, per
     }
 
     // Cập nhật canCancel flag
-    if (newStatus === ORDER_STATUS.PROCESSING) {
+    if (newStatus === DETAILED_ORDER_STATUS.PREPARING) {
       updateFields.canCancel = false; // Không thể hủy trực tiếp khi shop đang chuẩn bị
     }
 
@@ -53,7 +54,7 @@ export const autoConfirmOrders = async () => {
     const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
     
     const ordersToConfirm = await Order.find({
-      status: ORDER_STATUS.PENDING,
+      status: DETAILED_ORDER_STATUS.NEW,
       createdAt: { $lte: thirtyMinutesAgo }
     });
 
@@ -64,7 +65,7 @@ export const autoConfirmOrders = async () => {
           userType: 'system',
           userName: 'System Auto-Confirm'
         };
-        await updateOrderStatus(order._id, ORDER_STATUS.PROCESSING, {}, performedBy);
+        await updateOrderStatus(order._id, DETAILED_ORDER_STATUS.CONFIRMED, {}, performedBy);
         confirmedCount++;
       } catch (error) {
         logger.error(`Lỗi auto-confirm đơn hàng ${order._id}: ${error.message}`);
@@ -84,12 +85,16 @@ export const autoConfirmOrders = async () => {
 /////////////////////////////
 export const isValidStatusTransition = (currentStatus, newStatus) => {
   const validTransitions = {
-    [ORDER_STATUS.PENDING]: [ORDER_STATUS.PROCESSING, ORDER_STATUS.CANCELLED],
-    [ORDER_STATUS.PROCESSING]: [ORDER_STATUS.SHIPPING, ORDER_STATUS.CANCELLED],
-    [ORDER_STATUS.SHIPPING]: [ORDER_STATUS.COMPLETED, ORDER_STATUS.RETURN_REFUND],
-    [ORDER_STATUS.COMPLETED]: [],
-    [ORDER_STATUS.CANCELLED]: [],
-    [ORDER_STATUS.RETURN_REFUND]: [],
+    [DETAILED_ORDER_STATUS.NEW]: [DETAILED_ORDER_STATUS.CONFIRMED, DETAILED_ORDER_STATUS.CANCELLED],
+    [DETAILED_ORDER_STATUS.CONFIRMED]: [DETAILED_ORDER_STATUS.PREPARING, DETAILED_ORDER_STATUS.CANCELLED],
+    [DETAILED_ORDER_STATUS.PREPARING]: [DETAILED_ORDER_STATUS.SHIPPING_IN_PROGRESS, DETAILED_ORDER_STATUS.CANCELLED],
+    [DETAILED_ORDER_STATUS.SHIPPING_IN_PROGRESS]: [DETAILED_ORDER_STATUS.DELIVERED, DETAILED_ORDER_STATUS.DELIVERY_FAILED],
+    [DETAILED_ORDER_STATUS.DELIVERED]: [DETAILED_ORDER_STATUS.COMPLETED],
+    [DETAILED_ORDER_STATUS.COMPLETED]: [],
+    [DETAILED_ORDER_STATUS.CANCELLED]: [],
+    [DETAILED_ORDER_STATUS.DELIVERY_FAILED]: [DETAILED_ORDER_STATUS.RETURN_REQUESTED],
+    [DETAILED_ORDER_STATUS.RETURN_REQUESTED]: [DETAILED_ORDER_STATUS.REFUNDED],
+    [DETAILED_ORDER_STATUS.REFUNDED]: [],
   };
 
   return validTransitions[currentStatus]?.includes(newStatus) || false;
@@ -97,9 +102,11 @@ export const isValidStatusTransition = (currentStatus, newStatus) => {
 
 export const getTimestampField = (status) => {
   const timestampMap = {
-    [ORDER_STATUS.PROCESSING]: 'confirmedAt',
-    [ORDER_STATUS.SHIPPING]: 'shippingAt',
-    [ORDER_STATUS.CANCELLED]: 'cancelledAt',
+    [DETAILED_ORDER_STATUS.CONFIRMED]: 'confirmedAt',
+    [DETAILED_ORDER_STATUS.PREPARING]: 'preparingAt',
+    [DETAILED_ORDER_STATUS.SHIPPING_IN_PROGRESS]: 'shippingAt',
+    [DETAILED_ORDER_STATUS.DELIVERED]: 'deliveredAt',
+    [DETAILED_ORDER_STATUS.CANCELLED]: 'cancelledAt',
   };
 
   return timestampMap[status];
@@ -110,8 +117,8 @@ export const getTimestampField = (status) => {
 export const getUserOrders = async (userId, page = 1, limit = 10, status = null, search = null) => {
   try {
     const filter = { userId };
-    if (status) {
-      filter.status = status;
+    if (status && STATUS_MAP[status]) {
+      filter.status = { $in: STATUS_MAP[status] };
     }
 
     if (search) {
@@ -163,6 +170,16 @@ export const getOrderDetail = async (orderId, userId = null) => {
       throw new Error("Không tìm thấy đơn hàng");
     }
 
+    // Lấy danh sách các đánh giá liên quan đến đơn hàng này
+    const reviews = await Review.find({ orderId: order._id }).lean();
+    const reviewsMap = new Map(reviews.map(review => [review.productId.toString(), review]));
+
+    // Gắn thông tin đánh giá vào từng order line
+    order.orderLines = order.orderLines.map(line => ({
+      ...line,
+      review: reviewsMap.get(line.productId.toString()) || null,
+    }));
+
     return order;
   } catch (error) {
     logger.error(`Lỗi lấy chi tiết đơn hàng: ${error.message}`);
@@ -173,28 +190,37 @@ export const getOrderDetail = async (orderId, userId = null) => {
 export const getOrderStats = async (userId = null) => {
   try {
     const filter = userId ? { userId } : {};
-    
+
     const stats = await Order.aggregate([
       { $match: filter },
       {
         $group: {
           _id: '$status',
           count: { $sum: 1 },
-        }
-      }
+        },
+      },
     ]);
 
     const result = {};
+    // Initialize all business statuses with 0 count
     for (const status of Object.values(ORDER_STATUS)) {
-      result[status] = {
-        count: 0,
-      };
+      result[status] = { count: 0 };
     }
 
+    // Create a reverse map from detailed status to business status
+    const reverseStatusMap = {};
+    for (const businessStatus in STATUS_MAP) {
+      for (const detailedStatus of STATUS_MAP[businessStatus]) {
+        reverseStatusMap[detailedStatus] = businessStatus;
+      }
+    }
+
+    // Aggregate counts from detailed statuses to business statuses
     stats.forEach(stat => {
-      result[stat._id] = {
-        count: stat.count,
-      };
+      const businessStatus = reverseStatusMap[stat._id];
+      if (businessStatus) {
+        result[businessStatus].count += stat.count;
+      }
     });
 
     return result;
@@ -206,12 +232,18 @@ export const getOrderStats = async (userId = null) => {
 
 export const createTimelineEntry = (status, performedBy = null, metadata = {}) => {
   const statusDescriptions = {
-    [ORDER_STATUS.PENDING]: 'Đơn hàng đang chờ xác nhận',
-    [ORDER_STATUS.PROCESSING]: 'Đơn hàng đã được xác nhận và đang được chuẩn bị',
-    [ORDER_STATUS.SHIPPING]: 'Đơn hàng đang được giao',
-    [ORDER_STATUS.COMPLETED]: 'Đơn hàng đã hoàn thành',
-    [ORDER_STATUS.CANCELLED]: 'Đơn hàng đã bị hủy',
-    [ORDER_STATUS.RETURN_REFUND]: 'Đơn hàng bị trả lại hoặc yêu cầu hoàn tiền',
+    [DETAILED_ORDER_STATUS.NEW]: "Đơn hàng mới được tạo.",
+    [DETAILED_ORDER_STATUS.CONFIRMED]: "Đơn hàng đã được xác nhận.",
+    [DETAILED_ORDER_STATUS.PREPARING]: "Người bán đang chuẩn bị hàng.",
+    [DETAILED_ORDER_STATUS.SHIPPING_IN_PROGRESS]: "Đơn hàng đang được giao.",
+    [DETAILED_ORDER_STATUS.DELIVERED]: "Đơn hàng đã được giao thành công.",
+    [DETAILED_ORDER_STATUS.CANCELLATION_REQUESTED]: "Yêu cầu hủy đơn hàng đã được ghi nhận.",
+    [DETAILED_ORDER_STATUS.COMPLETED]: "Đơn hàng đã hoàn thành.",
+    [DETAILED_ORDER_STATUS.PAYMENT_OVERDUE]: "Đơn hàng đã bị hủy do quá hạn thanh toán.",
+    [DETAILED_ORDER_STATUS.CANCELLED]: "Đơn hàng đã được hủy.",
+    [DETAILED_ORDER_STATUS.DELIVERY_FAILED]: "Giao hàng không thành công.",
+    [DETAILED_ORDER_STATUS.RETURN_REQUESTED]: "Yêu cầu trả hàng/hoàn tiền đã được ghi nhận.",
+    [DETAILED_ORDER_STATUS.REFUNDED]: "Đơn hàng đã được hoàn tiền.",
   };
 
   const entry = {
@@ -228,12 +260,12 @@ export const createTimelineEntry = (status, performedBy = null, metadata = {}) =
   };
 
   // Thêm thông tin bổ sung cho từng trạng thái
-  if (status === ORDER_STATUS.CANCELLED && metadata.cancelledReason) {
+  if (status === DETAILED_ORDER_STATUS.CANCELLED && metadata.cancelledReason) {
     entry.description += ` - Lý do: ${metadata.cancelledReason}`;
     entry.metadata.reason = metadata.cancelledReason;
   }
 
-  if (status === ORDER_STATUS.SHIPPING) {
+  if (status === DETAILED_ORDER_STATUS.SHIPPING_IN_PROGRESS) {
     entry.description = 'Đơn hàng đang được giao đến bạn';
     if (metadata.trackingNumber) {
       entry.description += ` - Mã vận đơn: ${metadata.trackingNumber}`;

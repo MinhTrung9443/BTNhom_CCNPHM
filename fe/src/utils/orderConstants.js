@@ -1,13 +1,10 @@
-/**
- * Simplified Order Status Constants for Business Logic Tabs
- * These represent the actual tabs in the UI
- */
+
 export const ORDER_STATUS = {
   PENDING: "pending", // Chờ xác nhận -> Tab: Chờ xác nhận
   PROCESSING: "processing", // Đã xác nhận, đang chuẩn bị -> Tab: Vận chuyển  
   SHIPPING: "shipping", // Đang giao hàng, Đã giao, Yêu cầu hủy -> Tab: Chờ giao hàng
-  COMPLETED: "completed", // Hoàn thành (khi khách bấm nhận hàng) -> Tab: Đã giao hàng
-  CANCELLED: "cancelled", // chưa thanh toán, Đã hủy (Trước khi giao hàng) -> Tab: Đã hủy
+  COMPLETED: "completed", // Hoàn thành (khi khách bấm nhận hàng) -> Tab: Hoàn thành
+  CANCELLED: "cancelled", //quá hạn thanh toán, Đã hủy (hủy Trước khi shop chuẩn bị ) -> Tab: Đã hủy
   RETURN_REFUND: "return_refund", // Giao hàng không thành công, Trả hàng/Hoàn tiền (Sau khi giao hàng) -> Tab: Trả hàng/Hoàn tiền
 };
 
@@ -16,15 +13,28 @@ export const ORDER_STATUS = {
  * These are the granular statuses used in order timeline
  */
 export const DETAILED_ORDER_STATUS = {
-  NEW: "new", // Đơn hàng mới
-  CONFIRMED: "confirmed", // Đã xác nhận  
-  PREPARING: "preparing", // Shop đang chuẩn bị hàng
+  // PENDING
+  NEW: "new", // Đơn hàng đã được đặt
+
+  // PROCESSING
+  CONFIRMED: "confirmed", // Đơn hàng đã xác nhận
+  PREPARING: "preparing", // Người bán đang chuẩn bị hàng
+
+  // SHIPPING
   SHIPPING_IN_PROGRESS: "shipping_in_progress", // Đang giao hàng
-  DELIVERED: "delivered", // Đã giao thành công
-  COMPLETED: "completed", // Đơn hàng hoàn tất (khách hàng đã bấm đã nhận hàng)
-  CANCELLED: "cancelled", // Hủy đơn hàng
-  CANCELLATION_REQUESTED: "cancellation_requested", // Yêu cầu hủy đơn
-  RETURN_REQUESTED: "return_requested", // Yêu cầu trả hàng
+  DELIVERED: "delivered", // Đã giao
+  CANCELLATION_REQUESTED: "cancellation_requested", // Yêu cầu hủy
+
+  // COMPLETED
+  COMPLETED: "completed", // Hoàn thành (khách đã nhận hàng)
+
+  // CANCELLED
+  PAYMENT_OVERDUE: "payment_overdue", // Quá hạn thanh toán
+  CANCELLED: "cancelled", // Đã hủy (trước khi shop chuẩn bị)
+
+  // RETURN_REFUND
+  DELIVERY_FAILED: "delivery_failed", // Giao hàng không thành công
+  RETURN_REQUESTED: "return_requested", // Yêu cầu trả hàng/hoàn tiền
   REFUNDED: "refunded", // Đã hoàn tiền
 };
 
@@ -35,7 +45,7 @@ export const ORDER_STATUS_LABELS = {
   [ORDER_STATUS.PENDING]: "Chờ xác nhận",
   [ORDER_STATUS.PROCESSING]: "Vận chuyển", 
   [ORDER_STATUS.SHIPPING]: "Chờ giao hàng",
-  [ORDER_STATUS.COMPLETED]: "Đã giao hàng",
+  [ORDER_STATUS.COMPLETED]: "Hoàn thành",
   [ORDER_STATUS.CANCELLED]: "Đã hủy",
   [ORDER_STATUS.RETURN_REFUND]: "Trả hàng/Hoàn tiền",
 };
@@ -45,13 +55,15 @@ export const ORDER_STATUS_LABELS = {
  */
 export const DETAILED_STATUS_LABELS = {
   [DETAILED_ORDER_STATUS.NEW]: "Đơn hàng mới",
-  [DETAILED_ORDER_STATUS.CONFIRMED]: "Đã xác nhận", 
+  [DETAILED_ORDER_STATUS.CONFIRMED]: "Đã xác nhận",
   [DETAILED_ORDER_STATUS.PREPARING]: "Đang chuẩn bị",
   [DETAILED_ORDER_STATUS.SHIPPING_IN_PROGRESS]: "Đang giao hàng",
   [DETAILED_ORDER_STATUS.DELIVERED]: "Đã giao hàng",
-  [DETAILED_ORDER_STATUS.COMPLETED]: "Hoàn thành",
-  [DETAILED_ORDER_STATUS.CANCELLED]: "Đã hủy",
   [DETAILED_ORDER_STATUS.CANCELLATION_REQUESTED]: "Yêu cầu hủy",
+  [DETAILED_ORDER_STATUS.COMPLETED]: "Hoàn thành",
+  [DETAILED_ORDER_STATUS.PAYMENT_OVERDUE]: "Quá hạn thanh toán",
+  [DETAILED_ORDER_STATUS.CANCELLED]: "Đã hủy",
+  [DETAILED_ORDER_STATUS.DELIVERY_FAILED]: "Giao hàng thất bại",
   [DETAILED_ORDER_STATUS.RETURN_REQUESTED]: "Yêu cầu trả hàng",
   [DETAILED_ORDER_STATUS.REFUNDED]: "Đã hoàn tiền",
 };
@@ -73,13 +85,15 @@ export const ORDER_STATUS_COLORS = {
  */
 export const DETAILED_STATUS_COLORS = {
   [DETAILED_ORDER_STATUS.NEW]: "warning",
-  [DETAILED_ORDER_STATUS.CONFIRMED]: "info", 
+  [DETAILED_ORDER_STATUS.CONFIRMED]: "info",
   [DETAILED_ORDER_STATUS.PREPARING]: "primary",
   [DETAILED_ORDER_STATUS.SHIPPING_IN_PROGRESS]: "primary",
   [DETAILED_ORDER_STATUS.DELIVERED]: "success",
-  [DETAILED_ORDER_STATUS.COMPLETED]: "success",
-  [DETAILED_ORDER_STATUS.CANCELLED]: "danger",
   [DETAILED_ORDER_STATUS.CANCELLATION_REQUESTED]: "warning",
+  [DETAILED_ORDER_STATUS.COMPLETED]: "success",
+  [DETAILED_ORDER_STATUS.PAYMENT_OVERDUE]: "danger",
+  [DETAILED_ORDER_STATUS.CANCELLED]: "danger",
+  [DETAILED_ORDER_STATUS.DELIVERY_FAILED]: "danger",
   [DETAILED_ORDER_STATUS.RETURN_REQUESTED]: "secondary",
   [DETAILED_ORDER_STATUS.REFUNDED]: "secondary",
 };
@@ -102,7 +116,7 @@ export const BUSINESS_TABS = {
     description: 'Đơn hàng chờ shop xác nhận'
   },
   PROCESSING: {
-    key: 'processing', 
+    key: 'processing',
     label: ORDER_STATUS_LABELS[ORDER_STATUS.PROCESSING],
     status: ORDER_STATUS.PROCESSING,
     description: 'Đơn hàng đang được xử lý và chuẩn bị'
@@ -133,13 +147,36 @@ export const BUSINESS_TABS = {
   }
 };
 
+export const STATUS_MAP = {
+  [ORDER_STATUS.PENDING]: [DETAILED_ORDER_STATUS.NEW],
+  [ORDER_STATUS.PROCESSING]: [
+    DETAILED_ORDER_STATUS.CONFIRMED,
+    DETAILED_ORDER_STATUS.PREPARING,
+  ],
+  [ORDER_STATUS.SHIPPING]: [
+    DETAILED_ORDER_STATUS.SHIPPING_IN_PROGRESS,
+    DETAILED_ORDER_STATUS.DELIVERED,
+    DETAILED_ORDER_STATUS.CANCELLATION_REQUESTED,
+  ],
+  [ORDER_STATUS.COMPLETED]: [DETAILED_ORDER_STATUS.COMPLETED],
+  [ORDER_STATUS.CANCELLED]: [
+    DETAILED_ORDER_STATUS.PAYMENT_OVERDUE,
+    DETAILED_ORDER_STATUS.CANCELLED,
+  ],
+  [ORDER_STATUS.RETURN_REFUND]: [
+    DETAILED_ORDER_STATUS.DELIVERY_FAILED,
+    DETAILED_ORDER_STATUS.RETURN_REQUESTED,
+    DETAILED_ORDER_STATUS.REFUNDED,
+  ],
+};
+
 /**
  * Helper function to get business tab configuration by status
  * @param {string} status - Order status
  * @returns {object|null} Business tab configuration
  */
 export const getBusinessTabByStatus = (status) => {
-  return Object.values(BUSINESS_TABS).find(tab => 
+  return Object.values(BUSINESS_TABS).find(tab =>
     tab.status === status
   ) || null;
 };
@@ -178,6 +215,18 @@ export const isValidOrderStatus = (status) => {
  */
 export const isValidDetailedStatus = (status) => {
   return getValidDetailedStatuses().includes(status);
+};
+
+/**
+ * Helper function to find the business status from a detailed status
+ */
+export const getBusinessStatusFromDetailed = (detailedStatus) => {
+  for (const businessStatus in STATUS_MAP) {
+    if (STATUS_MAP[businessStatus].includes(detailedStatus)) {
+      return businessStatus;
+    }
+  }
+  return null; // Return null if no mapping is found
 };
 
 /**

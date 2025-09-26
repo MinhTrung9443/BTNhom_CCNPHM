@@ -9,6 +9,7 @@ import Collapse from 'react-bootstrap/Collapse';
 import Modal from 'react-bootstrap/Modal';
 import { useNavigate, Link } from 'react-router-dom';
 import OrderStatusBadge from './OrderStatusBadge';
+import { getBusinessStatusFromDetailed } from '../../utils/orderConstants';
 import styles from './OrderCard.module.css';
 
 /**
@@ -25,7 +26,8 @@ import styles from './OrderCard.module.css';
  *     createdAt: string,
  *     recipientName: string,
  *     phoneNumber: string,
- *     notes?: string
+ *     notes?: string,
+ *     timeline?: array
  *   };
  *   onCancel?: (orderId: string) => void;
  * }} props
@@ -80,15 +82,14 @@ const OrderCard = ({ order, onCancel }) => {
   };
 
   const getStatusColor = (status) => {
-    switch (status) {
-      case 'new': return 'warning';
-      case 'confirmed': return 'info';
-      case 'preparing': return 'primary';
-      case 'shipping': return 'secondary';
-      case 'delivered': return 'success';
+    const businessStatus = getBusinessStatusFromDetailed(status);
+    switch (businessStatus) {
+      case 'pending': return 'warning';
+      case 'processing': return 'info';
+      case 'shipping': return 'primary';
       case 'completed': return 'success';
       case 'cancelled': return 'danger';
-      case 'cancellation_requested': return 'warning';
+      case 'return_refund': return 'secondary';
       default: return 'secondary';
     }
   };
@@ -150,11 +151,19 @@ const OrderCard = ({ order, onCancel }) => {
 
   const visibleProducts = showAllProducts ? order.orderLines : order.orderLines.slice(0, 2);
   const hiddenProductsCount = order.orderLines.length - 2;
+
+  const getLatestStatusDescription = () => {
+    if (order.timeline && order.timeline.length > 0) {
+      const latestStatus = order.timeline[order.timeline.length - 1];
+      return latestStatus.description;
+    }
+    return <OrderStatusBadge status={order.status} showIcon={false} />;
+  };
   
   return (
     <>
-      <Card 
-        className={`mb-3 ${styles.OrderCard}`} 
+      <Card
+        className={`mb-3 ${styles.OrderCard}`}
         border={getStatusColor(order.status)}
       >
         <Card.Header className="d-flex justify-content-between align-items-center">
@@ -165,7 +174,7 @@ const OrderCard = ({ order, onCancel }) => {
             </span>
           </div>
           <div className="d-flex gap-2 align-items-center">
-            <OrderStatusBadge status={order.status} showIcon={true} />
+            <OrderStatusBadge status={getBusinessStatusFromDetailed(order.status) || order.status} showIcon={true} />
             {order.payment && getPaymentStatusBadge(order.payment.status)}
           </div>
         </Card.Header>
@@ -178,9 +187,9 @@ const OrderCard = ({ order, onCancel }) => {
                 <div className="d-flex justify-content-between align-items-center mb-2">
                   <h6 className="mb-0">Sản phẩm ({order.orderLines.length} món):</h6>
                   {hiddenProductsCount > 0 && (
-                    <Button 
-                      variant="link" 
-                      size="sm" 
+                    <Button
+                      variant="link"
+                      size="sm"
                       className="p-0 text-decoration-none"
                       onClick={() => setShowAllProducts(!showAllProducts)}
                       aria-expanded={showAllProducts}
@@ -203,8 +212,8 @@ const OrderCard = ({ order, onCancel }) => {
                         style={{ objectFit: 'cover' }}
                       />
                       <div className="flex-grow-1">
-                        <Link 
-                          to={`/products/${item.productId}`} 
+                        <Link
+                          to={`/products/${item.productId}`}
                           className="text-decoration-none text-dark fw-medium d-block"
                         >
                           {item.productName}
@@ -234,8 +243,8 @@ const OrderCard = ({ order, onCancel }) => {
                             style={{ objectFit: 'cover' }}
                           />
                           <div className="flex-grow-1">
-                            <Link 
-                              to={`/products/${item.productId}`} 
+                            <Link
+                              to={`/products/${item.productId}`}
                               className="text-decoration-none text-dark fw-medium d-block"
                             >
                               {item.productName}
@@ -263,7 +272,7 @@ const OrderCard = ({ order, onCancel }) => {
                   <small className="text-muted">
                     <strong>Trạng thái:</strong>
                   </small>
-                  <OrderStatusBadge status={order.status} showIcon={false} />
+                  <span className="fw-medium">{getLatestStatusDescription()}</span>
                 </div>
                 <small className="text-muted">
                   <i className="fas fa-credit-card me-1"></i>
@@ -292,8 +301,8 @@ const OrderCard = ({ order, onCancel }) => {
 
               {/* Action Buttons */}
               <div className="d-flex flex-column gap-2">
-                <Button 
-                  variant="primary" 
+                <Button
+                  variant="primary"
                   onClick={handleViewDetail}
                   className="d-flex align-items-center justify-content-center"
                 >
@@ -302,14 +311,24 @@ const OrderCard = ({ order, onCancel }) => {
                 </Button>
                 
                 {order.canCancel && order.status !== 'cancelled' && (
-                  <Button 
-                    variant="outline-danger" 
+                  <Button
+                    variant="outline-danger"
                     size="sm"
                     onClick={() => setShowCancelModal(true)}
                     className="d-flex align-items-center justify-content-center"
                   >
                     <i className="fas fa-times me-2"></i>
                     Hủy đơn hàng
+                  </Button>
+                )}
+                 {order.status === 'completed' && (
+                  <Button
+                    variant="success"
+                    onClick={handleViewDetail}
+                    className="d-flex align-items-center justify-content-center mt-2"
+                  >
+                    <i className="fas fa-star me-2"></i>
+                    Đánh giá
                   </Button>
                 )}
               </div>
