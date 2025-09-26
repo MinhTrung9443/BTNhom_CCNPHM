@@ -3,6 +3,7 @@ import Product from "../models/Product.js";
 import Voucher from "../models/Voucher.js";
 import UserVoucher from "../models/UserVoucher.js";
 import Delivery from "../models/Delivery.js";
+import Notification from "../models/Notification.js";
 import AppError from "../utils/AppError.js";
 import logger from "../utils/logger.js";
 
@@ -258,7 +259,6 @@ const _verifyOrderPreview = async (userId, clientPreview) => {
   return serverPreview; // Return the trusted, server-generated preview if everything matches
 };
 
-// Internal function to handle all side-effects after an order is created
 const _executePostOrderActions = async (order) => {
   // 1. Update stock
   for (const line of order.orderLines) {
@@ -322,9 +322,25 @@ export const placeOrder = async (userId, { previewOrder: clientPreview }) => {
   // Step 3: Execute all post-creation side effects (stock, vouchers, points).
   await _executePostOrderActions(newOrder);
 
+  // Create persistent notification for admin
+  const user = await User.findById(userId).select('name').lean();
+  const notification = await Notification.create({
+    title: 'Đơn hàng mới',
+    message: `Khách hàng ${user?.name || 'N/A'} đã đặt đơn hàng #${newOrder._id} với tổng giá trị ${newOrder.totalAmount.toLocaleString('vi-VN')} VNĐ`,
+    type: 'order',
+    referenceId: newOrder._id,
+    recipient: 'admin',
+    metadata: {
+      orderAmount: newOrder.totalAmount,
+      userName: user?.name || 'N/A',
+      orderLinesCount: newOrder.orderLines.length,
+    }
+  });
+  logger.info(`Notification created for new order: ${notification._id}`);
+
   logger.info(`New order created: ${newOrder._id} for user: ${userId}`);
 
-  // Emit notification to admin room
+  // Emit real-time notification to admin room
   if (global.io) {
     global.io.to("admin").emit("newOrder", {
       orderId: newOrder._id,

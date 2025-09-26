@@ -12,6 +12,7 @@ import OrderDetailPage from './pages/orders/OrderDetailPage'
 import CouponsPage from './pages/coupons/CouponsPage'
 import LoyaltyPointsPage from './pages/loyalty/LoyaltyPointsPage'
 import SettingsPage from './pages/SettingsPage'
+import Notifications from './pages/Notifications'
 
 // Protected Route component
 const ProtectedRoute = ({ children }) => {
@@ -57,6 +58,7 @@ function App() {
                   <Route path="/orders/:orderId" element={<OrderDetailPage />} />
                   <Route path="/coupons" element={<CouponsPage />} />
                   <Route path="/loyalty-points" element={<LoyaltyPointsPage />} />
+                  <Route path="/notifications" element={<Notifications />} />
                   <Route path="/settings" element={<SettingsPage />} />
                   <Route path="*" element={<Navigate to="/dashboard" replace />} />
                 </Routes>

@@ -27,6 +27,11 @@ const Sidebar = () => {
       label: 'Quản lý đơn hàng',
     },
     {
+      path: '/notifications',
+      icon: 'bi-bell',
+      label: 'Thông báo',
+    },
+    {
       path: '/coupons',
       icon: 'bi-ticket-perforated',
       label: 'Mã giảm giá',
