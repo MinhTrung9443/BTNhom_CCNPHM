@@ -16,9 +16,10 @@ import {
   markAllAsRead,
 } from "../../redux/slices/notificationsSlice";
 import { toast } from "react-toastify";
+import socketService from '../../services/socketService';
 
 const Header = () => {
-  const { user } = useSelector((state) => state.auth);
+  const { user, token } = useSelector((state) => state.auth);
   const { unreadCount, notifications } = useSelector(
     (state) => state.notifications
   );
@@ -27,6 +28,23 @@ const Header = () => {
 
   useEffect(() => {
     dispatch(fetchNotifications({ page: 1, limit: 5 })); // Fetch recent notifications for dropdown
+  }, [dispatch]);
+
+  useEffect(() => {
+  socketService.connect(token);
+
+    // Set callback to refetch notifications on new order
+    socketService.setOnNewOrderCallback(() => {
+      dispatch(fetchNotifications({ page: 1, limit: 5 }));
+    });
+
+    // Join admin room
+    socketService.emit('joinRoom', 'admin');
+
+    // Cleanup on unmount
+    return () => {
+      socketService.disconnect();
+    };
   }, [dispatch]);
 
   const handleMarkAsRead = (notificationId) => {

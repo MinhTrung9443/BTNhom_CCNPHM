@@ -5,6 +5,8 @@ class SocketService {
   constructor() {
     this.socket = null;
     this.isConnected = false;
+    this.onNewOrderCallback = null;
+    this.lastToastTime = 0;
   }
 
   connect(token) {
@@ -40,6 +42,9 @@ class SocketService {
     this.socket.on("newOrder", (orderData) => {
       console.log("New order received:", orderData);
       this.handleNewOrderNotification(orderData);
+      if (this.onNewOrderCallback) {
+        this.onNewOrderCallback(orderData);
+      }
     });
   }
 
@@ -52,6 +57,14 @@ class SocketService {
   }
 
   handleNewOrderNotification(orderData) {
+    // Debounce to prevent multiple toasts for the same event (in case of duplicate emissions)
+    const now = Date.now();
+    if (this.lastToastTime && now - this.lastToastTime < 2000) { // 2 second debounce
+      console.log('Ignoring duplicate new order notification');
+      return;
+    }
+    this.lastToastTime = now;
+
     const message = `Đơn hàng mới: #${orderData.orderId.slice(-8)} - ${
       orderData.orderLines
     } sản phẩm - ${new Intl.NumberFormat("vi-VN", {
@@ -69,12 +82,16 @@ class SocketService {
       progress: undefined,
       onClick: () => {
         // Navigate to orders page or order detail
-        window.location.href = `/orders/${orderData.orderId}`;
+        window.location.href = `/notifications`;
       },
     });
 
     // You can also dispatch to Redux store if needed
     // store.dispatch(addNewOrderNotification(orderData));
+  }
+
+  setOnNewOrderCallback(callback) {
+    this.onNewOrderCallback = callback;
   }
 
   // Method to manually emit events if needed
