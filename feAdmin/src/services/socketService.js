@@ -38,7 +38,8 @@ class SocketService {
       this.isConnected = false;
     });
 
-    // Listen for new order notifications
+    // Listen for new order notifications (remove existing listener to prevent duplicates)
+    this.socket.off("newOrder");
     this.socket.on("newOrder", (orderData) => {
       console.log("New order received:", orderData);
       this.handleNewOrderNotification(orderData);
