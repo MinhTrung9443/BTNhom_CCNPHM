@@ -10,8 +10,8 @@ const createReview = async (reviewData) => {
   return response.data;
 };
 
-const getUserReviews = async (userId) => {
-  const response = await api.get(`/reviews/user/${userId}`);
+const getUserReviews = async () => {
+  const response = await api.get('/reviews/me');
   return response.data;
 };
 

@@ -168,7 +168,7 @@ export const previewOrder = async (
     previewOrder: preview,
   };
 };
-import Order from "../models/Order.js";
+import Order, { DETAILED_ORDER_STATUS } from '../models/Order.js';
 
 // Internal function to verify the preview and return the trusted server-side version
 const _verifyOrderPreview = async (userId, clientPreview) => {
@@ -302,7 +302,7 @@ export const placeOrder = async (userId, { previewOrder: clientPreview }) => {
   const newOrder = await Order.create({
     ...serverPreview,
     userId: userId, // Explicitly add the userId from the authenticated session
-    status: "pending",
+    status: DETAILED_ORDER_STATUS.NEW,
     payment: {
       paymentMethod: serverPreview.paymentMethod, // Use the verified payment method
       amount: serverPreview.totalAmount,
@@ -312,9 +312,9 @@ export const placeOrder = async (userId, { previewOrder: clientPreview }) => {
     },
     timeline: [
       {
-        status: "pending",
-        description: "Đơn hàng mới được tạo.",
-        performedBy: { userId: userId, userType: "user" },
+        status: DETAILED_ORDER_STATUS.NEW,
+        description: 'Đơn hàng mới được tạo.',
+        performedBy: { userId: userId, userType: 'user' },
       },
     ],
   });

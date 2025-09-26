@@ -6,7 +6,8 @@
     "start": "node backend/server.js",
     "client": "npm start --prefix fe",
     "server": "npm start --prefix be",
-    "dev": "concurrently \"npm run server\" \"npm run client\""
+    "clientAdmin": "npm start --prefix feAdmin",
+    "dev": "concurrently \"npm run server\" \"npm run client\" \"npm run clientAdmin\""
   },
   "dependencies": {
     "concurrently": "^8.0.1"  

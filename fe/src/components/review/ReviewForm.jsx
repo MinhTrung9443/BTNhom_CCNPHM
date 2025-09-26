@@ -28,13 +28,13 @@ const ReviewForm = ({ productId, orderId, existingReview, onReviewSubmit }) => {
         ? dispatch(updateReview({ reviewId: existingReview._id, ...reviewData }))
         : dispatch(createReview({ productId, orderId, ...reviewData }));
 
-      action
-        .unwrap()
-        .then(() => {
-          onReviewSubmit();
-        });
+      action.unwrap().then(() => {
+        onReviewSubmit();
+      });
     }
   };
+
+  const cannotEdit = isEditMode && existingReview.editCount > 0;
 
   return (
     <form onSubmit={handleSubmit}>
@@ -58,7 +58,10 @@ const ReviewForm = ({ productId, orderId, existingReview, onReviewSubmit }) => {
         ></textarea>
       </div>
       {error && <div className="alert alert-danger">{error.message}</div>}
-      <Button type="submit" disabled={submitting}>
+      {cannotEdit && (
+        <div className="alert alert-warning">Bạn chỉ có thể chỉnh sửa đánh giá một lần.</div>
+      )}
+      <Button type="submit" disabled={submitting || cannotEdit}>
         {submitting ? (
           <LoadingSpinner size="sm" />
         ) : isEditMode ? (
