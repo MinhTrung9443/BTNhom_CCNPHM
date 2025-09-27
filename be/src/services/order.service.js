@@ -1,26 +1,41 @@
-import User from '../models/User.js';
-import Product from '../models/Product.js';
-import Voucher from '../models/Voucher.js';
-import UserVoucher from '../models/UserVoucher.js';
-import Delivery from '../models/Delivery.js';
-import AppError from '../utils/AppError.js';
-import logger from '../utils/logger.js';
+import User from "../models/User.js";
+import Product from "../models/Product.js";
+import Voucher from "../models/Voucher.js";
+import UserVoucher from "../models/UserVoucher.js";
+import Delivery from "../models/Delivery.js";
+import Notification from "../models/Notification.js";
+import AppError from "../utils/AppError.js";
+import logger from "../utils/logger.js";
 
 const calculateShippingFee = async (shippingMethod) => {
   if (!shippingMethod) return 0;
 
-  const deliveryMethod = await Delivery.findOne({ type: shippingMethod, isActive: true }).lean();
+  const deliveryMethod = await Delivery.findOne({
+    type: shippingMethod,
+    isActive: true,
+  }).lean();
   if (!deliveryMethod) {
-    logger.warn(`Phương thức vận chuyển '${shippingMethod}' không hợp lệ hoặc không hoạt động.`);
+    logger.warn(
+      `Phương thức vận chuyển '${shippingMethod}' không hợp lệ hoặc không hoạt động.`
+    );
     return 0; // Hoặc throw lỗi tùy theo yêu cầu nghiệp vụ
   }
   return deliveryMethod.price;
 };
 
-
-export const previewOrder = async (userId, { orderLines, shippingAddress, voucherCode, shippingMethod, pointsToApply = 0, paymentMethod }) => {
+export const previewOrder = async (
+  userId,
+  {
+    orderLines,
+    shippingAddress,
+    voucherCode,
+    shippingMethod,
+    pointsToApply = 0,
+    paymentMethod,
+  }
+) => {
   if (!orderLines || orderLines.length === 0) {
-    throw new AppError('Vui lòng chọn sản phẩm để xem trước', 400);
+    throw new AppError("Vui lòng chọn sản phẩm để xem trước", 400);
   }
 
   let subtotal = 0;
@@ -31,7 +46,7 @@ export const previewOrder = async (userId, { orderLines, shippingAddress, vouche
     const product = await Product.findById(line.productId).lean();
 
     if (!product) {
-      unavailableItems.push({ ...line, reason: 'Sản phẩm không tồn tại' });
+      unavailableItems.push({ ...line, reason: "Sản phẩm không tồn tại" });
       continue;
     }
 
@@ -62,13 +77,15 @@ export const previewOrder = async (userId, { orderLines, shippingAddress, vouche
   }
 
   if (unavailableItems.length > 0) {
-    throw new AppError('Một số sản phẩm không có sẵn hoặc đã hết hàng', 409, {
+    throw new AppError("Một số sản phẩm không có sẵn hoặc đã hết hàng", 409, {
       unavailableItems,
     });
   }
 
   // Phí ship chỉ được tính khi có phương thức vận chuyển
-  const shippingFee = shippingMethod ? await calculateShippingFee(shippingMethod) : null;
+  const shippingFee = shippingMethod
+    ? await calculateShippingFee(shippingMethod)
+    : null;
   let discount = 0;
   let appliedVoucherCode = null;
 
@@ -92,13 +109,19 @@ export const previewOrder = async (userId, { orderLines, shippingAddress, vouche
           discount = voucher.discountValue; // Giả sử giảm giá cố định
           appliedVoucherCode = voucher.code;
         } else {
-            throw new AppError(`Đơn hàng tối thiểu để áp dụng voucher này là ${voucher.minPurchaseAmount}`, 400);
+          throw new AppError(
+            `Đơn hàng tối thiểu để áp dụng voucher này là ${voucher.minPurchaseAmount}`,
+            400
+          );
         }
       } else {
-        throw new AppError('Bạn không có quyền sử dụng voucher này hoặc đã sử dụng rồi', 400);
+        throw new AppError(
+          "Bạn không có quyền sử dụng voucher này hoặc đã sử dụng rồi",
+          400
+        );
       }
     } else {
-      throw new AppError('Voucher không hợp lệ hoặc đã hết hạn', 400);
+      throw new AppError("Voucher không hợp lệ hoặc đã hết hạn", 400);
     }
   }
 
@@ -106,17 +129,23 @@ export const previewOrder = async (userId, { orderLines, shippingAddress, vouche
   let pointsApplied = 0;
 
   if (pointsToApply > 0) {
-    const user = await User.findById(userId).select('loyaltyPoints').lean();
+    const user = await User.findById(userId).select("loyaltyPoints").lean();
     if (user && user.loyaltyPoints > 0) {
       // 1. Calculate max discount allowed (50% of value, rounded down to nearest 100)
-      const maxAllowableDiscount = Math.floor((totalAfterVoucher * 0.5) / 100) * 100;
+      const maxAllowableDiscount =
+        Math.floor((totalAfterVoucher * 0.5) / 100) * 100;
 
       // 2. Determine points to actually apply
       // It's the minimum of: what user wants to apply, what user has, and the max allowed by the rule
-      pointsApplied = Math.min(pointsToApply, user.loyaltyPoints, maxAllowableDiscount);
-
+      pointsApplied = Math.min(
+        pointsToApply,
+        user.loyaltyPoints,
+        maxAllowableDiscount
+      );
     } else {
-      logger.warn(`User ${userId} does not have enough loyalty points or tried to apply points with a zero balance.`);
+      logger.warn(
+        `User ${userId} does not have enough loyalty points or tried to apply points with a zero balance.`
+      );
     }
   }
 
@@ -135,7 +164,6 @@ export const previewOrder = async (userId, { orderLines, shippingAddress, vouche
     voucherCode: appliedVoucherCode,
     paymentMethod: paymentMethod,
   };
-
 
   return {
     previewOrder: preview,
@@ -157,7 +185,13 @@ const _verifyOrderPreview = async (userId, clientPreview) => {
   const changes = [];
 
   // 1. Compare top-level numeric fields
-  const fieldsToCompare = ['subtotal', 'shippingFee', 'discount', 'pointsApplied', 'totalAmount'];
+  const fieldsToCompare = [
+    "subtotal",
+    "shippingFee",
+    "discount",
+    "pointsApplied",
+    "totalAmount",
+  ];
   for (const field of fieldsToCompare) {
     if (clientPreview[field] !== serverPreview[field]) {
       changes.push({
@@ -172,8 +206,8 @@ const _verifyOrderPreview = async (userId, clientPreview) => {
   // 2. Deep compare order lines for changes in price, name, etc.
   if (clientPreview.orderLines.length !== serverPreview.orderLines.length) {
     changes.push({
-      field: 'orderLines',
-      message: 'Số lượng mặt hàng trong giỏ đã thay đổi.',
+      field: "orderLines",
+      message: "Số lượng mặt hàng trong giỏ đã thay đổi.",
     });
   } else {
     clientPreview.orderLines.forEach((clientLine, index) => {
@@ -190,7 +224,16 @@ const _verifyOrderPreview = async (userId, clientPreview) => {
       }
 
       // Compare critical fields within each line item
-      const lineFields = ['productName', 'productPrice', 'quantity', 'lineTotal','productCode','productImage', 'discount', 'productActualPrice'];
+      const lineFields = [
+        "productName",
+        "productPrice",
+        "quantity",
+        "lineTotal",
+        "productCode",
+        "productImage",
+        "discount",
+        "productActualPrice",
+      ];
       for (const field of lineFields) {
         if (clientLine[field] !== serverLine[field]) {
           changes.push({
@@ -207,17 +250,21 @@ const _verifyOrderPreview = async (userId, clientPreview) => {
   console.log(changes);
   // 3. If any changes were found, throw a detailed error
   if (changes.length > 0) {
-    throw new AppError('Một vài sản phẩm trong đơn hàng vừa được cập nhật. Vui lòng thực hiện lại.', 409);
+    throw new AppError(
+      "Một vài sản phẩm trong đơn hàng vừa được cập nhật. Vui lòng thực hiện lại.",
+      409
+    );
   }
 
   return serverPreview; // Return the trusted, server-generated preview if everything matches
 };
 
-// Internal function to handle all side-effects after an order is created
 const _executePostOrderActions = async (order) => {
   // 1. Update stock
   for (const line of order.orderLines) {
-    await Product.findByIdAndUpdate(line.productId, { $inc: { stock: -line.quantity } });
+    await Product.findByIdAndUpdate(line.productId, {
+      $inc: { stock: -line.quantity },
+    });
   }
 
   // 2. Mark voucher as used
@@ -228,7 +275,9 @@ const _executePostOrderActions = async (order) => {
         { userId: order.userId, voucherId: voucher._id, isUsed: false },
         { $set: { isUsed: true, orderId: order._id } }
       );
-      logger.info(`Voucher ${order.voucherCode} marked as used for user ${order.userId}`);
+      logger.info(
+        `Voucher ${order.voucherCode} marked as used for user ${order.userId}`
+      );
     }
   }
 
@@ -237,19 +286,18 @@ const _executePostOrderActions = async (order) => {
     await User.findByIdAndUpdate(order.userId, {
       $inc: { loyaltyPoints: -order.pointsApplied },
     });
-    logger.info(`Deducted ${order.pointsApplied} points from user ${order.userId}`);
+    logger.info(
+      `Deducted ${order.pointsApplied} points from user ${order.userId}`
+    );
   }
 };
 
 // TODO: Cần bổ sung tặng điểm bằng 1% giá trị đơn hàng sau khi khách đã nhận hàng
 
-
-
-
 export const placeOrder = async (userId, { previewOrder: clientPreview }) => {
   // Step 1: Verify the client's preview against a fresh server-side calculation.
   const serverPreview = await _verifyOrderPreview(userId, clientPreview);
-  console.log('Server Preview:', serverPreview);
+  console.log("Server Preview:", serverPreview);
   // Step 2: Create the order using the *trusted* server-side preview data.
   const newOrder = await Order.create({
     ...serverPreview,
@@ -258,7 +306,7 @@ export const placeOrder = async (userId, { previewOrder: clientPreview }) => {
     payment: {
       paymentMethod: serverPreview.paymentMethod, // Use the verified payment method
       amount: serverPreview.totalAmount,
-      status: 'pending',
+      status: "pending",
       createdAt: new Date(),
       updatedAt: new Date(),
     },
@@ -274,7 +322,38 @@ export const placeOrder = async (userId, { previewOrder: clientPreview }) => {
   // Step 3: Execute all post-creation side effects (stock, vouchers, points).
   await _executePostOrderActions(newOrder);
 
+  // Create persistent notification for admin
+  const user = await User.findById(userId).select('name').lean();
+  const notification = await Notification.create({
+    title: 'Đơn hàng mới',
+    message: `Khách hàng ${user?.name || 'N/A'} đã đặt đơn hàng #${newOrder._id} với tổng giá trị ${newOrder.totalAmount.toLocaleString('vi-VN')} VNĐ`,
+    type: 'order',
+    referenceId: newOrder._id,
+    recipient: 'admin',
+    metadata: {
+      orderAmount: newOrder.totalAmount,
+      userName: user?.name || 'N/A',
+      orderLinesCount: newOrder.orderLines.length,
+    }
+  });
+  logger.info(`Notification created for new order: ${notification._id}`);
+
   logger.info(`New order created: ${newOrder._id} for user: ${userId}`);
+
+  // Emit real-time notification to admin room
+  if (global.io) {
+    global.io.to("admin").emit("newOrder", {
+      orderId: newOrder._id,
+      userId: newOrder.userId,
+      totalAmount: newOrder.totalAmount,
+      orderLines: newOrder.orderLines.length,
+      createdAt: newOrder.createdAt,
+      status: newOrder.status,
+    });
+    logger.info(
+      `New order notification sent to admin room for order ${newOrder._id}`
+    );
+  }
 
   return newOrder;
 };

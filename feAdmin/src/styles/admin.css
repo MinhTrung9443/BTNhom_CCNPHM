@@ -289,3 +289,114 @@
     --admin-dark: #f7fafc;
   }
 }
+
+/* Notification Styles */
+.notification-dropdown .dropdown-toggle {
+  border: none;
+  background: none;
+  padding: 0.5rem;
+  margin: 0 0.5rem;
+}
+
+.notification-dropdown .dropdown-toggle:focus {
+  box-shadow: none;
+  background: none;
+}
+
+.notification-menu {
+  width: 400px;
+  max-width: 90vw;
+  border: none;
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+  padding: 0;
+}
+
+.notification-header {
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.notification-list {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.notification-item {
+  padding: 1rem;
+  border-bottom: 1px solid #f1f1f1;
+  transition: background-color 0.2s ease;
+  cursor: pointer;
+}
+
+.notification-item:hover {
+  background-color: #f8f9fa;
+}
+
+.notification-item.unread {
+  background-color: #e3f2fd;
+  border-left: 4px solid var(--admin-primary);
+}
+
+.notification-item.unread:hover {
+  background-color: #bbdefb;
+}
+
+.notification-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #212529;
+  margin-bottom: 0.25rem;
+}
+
+.notification-message {
+  font-size: 0.85rem;
+  color: #6c757d;
+  margin-bottom: 0.5rem;
+  line-height: 1.4;
+}
+
+.notification-footer {
+  text-align: center;
+  background-color: #f8f9fa;
+}
+
+.notification-footer .btn-link {
+  color: var(--admin-primary);
+  text-decoration: none;
+  font-size: 0.875rem;
+}
+
+.notification-footer .btn-link:hover {
+  color: var(--admin-primary);
+  text-decoration: underline;
+}
+
+/* Custom scrollbar for notification list */
+.notification-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.notification-list::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.notification-list::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.notification-list::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Responsive notification menu */
+@media (max-width: 576px) {
+  .notification-menu {
+    width: 350px;
+  }
+
+  .notification-item {
+    padding: 0.75rem;
+  }
+}
