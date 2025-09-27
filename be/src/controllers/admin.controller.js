@@ -3,6 +3,7 @@ import User from "../models/User.js";
 import LoyaltyPoints from "../models/LoyaltyPoints.js";
 import logger from "../utils/logger.js";
 import AppError from "../utils/AppError.js";
+import * as adminService from "../services/admin.service.js";
 
 export const adminController = {
   // User Management
@@ -451,5 +452,23 @@ export const adminController = {
       logger.error(`Lỗi lấy thống kê điểm: ${error.message}`);
       next(new AppError(error.message, 500));
     }
+  },
+
+  updateOrderStatus: async (req, res, next) => {
+    const { orderId } = req.params;
+    const { status, ...metadata } = req.body;
+    const adminId = req.user._id;
+
+    const updatedOrder = await adminService.updateOrderStatusByAdmin(
+      orderId,
+      status,
+      metadata
+    );
+
+    res.json({
+      success: true,
+      message: "Cập nhật trạng thái đơn hàng thành công.",
+      data: updatedOrder,
+    });
   },
 };

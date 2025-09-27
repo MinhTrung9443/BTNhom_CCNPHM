@@ -31,28 +31,28 @@ const ORDER_STATUS = {
 
 const DETAILED_ORDER_STATUS = {
   // PENDING
-  NEW: "new", // Đơn hàng đã được đặt
+  NEW: "new", // Đơn hàng đã được đặt (tự động bởi hệ thống)
 
   // PROCESSING
-  CONFIRMED: "confirmed", // Đơn hàng đã xác nhận
-  PREPARING: "preparing", // Người bán đang chuẩn bị hàng
-
+  CONFIRMED: "confirmed", // Đơn hàng đã xác nhận (tự động bởi hệ thống)
+  PREPARING: "preparing", // Người bán đang chuẩn bị hàng (thủ công bởi admin)
+ 
   // SHIPPING
-  SHIPPING_IN_PROGRESS: "shipping_in_progress", // Đang giao hàng
-  DELIVERED: "delivered", // Đã giao
-  CANCELLATION_REQUESTED: "cancellation_requested", // Yêu cầu hủy
+  SHIPPING_IN_PROGRESS: "shipping_in_progress", // Đang giao hàng (thủ công bởi admin)
+  DELIVERED: "delivered", // Đã giao hàng (thủ công bởi admin)
+  CANCELLATION_REQUESTED: "cancellation_requested", // Yêu cầu hủy (thủ công bởi user)
 
   // COMPLETED
-  COMPLETED: "completed", // Hoàn thành (khách đã nhận hàng)
+  COMPLETED: "completed", // Hoàn thành (khách đã nhận hàng) (thủ công bởi user)
 
   // CANCELLED
-  PAYMENT_OVERDUE: "payment_overdue", // Quá hạn thanh toán
-  CANCELLED: "cancelled", // Đã hủy (trước khi shop chuẩn bị)
+  PAYMENT_OVERDUE: "payment_overdue", // Quá hạn thanh toán (tự động cập nhật bởi hệ thống)
+  CANCELLED: "cancelled", // Đã hủy (trước khi shop chuẩn bị) (thủ công bởi admin hoặc user)
 
   // RETURN_REFUND
-  DELIVERY_FAILED: "delivery_failed", // Giao hàng không thành công
-  RETURN_REQUESTED: "return_requested", // Yêu cầu trả hàng/hoàn tiền
-  REFUNDED: "refunded", // Đã hoàn tiền
+  DELIVERY_FAILED: "delivery_failed", // Giao hàng không thành công (thủ công bởi admin)
+  RETURN_REQUESTED: "return_requested", // Yêu cầu trả hàng/hoàn tiền (thủ công bởi user)
+  REFUNDED: "refunded", // Đã hoàn tiền (thủ công bởi admin)
 };
 
 const STATUS_MAP = {
@@ -96,16 +96,9 @@ const timelineEntrySchema = new mongoose.Schema(
     },
     // Người thực hiện hành động (user, admin, system)
     performedBy: {
-      userId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-      },
-      userName: { type: String },
-      userType: {
-        type: String,
-        enum: ["user", "admin", "system"],
-        default: "system",
-      },
+      type: "String",
+      enum: ["user", "admin", "system"],
+      required: true,
     },
     // Thông tin bổ sung
     metadata: {
@@ -129,8 +122,8 @@ const orderSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: Object.values(DETAILED_ORDER_STATUS),
-      default: DETAILED_ORDER_STATUS.NEW,
+      enum: Object.values(ORDER_STATUS),
+      default: ORDER_STATUS.PENDING,
     },
     deliveryId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -175,7 +168,7 @@ const orderSchema = new mongoose.Schema(
     
     // Thông tin hủy đơn
     cancelledAt: { type: Date },
-    cancelledBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    cancelledBy: { type: String, enum: ["user", "admin"] },
     cancelledReason: { type: String },
     cancellationRequestedAt: { type: Date },
     cancellationRequestReason: { type: String },

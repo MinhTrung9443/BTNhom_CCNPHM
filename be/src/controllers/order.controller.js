@@ -1,7 +1,3 @@
-import * as OrderStatusService from '../services/orderStatus.service.js';
-import logger from '../utils/logger.js';
-import AppError from '../utils/AppError.js';
-
 import * as OrderService from '../services/order.service.js';
 
 export const previewOrder = async (req, res) => {
@@ -25,7 +21,7 @@ export const getUserOrders = async (req, res, next) => {
   const userId = req.user._id;
   const { page = 1, limit = 10, status, search } = req.query;
 
-  const result = await OrderStatusService.getUserOrders(
+  const result = await OrderService.getUserOrders(
     userId,
     parseInt(page),
     parseInt(limit),
@@ -40,12 +36,11 @@ export const getUserOrders = async (req, res, next) => {
     data: result.orders,
   });
 };
-
 export const getOrderDetail = async (req, res, next) => {
   const { orderId } = req.params;
   const userId = req.user._id;
 
-  const order = await OrderStatusService.getOrderDetail(orderId, userId);
+  const order = await OrderService.getOrderDetail(orderId, userId);
 
   res.json({
     success: true,
@@ -54,44 +49,23 @@ export const getOrderDetail = async (req, res, next) => {
   });
 };
 
+export const getOrderByAdmin = async (req, res, next) => {
+    const { orderId } = req.params;
+    const order = await OrderService.getOrderByIdForAdmin(orderId);
+    res.json({
+      success: true,
+      message: 'Lấy thông tin đơn hàng thành công.',
+      data: order
+    });
+};
+
 export const getUserOrderStats = async (req, res, next) => {
   const userId = req.user._id;
-  const stats = await OrderStatusService.getOrderStats(userId);
+  const stats = await OrderService.getOrderStats(userId);
 
   res.json({
     success: true,
     message: 'Lấy thống kê đơn hàng thành công',
     data: stats
-  });
-};
-
-// === ADMIN FUNCTIONS ===
-
-export const addTimelineNote = async (req, res, next) => {
-  const { orderId } = req.params;
-  const { description, metadata = {} } = req.body;
-
-  if (!description) {
-    return next(new AppError('Vui lòng nhập nội dung ghi chú', 400));
-  }
-
-  const performedBy = {
-    userId: req.user?._id,
-    userName: req.user?.name || 'Admin',
-    userType: 'admin'
-  };
-
-  const order = await OrderStatusService.addTimelineEntry(
-    orderId,
-    null, // Không thay đổi status
-    description,
-    performedBy,
-    metadata
-  );
-
-  res.json({
-    success: true,
-    message: 'Thêm ghi chú thành công',
-    data: order
   });
 };

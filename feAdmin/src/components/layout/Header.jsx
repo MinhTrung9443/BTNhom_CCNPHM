@@ -15,6 +15,7 @@ import {
   markAsRead,
   markAllAsRead,
 } from "../../redux/slices/notificationsSlice";
+import { fetchOrderDetail } from "../../redux/slices/ordersSlice";
 import { toast } from "react-toastify";
 import socketService from '../../services/socketService';
 
@@ -132,6 +133,7 @@ const Header = () => {
                           handleMarkAsRead(notification._id);
                         }
                         if (notification.type === "order") {
+                          dispatch(fetchOrderDetail(notification.referenceId));
                           navigate(`/orders/${notification.referenceId}`);
                         }
                       }}

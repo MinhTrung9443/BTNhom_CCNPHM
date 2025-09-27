@@ -9,6 +9,7 @@ import {
   markAllAsRead,
   deleteNotification
 } from '../redux/slices/notificationsSlice';
+import { fetchOrderDetail } from '../redux/slices/ordersSlice';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import ConfirmModal from '../components/common/ConfirmModal';
 
@@ -64,6 +65,7 @@ const Notifications = () => {
     }
 
     if (notification.type === 'order') {
+      dispatch(fetchOrderDetail(notification.referenceId));
       navigate(`/orders/${notification.referenceId}`);
     }
     // Add more navigation logic for other types

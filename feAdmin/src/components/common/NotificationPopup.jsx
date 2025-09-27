@@ -8,6 +8,7 @@ import {
   markAllAsRead,
   deleteNotification
 } from '../../redux/slices/notificationsSlice';
+import { fetchOrderDetail } from '../../redux/slices/ordersSlice';
 import { toast } from 'react-toastify';
 
 const NotificationPopup = () => {
@@ -54,6 +55,7 @@ const NotificationPopup = () => {
 
     // Navigate based on notification type
     if (notification.type === 'order') {
+      dispatch(fetchOrderDetail(notification.referenceId));
       navigate(`/orders/${notification.referenceId}`);
     }
     // Add more navigation logic for other types as needed

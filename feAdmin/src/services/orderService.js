@@ -2,23 +2,23 @@ import api from './apiService'
 
 const orderService = {
   getAllOrders: (params = {}) => {
-    return api.get('/orders', { params })
+    return api.get('/admin/orders', { params })
   },
 
   getOrderDetail: (orderId) => {
-    return api.get(`/orders/${orderId}`)
+    return api.get(`/admin/orders/${orderId}`)
   },
 
   updateOrderStatus: (orderId, status, description) => {
-    return api.patch(`/orders/${orderId}/status`, { status, description })
+    return api.patch(`/admin/orders/${orderId}/status`, { status, description })
   },
 
   addOrderNote: (orderId, description, metadata = {}) => {
-    return api.post(`/orders/${orderId}/notes`, { description, metadata })
+    return api.post(`/admin/orders/${orderId}/notes`, { description, metadata })
   },
 
   getOrderStats: () => {
-    return api.get('/orders/stats')
+    return api.get('/admin/orders/stats')
   },
 }
 

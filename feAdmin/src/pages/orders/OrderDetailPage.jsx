@@ -24,12 +24,12 @@ const OrderDetailPage = () => {
   })
 
   useEffect(() => {
-    if (orderId) {
-      dispatch(fetchOrderDetail(orderId))
+    if (orderId && !order) {
+      dispatch(fetchOrderDetail(orderId));
     }
     return () => {
-      dispatch(clearCurrentOrder())
-    }
+      dispatch(clearCurrentOrder());
+    };
   }, [dispatch, orderId])
 
   const formatCurrency = (amount) => {
@@ -43,10 +43,13 @@ const OrderDetailPage = () => {
     const statusConfig = {
       new: { variant: 'primary', text: 'Mới' },
       confirmed: { variant: 'info', text: 'Đã xác nhận' },
+      processing: { variant: 'warning', text: 'Đang xử lý' },
       preparing: { variant: 'warning', text: 'Đang chuẩn bị' },
-      shipping: { variant: 'secondary', text: 'Đang giao' },
+      shipping_in_progress: { variant: 'secondary', text: 'Đang giao' },
       delivered: { variant: 'success', text: 'Đã giao' },
       cancelled: { variant: 'danger', text: 'Đã hủy' },
+      delivery_failed: { variant: 'danger', text: 'Giao hàng thất bại' },
+      refunded: { variant: 'info', text: 'Đã hoàn tiền' },
       cancellation_requested: { variant: 'warning', text: 'Yêu cầu hủy' },
     }
     const config = statusConfig[status] || { variant: 'secondary', text: status }
@@ -54,21 +57,13 @@ const OrderDetailPage = () => {
   }
 
   const getStatusOptions = (currentStatus) => {
-    const statusFlow = {
-      new: ['confirmed', 'cancelled'],
-      confirmed: ['preparing', 'cancelled'],
-      preparing: ['shipping', 'cancelled'],
-      shipping: ['delivered'],
-      delivered: [],
-      cancelled: [],
-      cancellation_requested: ['cancelled', 'confirmed'],
-    }
-    return statusFlow[currentStatus] || []
+    // Return all valid statuses that can be updated to
+    return ['preparing', 'shipping_in_progress', 'delivered', 'cancelled', 'delivery_failed', 'refunded']
   }
 
   const handleUpdateStatus = async () => {
-    if (!statusForm.status || !statusForm.description) {
-      toast.error('Vui lòng nhập đầy đủ thông tin')
+    if (!statusForm.status) {
+      toast.error('Vui lòng chọn trạng thái')
       return
     }
 
@@ -76,7 +71,7 @@ const OrderDetailPage = () => {
       await dispatch(updateOrderStatus({
         orderId: order._id,
         status: statusForm.status,
-        description: statusForm.description
+        reason: statusForm.description
       })).unwrap()
       toast.success('Cập nhật trạng thái thành công')
       setShowStatusModal(false)
@@ -106,12 +101,12 @@ const OrderDetailPage = () => {
     }
   }
 
-  const getUserTypeText = (userType, userName) => {
-    if (userType === 'system') {
-      return userName || 'Hệ thống'
+  const getUserTypeText = (performedBy) => {
+    if (performedBy === 'system') {
+      return 'Hệ thống'
     }
-    if (userType === 'admin') {
-      return 'Nhân viên'
+    if (performedBy === 'admin') {
+      return 'Quản trị viên'
     }
     return 'Khách hàng'
   }
@@ -185,13 +180,13 @@ const OrderDetailPage = () => {
                 </Col>
                 <Col md={6}>
                   <div className="mb-3">
-                    <strong>Người nhận:</strong> {order.recipientName}
+                    <strong>Người nhận:</strong> {order.shippingAddress.recipientName}
                   </div>
                   <div className="mb-3">
-                    <strong>Số điện thoại:</strong> {order.phoneNumber}
+                    <strong>Số điện thoại:</strong> {order.shippingAddress.phoneNumber}
                   </div>
                   <div className="mb-3">
-                    <strong>Địa chỉ:</strong> {order.shippingAddress}
+                    <strong>Địa chỉ:</strong> {`${order.shippingAddress.street}, ${order.shippingAddress.ward}, ${order.shippingAddress.district}, ${order.shippingAddress.province}`}
                   </div>
                   {order.notes && (
                     <div className="mb-3">
@@ -277,8 +272,8 @@ const OrderDetailPage = () => {
                             <div>
                               {getStatusBadge(item.status)}
                               <small className="text-muted ms-2">
-                                {getUserTypeText(item.performedBy.userType, item.performedBy.userName)}
-                              </small>
+                                  {getUserTypeText(item.performedBy)}
+                                </small>
                             </div>
                             <small className="text-muted">
                               {moment(item.timestamp).format('DD/MM HH:mm')}
@@ -320,11 +315,12 @@ const OrderDetailPage = () => {
                 <option value="">Chọn trạng thái</option>
                 {getStatusOptions(order.status).map((status) => (
                   <option key={status} value={status}>
-                    {status === 'confirmed' && 'Đã xác nhận'}
                     {status === 'preparing' && 'Đang chuẩn bị'}
-                    {status === 'shipping' && 'Đang giao'}
+                    {status === 'shipping_in_progress' && 'Đang giao'}
                     {status === 'delivered' && 'Đã giao'}
                     {status === 'cancelled' && 'Đã hủy'}
+                    {status === 'delivery_failed' && 'Giao hàng thất bại'}
+                    {status === 'refunded' && 'Đã hoàn tiền'}
                   </option>
                 ))}
               </Form.Select>
@@ -336,7 +332,7 @@ const OrderDetailPage = () => {
                 rows={3}
                 value={statusForm.description}
                 onChange={(e) => setStatusForm(prev => ({ ...prev, description: e.target.value }))}
-                placeholder="Nhập mô tả cho việc cập nhật trạng thái..."
+                placeholder="Nhập mô tả cho việc cập nhật trạng thái (không bắt buộc)"
               />
             </Form.Group>
           </Form>

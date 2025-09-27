@@ -1,5 +1,5 @@
 import cron from 'node-cron';
-import * as OrderStatusService from './orderStatus.service.js';
+import * as orderService from './order.service.js';
 import logger from '../utils/logger.js';
 
 export const init = () => {
@@ -13,16 +13,12 @@ export const init = () => {
 export const scheduleOrderAutoConfirm = () => {
   // Chạy mỗi phút
   cron.schedule('* * * * *', async () => {
-    try {
       logger.info('Bắt đầu kiểm tra đơn hàng cần auto-confirm');
-      const confirmedCount = await OrderStatusService.autoConfirmOrders();
+      const confirmedCount = await orderService.autoConfirmOrders();
       
       if (confirmedCount > 0) {
         logger.info(`Cron job: Đã tự động xác nhận ${confirmedCount} đơn hàng`);
       }
-    } catch (error) {
-      logger.error(`Lỗi trong cron job auto-confirm: ${error.message}`);
-    }
   }, {
     scheduled: true,
     timezone: "Asia/Ho_Chi_Minh"

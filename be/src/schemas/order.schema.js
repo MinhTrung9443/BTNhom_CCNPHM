@@ -15,7 +15,12 @@ const getUserOrders = {
   }),
 };
 
-export { getUserOrders };
+const getOrderById = {
+  params: Joi.object().keys({
+    orderId: Joi.string().hex().length(24).required(),
+  }),
+};
+export { getUserOrders, getOrderById };
 const addressSchema = Joi.object({
   province: Joi.string().required(),
   district: Joi.string().required(),
@@ -69,5 +74,22 @@ export const placeOrder = {
       voucherCode: Joi.string().allow(null),
       paymentMethod: Joi.string().valid("VNPAY", "COD", "BANK").required(),
     }).required(),
+  }),
+};
+
+export const updateOrderStatus = {
+  params: Joi.object().keys({
+    orderId: Joi.string().hex().length(24).required(),
+  }),
+  body: Joi.object().keys({
+    status: Joi.string().valid(
+      'preparing',
+      'shipping_in_progress',
+      'delivered',
+      'cancelled',
+      'delivery_failed',
+      'refunded'
+    ).required(),
+    reason: Joi.string().optional(),
   }),
 };

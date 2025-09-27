@@ -36,7 +36,10 @@ const protect = async (req, res, next) => {
 
 const restrictTo = (...roles) => {
     return (req, res, next) => {
+      console.log(req.user.role);
+      console.log(roles);
         if (!roles.includes(req.user.role)) {
+          console.log(`User role ${req.user.role} is not authorized to access this route.`);
             return next(new AppError('Bạn không có quyền thực hiện hành động này.', 403));
         }
         next();

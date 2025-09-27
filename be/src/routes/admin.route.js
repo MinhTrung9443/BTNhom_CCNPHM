@@ -1,5 +1,6 @@
 import express from "express";
 import { adminController } from "../controllers/admin.controller.js";
+import * as orderController from "../controllers/order.controller.js";
 import {
   getNotificationsHandler,
   markAsReadHandler,
@@ -7,6 +8,8 @@ import {
   deleteNotificationHandler,
 } from "../controllers/notification.controller.js";
 import { protect, restrictTo } from "../middlewares/auth.js";
+import { validate } from "../middlewares/validate.js";
+import { getOrderById, updateOrderStatus } from "../schemas/order.schema.js";
 
 const router = express.Router();
 
@@ -47,5 +50,19 @@ router.get("/notifications", getNotificationsHandler);
 router.patch("/notifications/:id/read", markAsReadHandler);
 router.patch("/notifications/mark-all-read", markAllAsReadHandler);
 router.delete("/notifications/:id", deleteNotificationHandler);
+
+// === ORDER MANAGEMENT ROUTES ===
+router.get(
+  "/orders/:orderId",
+  validate(getOrderById),
+  orderController.getOrderByAdmin
+);
+
+// === ORDER STATUS MANAGEMENT ===
+router.patch(
+  "/orders/:orderId/status",
+  validate(updateOrderStatus),
+  adminController.updateOrderStatus
+);
 
 export default router;

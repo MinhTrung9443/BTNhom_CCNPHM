@@ -7,7 +7,7 @@ export const fetchOrders = createAsyncThunk(
   async (params = {}, { rejectWithValue }) => {
     try {
       const response = await orderService.getAllOrders(params)
-      return response.data
+      return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || error.message)
     }
@@ -19,7 +19,7 @@ export const fetchOrderDetail = createAsyncThunk(
   async (orderId, { rejectWithValue }) => {
     try {
       const response = await orderService.getOrderDetail(orderId)
-      return response.data
+      return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || error.message)
     }
@@ -31,7 +31,7 @@ export const updateOrderStatus = createAsyncThunk(
   async ({ orderId, status, description }, { rejectWithValue }) => {
     try {
       const response = await orderService.updateOrderStatus(orderId, status, description)
-      return response.data
+      return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || error.message)
     }
@@ -43,7 +43,7 @@ export const addOrderNote = createAsyncThunk(
   async ({ orderId, description, metadata }, { rejectWithValue }) => {
     try {
       const response = await orderService.addOrderNote(orderId, description, metadata)
-      return response.data
+      return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || error.message)
     }
