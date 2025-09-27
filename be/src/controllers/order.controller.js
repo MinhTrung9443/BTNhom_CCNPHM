@@ -49,6 +49,50 @@ export const getOrderDetail = async (req, res, next) => {
   });
 };
 
+export const getAllOrdersByAdmin = async (req, res) => {
+  const {
+    page = 1,
+    limit = 10,
+    status,
+    search,
+    sortBy,
+    sortOrder,
+  } = req.query;
+
+  const result = await OrderService.getAllOrders(
+    parseInt(page, 10),
+    parseInt(limit, 10),
+    status,
+    search,
+    sortBy,
+    sortOrder
+  );
+
+  res.json({
+    success: true,
+    message: "Lấy danh sách tất cả đơn hàng thành công.",
+    meta: result.meta,
+    data: result.data,
+  });
+};
+
+export const updateOrderStatusByAdmin = async (req, res) => {
+  const { orderId } = req.params;
+  const { status, ...metadata } = req.body;
+
+  const updatedOrder = await OrderService.updateOrderStatusByAdmin(
+    orderId,
+    status,
+    metadata
+  );
+
+  res.json({
+    success: true,
+    message: "Cập nhật trạng thái đơn hàng thành công.",
+    data: updatedOrder,
+  });
+};
+
 export const getOrderByAdmin = async (req, res, next) => {
     const { orderId } = req.params;
     const order = await OrderService.getOrderByIdForAdmin(orderId);

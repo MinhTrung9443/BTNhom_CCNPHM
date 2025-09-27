@@ -11,6 +11,7 @@ import UserVoucher from "./UserVoucher.js";
 import Review from "./Review.js";
 import Favorite from "./Favorite.js";
 import LoyaltyPoints from "./LoyaltyPoints.js";
+import Notification from "./Notification.js";
 export {
   User,
   OTP,
@@ -24,5 +25,6 @@ export {
   Cart,
   Delivery,
   LoyaltyPoints,
-  Favorite
+  Favorite,
+  Notification
 };

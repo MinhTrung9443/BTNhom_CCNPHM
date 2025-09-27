@@ -5,12 +5,12 @@ const orderService = {
     return api.get('/admin/orders', { params })
   },
 
-  getOrderDetail: (orderId) => {
-    return api.get(`/admin/orders/${orderId}`)
+  getOrderById: (orderId) => {
+    return api.get(`/admin/orders/${orderId}`);
   },
 
-  updateOrderStatus: (orderId, status, description) => {
-    return api.patch(`/admin/orders/${orderId}/status`, { status, description })
+  updateOrderStatus: (orderId, status, metadata = {}) => {
+    return api.patch(`/admin/orders/${orderId}/status`, { status, ...metadata });
   },
 
   addOrderNote: (orderId, description, metadata = {}) => {

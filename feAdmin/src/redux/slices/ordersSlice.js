@@ -7,19 +7,20 @@ export const fetchOrders = createAsyncThunk(
   async (params = {}, { rejectWithValue }) => {
     try {
       const response = await orderService.getAllOrders(params)
-      return response.data;
+      // Return only the serializable parts of the response (the actual API response body)
+      return response.data; // API trả về { data: [...], meta: {...} }
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || error.message)
     }
   }
 )
 
-export const fetchOrderDetail = createAsyncThunk(
-  'orders/fetchOrderDetail',
+export const fetchOrderById = createAsyncThunk(
+  "orders/fetchOrderById",
   async (orderId, { rejectWithValue }) => {
     try {
-      const response = await orderService.getOrderDetail(orderId)
-      return response.data;
+      const response = await orderService.getOrderById(orderId);
+      return response.data.data; // API trả về { success: true, message: "...", data: order_object }
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || error.message)
     }
@@ -28,10 +29,14 @@ export const fetchOrderDetail = createAsyncThunk(
 
 export const updateOrderStatus = createAsyncThunk(
   'orders/updateOrderStatus',
-  async ({ orderId, status, description }, { rejectWithValue }) => {
+  async ({ orderId, status, metadata }, { rejectWithValue }) => {
     try {
-      const response = await orderService.updateOrderStatus(orderId, status, description)
-      return response.data;
+      const response = await orderService.updateOrderStatus(
+        orderId,
+        status,
+        metadata
+      );
+      return response.data.data; // API trả về { success: true, message: "...", data: updatedOrder }
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || error.message)
     }
@@ -39,11 +44,11 @@ export const updateOrderStatus = createAsyncThunk(
 )
 
 export const addOrderNote = createAsyncThunk(
-  'orders/addOrderNote',
+ 'orders/addOrderNote',
   async ({ orderId, description, metadata }, { rejectWithValue }) => {
     try {
       const response = await orderService.addOrderNote(orderId, description, metadata)
-      return response.data;
+      return response.data.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || error.message)
     }
@@ -52,14 +57,8 @@ export const addOrderNote = createAsyncThunk(
 
 const initialState = {
   orders: [],
-  currentOrder: null,
-  pagination: {
-    currentPage: 1,
-    totalPages: 1,
-    totalOrders: 0,
-    hasNext: false,
-    hasPrev: false,
-  },
+  order: null, // Đổi tên cho nhất quán
+  meta: {}, // Đổi tên cho nhất quán với API
   loading: false,
   error: null,
 }
@@ -71,8 +70,8 @@ const ordersSlice = createSlice({
     clearError: (state) => {
       state.error = null
     },
-    clearCurrentOrder: (state) => {
-      state.currentOrder = null
+    clearOrder: (state) => {
+      state.order = null;
     },
   },
   extraReducers: (builder) => {
@@ -84,46 +83,54 @@ const ordersSlice = createSlice({
       })
       .addCase(fetchOrders.fulfilled, (state, action) => {
         state.loading = false
-        state.orders = action.payload.data
-        state.pagination = action.payload.pagination
+        state.orders = action.payload.data;
+        state.meta = action.payload.meta; // Cập nhật meta
       })
       .addCase(fetchOrders.rejected, (state, action) => {
         state.loading = false
         state.error = action.payload
       })
-      // Fetch order detail
-      .addCase(fetchOrderDetail.pending, (state) => {
-        state.loading = true
-        state.error = null
+      // Fetch Order By Id
+      .addCase(fetchOrderById.pending, (state) => {
+        state.loading = true;
+        state.error = null;
       })
-      .addCase(fetchOrderDetail.fulfilled, (state, action) => {
-        state.loading = false
-        state.currentOrder = action.payload.data
+      .addCase(fetchOrderById.fulfilled, (state, action) => {
+        state.loading = false;
+        state.order = action.payload;
       })
-      .addCase(fetchOrderDetail.rejected, (state, action) => {
-        state.loading = false
-        state.error = action.payload
+      .addCase(fetchOrderById.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
       })
       // Update order status
+      .addCase(updateOrderStatus.pending, (state) => {
+        // Có thể set loading riêng cho việc update nếu cần
+      })
       .addCase(updateOrderStatus.fulfilled, (state, action) => {
-        const updatedOrder = action.payload.data
-        const index = state.orders.findIndex(order => order._id === updatedOrder._id)
+        const updatedOrder = action.payload;
+        const index = state.orders.findIndex(
+          (order) => order._id === updatedOrder._id
+        );
         if (index !== -1) {
-          state.orders[index] = updatedOrder
+          state.orders[index] = updatedOrder;
         }
-        if (state.currentOrder && state.currentOrder._id === updatedOrder._id) {
-          state.currentOrder = updatedOrder
+        if (state.order && state.order._id === updatedOrder._id) {
+          state.order = updatedOrder;
         }
+      })
+      .addCase(updateOrderStatus.rejected, (state, action) => {
+        state.error = action.payload;
       })
       // Add order note
       .addCase(addOrderNote.fulfilled, (state, action) => {
-        const updatedOrder = action.payload.data
-        if (state.currentOrder && state.currentOrder._id === updatedOrder._id) {
-          state.currentOrder = updatedOrder
+        const updatedOrder = action.payload;
+        if (state.order && state.order._id === updatedOrder._id) {
+          state.order = updatedOrder;
         }
       })
   },
 })
 
-export const { clearError, clearCurrentOrder } = ordersSlice.actions
+export const { clearError, clearOrder } = ordersSlice.actions;
 export default ordersSlice.reducer

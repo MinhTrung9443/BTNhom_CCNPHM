@@ -3,7 +3,7 @@ import User from "../models/User.js";
 import LoyaltyPoints from "../models/LoyaltyPoints.js";
 import logger from "../utils/logger.js";
 import AppError from "../utils/AppError.js";
-import * as adminService from "../services/admin.service.js";
+import * as orderService from "../services/order.service.js";
 
 export const adminController = {
   // User Management
@@ -454,12 +454,11 @@ export const adminController = {
     }
   },
 
-  updateOrderStatus: async (req, res, next) => {
+  updateOrderStatus: async (req, res) => {
     const { orderId } = req.params;
     const { status, ...metadata } = req.body;
-    const adminId = req.user._id;
 
-    const updatedOrder = await adminService.updateOrderStatusByAdmin(
+    const updatedOrder = await orderService.updateOrderStatusByAdmin(
       orderId,
       status,
       metadata

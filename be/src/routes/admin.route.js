@@ -52,6 +52,8 @@ router.patch("/notifications/mark-all-read", markAllAsReadHandler);
 router.delete("/notifications/:id", deleteNotificationHandler);
 
 // === ORDER MANAGEMENT ROUTES ===
+// === ORDER MANAGEMENT ROUTES ===
+router.get("/orders", orderController.getAllOrdersByAdmin);
 router.get(
   "/orders/:orderId",
   validate(getOrderById),
@@ -62,7 +64,7 @@ router.get(
 router.patch(
   "/orders/:orderId/status",
   validate(updateOrderStatus),
-  adminController.updateOrderStatus
+  orderController.updateOrderStatusByAdmin
 );
 
 export default router;

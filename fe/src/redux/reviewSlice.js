@@ -17,7 +17,7 @@ export const getUserReviews = createAsyncThunk(
   'reviews/getUserReviews',
   async (userId, { rejectWithValue }) => {
     try {
-      const response = await api.get(`/reviews/user/${userId}`);
+      const response = await api.get(`/reviews/me`);
       return response.data.reviews;
     } catch (error) {
       return rejectWithValue(error.response.data);

@@ -10,43 +10,42 @@ import moment from 'moment'
 
 const OrdersPage = () => {
   const dispatch = useDispatch()
-  const { orders, pagination, loading } = useSelector((state) => state.orders)
+  const { orders, meta, loading, error } = useSelector((state) => state.orders);
 
   const [filters, setFilters] = useState({
     page: 1,
     limit: 10,
     search: '',
     status: '',
-    sortBy: '-createdAt',
+    sortBy: "createdAt",
+    sortOrder: "desc",
   })
 
   useEffect(() => {
     dispatch(fetchOrders(filters))
   }, [dispatch, filters])
 
-  const handleFilterChange = (key, value) => {
+  const handleFilterChange = (e) => {
+    const { name, value } = e.target;
+    setFilters((prev) => ({
+      ...prev,
+      [name]: value,
+      page: 1,
+    }));
+  };
+
+  const handleSortChange = (value) => {
+    const [sortBy, sortOrder] = value.split(',');
     setFilters(prev => ({
       ...prev,
-      [key]: value,
-      page: 1
-    }))
-  }
+      sortBy,
+      sortOrder,
+      page: 1,
+    }));
+  };
 
   const handlePageChange = (page) => {
     setFilters(prev => ({ ...prev, page }))
-  }
-
-  const handleStatusChange = async (orderId, newStatus) => {
-    try {
-      await dispatch(updateOrderStatus({ 
-        orderId, 
-        status: newStatus, 
-        description: `Cập nhật trạng thái thành ${getStatusText(newStatus)}` 
-      })).unwrap()
-      toast.success('Cập nhật trạng thái đơn hàng thành công')
-    } catch (error) {
-      toast.error(error || 'Có lỗi xảy ra khi cập nhật trạng thái')
-    }
   }
 
   const formatCurrency = (amount) => {
@@ -58,13 +57,12 @@ const OrdersPage = () => {
 
   const getStatusBadge = (status) => {
     const statusConfig = {
-      new: { variant: 'primary', text: 'Mới' },
-      confirmed: { variant: 'info', text: 'Đã xác nhận' },
-      preparing: { variant: 'warning', text: 'Đang chuẩn bị' },
-      shipping: { variant: 'secondary', text: 'Đang giao' },
-      delivered: { variant: 'success', text: 'Đã giao' },
-      cancelled: { variant: 'danger', text: 'Đã hủy' },
-      cancellation_requested: { variant: 'warning', text: 'Yêu cầu hủy' },
+      pending: { variant: "primary", text: "Chờ xác nhận" },
+      processing: { variant: "info", text: "Vận chuyển" },
+      shipping: { variant: "warning", text: "Đang giao" },
+      completed: { variant: "success", text: "Hoàn thành" },
+      cancelled: { variant: "danger", text: "Đã hủy" },
+      return_refund: { variant: "secondary", text: "Trả hàng/Hoàn tiền" },
     }
     const config = statusConfig[status] || { variant: 'secondary', text: status }
     return <Badge bg={config.variant}>{config.text}</Badge>
@@ -72,25 +70,24 @@ const OrdersPage = () => {
 
   const getStatusText = (status) => {
     const statusTexts = {
-      new: 'Mới',
-      confirmed: 'Đã xác nhận',
-      preparing: 'Đang chuẩn bị',
-      shipping: 'Đang giao',
-      delivered: 'Đã giao',
-      cancelled: 'Đã hủy',
+      pending: "Chờ xác nhận",
+      processing: "Vận chuyển",
+      shipping: "Đang giao",
+      completed: "Hoàn thành",
+      cancelled: "Đã hủy",
+      return_refund: "Trả hàng/Hoàn tiền",
     }
     return statusTexts[status] || status
   }
 
   const getStatusOptions = (currentStatus) => {
     const statusFlow = {
-      new: ['confirmed', 'cancelled'],
-      confirmed: ['preparing', 'cancelled'],
-      preparing: ['shipping', 'cancelled'],
-      shipping: ['delivered'],
-      delivered: [],
+      pending: ["processing", "cancelled"],
+      processing: ["shipping", "cancelled"],
+      shipping: ["completed", "return_refund"],
+      completed: [],
       cancelled: [],
-      cancellation_requested: ['cancelled', 'confirmed'],
+      return_refund: [],
     }
     return statusFlow[currentStatus] || []
   }
@@ -113,41 +110,43 @@ const OrdersPage = () => {
                 <Form.Control
                   type="text"
                   placeholder="Tìm kiếm theo mã đơn hàng, tên khách hàng..."
+                  name="search"
                   value={filters.search}
-                  onChange={(e) => handleFilterChange('search', e.target.value)}
+                  onChange={handleFilterChange}
                 />
               </InputGroup>
             </Col>
             <Col md={3}>
               <Form.Select
+                name="status"
                 value={filters.status}
-                onChange={(e) => handleFilterChange('status', e.target.value)}
+                onChange={handleFilterChange}
               >
                 <option value="">Tất cả trạng thái</option>
-                <option value="new">Mới</option>
-                <option value="confirmed">Đã xác nhận</option>
-                <option value="preparing">Đang chuẩn bị</option>
+                <option value="pending">Chờ xác nhận</option>
+                <option value="processing">Vận chuyển</option>
                 <option value="shipping">Đang giao</option>
-                <option value="delivered">Đã giao</option>
+                <option value="completed">Hoàn thành</option>
                 <option value="cancelled">Đã hủy</option>
-                <option value="cancellation_requested">Yêu cầu hủy</option>
+                <option value="return_refund">Trả hàng/Hoàn tiền</option>
               </Form.Select>
             </Col>
             <Col md={3}>
               <Form.Select
-                value={filters.sortBy}
-                onChange={(e) => handleFilterChange('sortBy', e.target.value)}
+                value={`${filters.sortBy},${filters.sortOrder}`}
+                onChange={(e) => handleSortChange(e.target.value)}
               >
-                <option value="-createdAt">Mới nhất</option>
-                <option value="createdAt">Cũ nhất</option>
-                <option value="-totalAmount">Giá trị cao nhất</option>
-                <option value="totalAmount">Giá trị thấp nhất</option>
+                <option value="createdAt,desc">Mới nhất</option>
+                <option value="createdAt,asc">Cũ nhất</option>
+                <option value="totalAmount,desc">Giá trị cao nhất</option>
+                <option value="totalAmount,asc">Giá trị thấp nhất</option>
               </Form.Select>
             </Col>
             <Col md={2}>
               <Form.Select
                 value={filters.limit}
-                onChange={(e) => handleFilterChange('limit', parseInt(e.target.value))}
+                name="limit"
+                onChange={handleFilterChange}
               >
                 <option value={10}>10 / trang</option>
                 <option value={25}>25 / trang</option>
@@ -190,8 +189,8 @@ const OrdersPage = () => {
                       </td>
                       <td>
                         <div>
-                          <div className="fw-semibold">{order.recipientName}</div>
-                          <small className="text-muted">{order.phoneNumber}</small>
+                          <div className="fw-semibold">{order.shippingAddress?.recipientName}</div>
+                          <small className="text-muted">{order.shippingAddress?.phoneNumber}</small>
                         </div>
                       </td>
                       <td>
@@ -220,26 +219,6 @@ const OrdersPage = () => {
                         <div className="mb-2">
                           {getStatusBadge(order.status)}
                         </div>
-                        {getStatusOptions(order.status).length > 0 && (
-                          <Form.Select
-                            size="sm"
-                            value=""
-                            onChange={(e) => {
-                              if (e.target.value) {
-                                handleStatusChange(order._id, e.target.value)
-                                e.target.value = ''
-                              }
-                            }}
-                            style={{ width: '140px' }}
-                          >
-                            <option value="">Cập nhật...</option>
-                            {getStatusOptions(order.status).map((status) => (
-                              <option key={status} value={status}>
-                                {getStatusText(status)}
-                              </option>
-                            ))}
-                          </Form.Select>
-                        )}
                       </td>
                       <td>
                         <small className="text-muted">
@@ -266,8 +245,8 @@ const OrdersPage = () => {
 
               <div className="p-3">
                 <Pagination
-                  currentPage={pagination.currentPage}
-                  totalPages={pagination.totalPages}
+                  currentPage={meta.currentPage}
+                  totalPages={meta.totalPages}
                   onPageChange={handlePageChange}
                   loading={loading}
                 />

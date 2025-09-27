@@ -2,7 +2,12 @@ import React, { useEffect, useState } from 'react'
 import { Container, Row, Col, Card, Table, Button, Form, Badge, Modal } from 'react-bootstrap'
 import { useDispatch, useSelector } from 'react-redux'
 import { useParams, Link } from 'react-router-dom'
-import { fetchOrderDetail, updateOrderStatus, addOrderNote, clearCurrentOrder } from '../../redux/slices/ordersSlice'
+import {
+  fetchOrderById,
+  updateOrderStatus,
+  addOrderNote,
+  clearOrder,
+} from "../../redux/slices/ordersSlice";
 import LoadingSpinner from '../../components/common/LoadingSpinner'
 import { toast } from 'react-toastify'
 import moment from 'moment'
@@ -10,13 +15,13 @@ import moment from 'moment'
 const OrderDetailPage = () => {
   const { orderId } = useParams()
   const dispatch = useDispatch()
-  const { currentOrder: order, loading } = useSelector((state) => state.orders)
+  const { order, loading } = useSelector((state) => state.orders);
 
   const [showStatusModal, setShowStatusModal] = useState(false)
   const [showNoteModal, setShowNoteModal] = useState(false)
   const [statusForm, setStatusForm] = useState({
     status: '',
-    description: ''
+    reason: "",
   })
   const [noteForm, setNoteForm] = useState({
     description: '',
@@ -24,13 +29,15 @@ const OrderDetailPage = () => {
   })
 
   useEffect(() => {
-    if (orderId && !order) {
-      dispatch(fetchOrderDetail(orderId));
+    if (orderId) {
+      dispatch(fetchOrderById(orderId));
     }
+    // Cleanup function to clear the current order when the component unmounts
+    // or when the orderId changes, to prevent showing stale data.
     return () => {
-      dispatch(clearCurrentOrder());
+      dispatch(clearOrder());
     };
-  }, [dispatch, orderId])
+  }, [dispatch, orderId]);
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('vi-VN', {
@@ -41,25 +48,57 @@ const OrderDetailPage = () => {
 
   const getStatusBadge = (status) => {
     const statusConfig = {
-      new: { variant: 'primary', text: 'Mới' },
-      confirmed: { variant: 'info', text: 'Đã xác nhận' },
-      processing: { variant: 'warning', text: 'Đang xử lý' },
-      preparing: { variant: 'warning', text: 'Đang chuẩn bị' },
-      shipping_in_progress: { variant: 'secondary', text: 'Đang giao' },
-      delivered: { variant: 'success', text: 'Đã giao' },
-      cancelled: { variant: 'danger', text: 'Đã hủy' },
-      delivery_failed: { variant: 'danger', text: 'Giao hàng thất bại' },
-      refunded: { variant: 'info', text: 'Đã hoàn tiền' },
-      cancellation_requested: { variant: 'warning', text: 'Yêu cầu hủy' },
+      pending: { variant: "primary", text: "Chờ xác nhận" },
+      processing: { variant: "info", text: "VẬn chuyển" },
+      shipping: { variant: "warning", text: "Đang giao" },
+      completed: { variant: "success", text: "Hoàn thành" },
+      cancelled: { variant: "danger", text: "Đã hủy" },
+      return_refund: { variant: "secondary", text: "Trả hàng/Hoàn tiền" },
+      // Detailed statuses for timeline
+      new: { variant: "primary", text: "Mới" },
+      confirmed: { variant: "info", text: "Đã xác nhận" },
+      preparing: { variant: "info", text: "Chuẩn bị hàng" },
+      shipping_in_progress: { variant: "warning", text: "Đang giao" },
+      delivered: { variant: "success", text: "Đã giao" },
+      delivery_failed: { variant: "danger", text: "Giao thất bại" },
+      cancellation_requested: {
+        variant: "warning",
+        text: "Yêu cầu hủy",
+        bg: "warning",
+      },
+      refunded: { variant: "info", text: "Đã hoàn tiền" },
     }
     const config = statusConfig[status] || { variant: 'secondary', text: status }
     return <Badge bg={config.variant}>{config.text}</Badge>
   }
 
-  const getStatusOptions = (currentStatus) => {
-    // Return all valid statuses that can be updated to
-    return ['preparing', 'shipping_in_progress', 'delivered', 'cancelled', 'delivery_failed', 'refunded']
-  }
+  const DETAILED_STATUS_TEXT = {
+    preparing: "Chuẩn bị hàng",
+    shipping_in_progress: "Bắt đầu giao hàng",
+    delivered: "Đã giao thành công",
+    cancelled: "Hủy đơn hàng",
+    delivery_failed: "Giao hàng thất bại",
+    refunded: "Hoàn tiền",
+  };
+
+  const getStatusOptions = (currentDetailedStatus) => {
+    const transitions = {
+      new: ["confirmed"],
+      confirmed: ["preparing", "cancelled"],
+      preparing: ["shipping_in_progress", "cancelled"],
+      shipping_in_progress: [
+        "delivered",
+        "delivery_failed",
+        "cancelled",
+      ],
+      cancellation_requested: ["cancelled"],
+      delivery_failed: [], // Có thể cho phép giao lại?
+      delivered: [], // Chỉ có user xác nhận completed
+    };
+    // Lấy trạng thái chi tiết cuối cùng từ timeline
+    const lastStatus = order?.timeline?.[order.timeline.length - 1]?.status;
+    return transitions[lastStatus] || [];
+  };
 
   const handleUpdateStatus = async () => {
     if (!statusForm.status) {
@@ -70,36 +109,18 @@ const OrderDetailPage = () => {
     try {
       await dispatch(updateOrderStatus({
         orderId: order._id,
+        orderId: order._id,
         status: statusForm.status,
-        reason: statusForm.description
+        metadata: { reason: statusForm.reason },
       })).unwrap()
       toast.success('Cập nhật trạng thái thành công')
       setShowStatusModal(false)
-      setStatusForm({ status: '', description: '' })
+      setStatusForm({ status: "", reason: "" });
     } catch (error) {
       toast.error(error || 'Có lỗi xảy ra')
     }
   }
 
-  const handleAddNote = async () => {
-    if (!noteForm.description) {
-      toast.error('Vui lòng nhập nội dung ghi chú')
-      return
-    }
-
-    try {
-      await dispatch(addOrderNote({
-        orderId: order._id,
-        description: noteForm.description,
-        metadata: noteForm.metadata
-      })).unwrap()
-      toast.success('Thêm ghi chú thành công')
-      setShowNoteModal(false)
-      setNoteForm({ description: '', metadata: {} })
-    } catch (error) {
-      toast.error(error || 'Có lỗi xảy ra')
-    }
-  }
 
   const getUserTypeText = (performedBy) => {
     if (performedBy === 'system') {
@@ -140,15 +161,15 @@ const OrderDetailPage = () => {
         </div>
         <div className="d-flex gap-2">
           {getStatusOptions(order.status).length > 0 && (
-            <Button variant="primary" onClick={() => setShowStatusModal(true)}>
+            <Button
+              variant="primary"
+              onClick={() => setShowStatusModal(true)}
+              disabled={getStatusOptions().length === 0}
+            >
               <i className="bi bi-arrow-repeat me-2"></i>
               Cập nhật trạng thái
             </Button>
           )}
-          <Button variant="outline-secondary" onClick={() => setShowNoteModal(true)}>
-            <i className="bi bi-chat-left-text me-2"></i>
-            Thêm ghi chú
-          </Button>
         </div>
       </div>
 
@@ -313,14 +334,9 @@ const OrderDetailPage = () => {
                 onChange={(e) => setStatusForm(prev => ({ ...prev, status: e.target.value }))}
               >
                 <option value="">Chọn trạng thái</option>
-                {getStatusOptions(order.status).map((status) => (
+                {getStatusOptions().map((status) => (
                   <option key={status} value={status}>
-                    {status === 'preparing' && 'Đang chuẩn bị'}
-                    {status === 'shipping_in_progress' && 'Đang giao'}
-                    {status === 'delivered' && 'Đã giao'}
-                    {status === 'cancelled' && 'Đã hủy'}
-                    {status === 'delivery_failed' && 'Giao hàng thất bại'}
-                    {status === 'refunded' && 'Đã hoàn tiền'}
+                    {DETAILED_STATUS_TEXT[status] || status}
                   </option>
                 ))}
               </Form.Select>
@@ -330,9 +346,11 @@ const OrderDetailPage = () => {
               <Form.Control
                 as="textarea"
                 rows={3}
-                value={statusForm.description}
-                onChange={(e) => setStatusForm(prev => ({ ...prev, description: e.target.value }))}
-                placeholder="Nhập mô tả cho việc cập nhật trạng thái (không bắt buộc)"
+                value={statusForm.reason}
+                onChange={(e) =>
+                  setStatusForm((prev) => ({ ...prev, reason: e.target.value }))
+                }
+                placeholder="Nhập lý do cập nhật (nếu có)"
               />
             </Form.Group>
           </Form>
@@ -343,35 +361,6 @@ const OrderDetailPage = () => {
           </Button>
           <Button variant="primary" onClick={handleUpdateStatus}>
             Cập nhật
-          </Button>
-        </Modal.Footer>
-      </Modal>
-
-      {/* Add Note Modal */}
-      <Modal show={showNoteModal} onHide={() => setShowNoteModal(false)}>
-        <Modal.Header closeButton>
-          <Modal.Title>Thêm ghi chú</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Form>
-            <Form.Group className="mb-3">
-              <Form.Label>Nội dung ghi chú</Form.Label>
-              <Form.Control
-                as="textarea"
-                rows={4}
-                value={noteForm.description}
-                onChange={(e) => setNoteForm(prev => ({ ...prev, description: e.target.value }))}
-                placeholder="Nhập nội dung ghi chú..."
-              />
-            </Form.Group>
-          </Form>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowNoteModal(false)}>
-            Hủy
-          </Button>
-          <Button variant="primary" onClick={handleAddNote}>
-            Thêm ghi chú
           </Button>
         </Modal.Footer>
       </Modal>
