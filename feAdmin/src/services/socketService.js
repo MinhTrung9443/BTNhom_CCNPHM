@@ -11,6 +11,7 @@ class SocketService {
 
   connect(token) {
     if (this.socket && this.isConnected) {
+      console.log("Socket already connected, skipping...");
       return;
     }
 

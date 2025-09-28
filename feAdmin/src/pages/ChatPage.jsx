@@ -1,63 +1,36 @@
 import React, { useState, useEffect, useRef } from "react";
 import socketService from "../services/socketService";
+import { useChatContext } from "../contexts/ChatContext";
 import "./ChatPage.css";
 
 const ChatPage = () => {
-  const [rooms, setRooms] = useState([]);
+  const { activeRooms, unreadMessages, markRoomAsRead, refreshActiveRooms } =
+    useChatContext();
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState("");
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
-    // Assume token is available, e.g., from localStorage
-    const token = localStorage.getItem("adminToken");
-    if (token) {
-      socketService.connect(token);
-      socketService.setOnNewOrderCallback(null); // Clear if any
+    // Clear the global message callback when entering chat page to prevent duplicate notifications
+    socketService.setOnNewOrderCallback(null);
 
-      // Listen for active rooms
-      socketService.setOnActiveRoomsCallback((activeRooms) => {
-        setRooms(activeRooms);
-      });
+    // Set current page indicator
+    sessionStorage.setItem("currentChatPage", "true");
 
-      // Listen for new room
-      socketService.setOnNewRoomCallback(({ room, adminId }) => {
-        setRooms((prev) => [...prev, room]);
-      });
-
-      // Listen for room closed
-      socketService.setOnRoomClosedCallback(({ room }) => {
-        setRooms((prev) => prev.filter((r) => r !== room));
-        if (selectedRoom === room) {
-          setSelectedRoom(null);
-          setMessages([]);
-        }
-      });
-
-      // Fetch initial active rooms
-      socketService.getActiveRooms();
-    }
+    // Refresh active rooms when entering chat page
+    refreshActiveRooms();
 
     return () => {
-      socketService.disconnect();
+      // Clear page indicator when leaving
+      sessionStorage.removeItem("currentChatPage");
+      sessionStorage.removeItem("currentChatRoom");
     };
-  }, []);
+  }, [refreshActiveRooms]);
 
   // Separate useEffect for message handlers that depend on selectedRoom
   useEffect(() => {
-    // Listen for messages
-    socketService.setOnMessageCallback((msg) => {
-      console.log(
-        "Admin received message:",
-        msg,
-        "selectedRoom:",
-        selectedRoom
-      );
-      if (selectedRoom && msg.room === selectedRoom) {
-        setMessages((prev) => [...prev, msg]);
-      }
-    });
+    if (!selectedRoom) return;
 
     // Listen for room messages when joining
     socketService.setOnRoomMessagesCallback(({ room, messages: msgs }) => {
@@ -75,8 +48,34 @@ const ChatPage = () => {
 
     return () => {
       // Clear callbacks when selectedRoom changes or component unmounts
-      socketService.setOnMessageCallback(null);
       socketService.setOnRoomMessagesCallback(null);
+    };
+  }, [selectedRoom]);
+
+  // Listen for individual messages (separate from global context listener)
+  useEffect(() => {
+    const handleMessage = (msg) => {
+      console.log(
+        "ChatPage received message:",
+        msg,
+        "selectedRoom:",
+        selectedRoom
+      );
+      if (selectedRoom && msg.room === selectedRoom) {
+        setMessages((prev) => [...prev, msg]);
+      }
+    };
+
+    // Add our specific listener
+    if (window.location.pathname === "/chat") {
+      socketService.socket?.off("message");
+      socketService.socket?.on("message", handleMessage);
+    }
+
+    return () => {
+      if (window.location.pathname === "/chat") {
+        socketService.socket?.off("message", handleMessage);
+      }
     };
   }, [selectedRoom]);
 
@@ -92,6 +91,12 @@ const ChatPage = () => {
     setSelectedRoom(room);
     setMessages([]);
     socketService.joinRoom(room);
+
+    // Mark room as read
+    markRoomAsRead(room);
+
+    // Set current room indicator
+    sessionStorage.setItem("currentChatRoom", room);
   };
 
   const handleSendMessage = () => {
@@ -112,13 +117,16 @@ const ChatPage = () => {
       <div className="rooms-list">
         <h4>Phòng chat</h4>
         <ul>
-          {rooms.map((room) => (
+          {activeRooms.map((room) => (
             <li
               key={room}
               className={selectedRoom === room ? "active" : ""}
               onClick={() => handleSelectRoom(room)}
             >
               {room.replace("chat_", "Khách hàng ")}
+              {unreadMessages[room] && unreadMessages[room] > 0 && (
+                <span className="unread-badge">{unreadMessages[room]}</span>
+              )}
             </li>
           ))}
         </ul>
