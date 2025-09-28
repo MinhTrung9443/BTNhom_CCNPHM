@@ -8,6 +8,7 @@ import {
   markAllAsReadHandler,
   deleteNotificationHandler,
 } from "../controllers/notification.controller.js";
+import { categoryController } from "../controllers/category.controller.js";
 import { protect, restrictTo } from "../middlewares/auth.js";
 import { validate } from "../middlewares/validate.js";
 import { getOrderById, updateOrderStatus } from "../schemas/order.schema.js";
@@ -33,6 +34,7 @@ router.get("/users/stats", adminController.getUserStats);
 router.get("/users", adminController.getAllUsers);
 router.get("/users/:userId", adminController.getUserById);
 router.patch("/users/:userId/role", adminController.updateUserRole);
+router.post("/products", productController.createProduct);
 // === PRODUCT MANAGEMENT ROUTES ===
 router.get("/products", adminController.getAllProductsForAdmin);
 router.delete("/products/:id", productController.deleteProduct);
@@ -46,6 +48,12 @@ router.delete("/users/:userId", adminController.deleteUser);
 // router.post('/coupons', adminController.createCoupon);
 // router.put('/coupons/:couponId', adminController.updateCoupon);
 // router.delete('/coupons/:couponId', adminController.deleteCoupon);
+
+// === CATEGORY MANAGEMENT ROUTES ===
+router.get("/categories", categoryController.getCategories);
+router.post("/categories", categoryController.createCategory);
+router.put("/categories/:id", categoryController.updateCategory);
+router.delete("/categories/:id", categoryController.deleteCategory);
 
 // === LOYALTY POINTS MANAGEMENT ROUTES ===
 

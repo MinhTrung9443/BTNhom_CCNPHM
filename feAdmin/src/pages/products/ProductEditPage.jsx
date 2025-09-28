@@ -15,28 +15,24 @@ const ProductEditPage = () => {
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [categories, setCategories] = useState([]);
+  const { categories } = useSelector(state => state.categories);
   const [newImageFiles, setNewImageFiles] = useState([]);
   
   const { loading: updateLoading, error: updateError } = useSelector(state => state.products);
 
   useEffect(() => {
-    const loadProductAndCategories = async () => {
+    const loadProduct = async () => {
       try {
         setLoading(true);
-        const [productRes, categoriesRes] = await Promise.all([
-          productService.getProductById(productId),
-          productService.getCategories(),
-        ]);
+        const productRes = await productService.getProductById(productId);
         setProduct(productRes.data.data);
-        setCategories(categoriesRes.data.data);
       } catch (err) {
         setError(err.message);
       } finally {
         setLoading(false);
       }
     };
-    loadProductAndCategories();
+    loadProduct();
   }, [productId]);
 
   const handleChange = (e) => {

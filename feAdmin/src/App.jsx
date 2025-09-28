@@ -1,7 +1,8 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { ToastContainer } from 'react-toastify'
-import { useSelector } from 'react-redux'
+import { useSelector, useDispatch } from 'react-redux'
+import { fetchCategories } from './redux/slices/categoriesSlice'
 import Layout from './components/layout/Layout'
 import LoginPage from './pages/auth/LoginPage'
 import DashboardPage from './pages/DashboardPage'
@@ -11,6 +12,7 @@ import ProductEditPage from './pages/products/ProductEditPage'
 import OrdersPage from './pages/orders/OrdersPage'
 import OrderDetailPage from './pages/orders/OrderDetailPage'
 import CouponsPage from './pages/coupons/CouponsPage'
+import CategoriesPage from './pages/categories/CategoriesPage'
 import LoyaltyPointsPage from './pages/loyalty/LoyaltyPointsPage'
 import SettingsPage from './pages/SettingsPage'
 import Notifications from './pages/Notifications'
@@ -18,6 +20,13 @@ import Notifications from './pages/Notifications'
 // Protected Route component
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, user } = useSelector((state) => state.auth)
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    if (isAuthenticated && user?.role === 'admin') {
+      dispatch(fetchCategories({ limit: 100 })); // Fetch all categories
+    }
+  }, [isAuthenticated, user, dispatch]);
   
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />
@@ -59,6 +68,7 @@ function App() {
                   <Route path="/orders" element={<OrdersPage />} />
                   <Route path="/orders/:orderId" element={<OrderDetailPage />} />
                   <Route path="/coupons" element={<CouponsPage />} />
+                  <Route path="/categories" element={<CategoriesPage />} />
                   <Route path="/loyalty-points" element={<LoyaltyPointsPage />} />
                   <Route path="/notifications" element={<Notifications />} />
                   <Route path="/settings" element={<SettingsPage />} />

@@ -14,6 +14,7 @@ import moment from 'moment'
 const ProductsPage = () => {
   const dispatch = useDispatch()
   const { products, pagination, loading } = useSelector((state) => state.products)
+  const { categories } = useSelector((state) => state.categories)
   const navigate = useNavigate()
 
   const [filters, setFilters] = useState({
@@ -22,13 +23,14 @@ const ProductsPage = () => {
     search: '',
     category: '',
     sortBy: 'createdAt',
+    isActive: '',
   })
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [showProductModal, setShowProductModal] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
-  const [categories, setCategories] = useState([])
+  const [newImageFiles, setNewImageFiles] = useState([]);
 
   const [productForm, setProductForm] = useState({
     name: '',
@@ -42,15 +44,6 @@ const ProductsPage = () => {
 
   useEffect(() => {
     dispatch(fetchProducts(filters))
-    const loadCategories = async () => {
-      try {
-        const res = await productService.getCategories()
-        setCategories(res.data.data)
-      } catch (error) {
-        console.error("Failed to fetch categories", error)
-      }
-    }
-    loadCategories()
   }, [dispatch, filters])
 
   const handleFilterChange = (key, value) => {
@@ -75,6 +68,7 @@ const ProductsPage = () => {
       categoryId: '',
       images: [],
     })
+    setNewImageFiles([]);
     setIsEditing(false)
     setShowProductModal(true)
   }
@@ -97,17 +91,26 @@ const ProductsPage = () => {
 
   const handleSaveProduct = async () => {
     try {
+      let uploadedImageUrls = [];
+      if (newImageFiles.length > 0) {
+        const uploadRes = await productService.uploadImages(newImageFiles);
+        uploadedImageUrls = uploadRes.data.filePaths;
+      }
+      
       const productData = {
         ...productForm,
         price: parseFloat(productForm.price),
         discount: productForm.discount ? parseFloat(productForm.discount) : 0,
         stock: parseInt(productForm.stock),
+        images: uploadedImageUrls,
       }
 
       if (isEditing) {
-        await dispatch(updateProduct({ 
-          productId: selectedProduct._id, 
-          productData 
+        const finalImages = [...(selectedProduct.images || []), ...uploadedImageUrls];
+        const finalProductData = { ...productData, images: finalImages };
+        await dispatch(updateProduct({
+          productId: selectedProduct._id,
+          productData: finalProductData
         })).unwrap()
         toast.success('Cập nhật sản phẩm thành công')
       } else {
@@ -117,8 +120,9 @@ const ProductsPage = () => {
 
       setShowProductModal(false)
       setSelectedProduct(null)
+      setNewImageFiles([])
     } catch (error) {
-      toast.error(error || 'Có lỗi xảy ra')
+      toast.error(error.message || 'Có lỗi xảy ra')
     }
   }
 
@@ -364,10 +368,9 @@ const ProductsPage = () => {
                     onChange={(e) => handleProductFormChange('categoryId', e.target.value)}
                   >
                     <option value="">Chọn danh mục</option>
-                    <option value="banh-pia">Bánh pía</option>
-                    <option value="banh-it">Bánh ít</option>
-                    <option value="banh-cam">Bánh cam</option>
-                    <option value="kem-bo">Kem bơ</option>
+                    {categories.map(cat => (
+                      <option key={cat._id} value={cat._id}>{cat.name}</option>
+                    ))}
                   </Form.Select>
                 </Form.Group>
               </Col>
@@ -429,11 +432,16 @@ const ProductsPage = () => {
                 type="file"
                 multiple
                 accept="image/*"
-                onChange={(e) => {
-                  // Handle file upload logic here
-                  console.log('Files selected:', e.target.files)
-                }}
+                onChange={(e) => setNewImageFiles([...e.target.files])}
               />
+              <div className="d-flex flex-wrap gap-2 mt-2">
+                {newImageFiles.map((file, index) => (
+                  <div key={index} className="position-relative">
+                    <img src={URL.createObjectURL(file)} alt={`preview-${index}`} width="80" height="80" className="rounded object-fit-cover"/>
+                    <Button variant="danger" size="sm" className="position-absolute top-0 end-0" style={{lineHeight: 0.5, padding: '0.2rem 0.4rem'}} onClick={() => setNewImageFiles(prev => prev.filter((_, i) => i !== index))}>&times;</Button>
+                  </div>
+                ))}
+              </div>
               <Form.Text className="text-muted">
                 Chọn nhiều hình ảnh cho sản phẩm (JPG, PNG)
               </Form.Text>

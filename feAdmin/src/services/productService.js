@@ -10,7 +10,7 @@ const productService = {
   },
 
   createProduct: (productData) => {
-    return api.post('/products', productData)
+    return api.post('/admin/products', productData)
   },
 
   updateProduct: (productId, productData) => {
@@ -21,20 +21,20 @@ const productService = {
     return api.delete(`/admin/products/${productId}`)
   },
 
-  getCategories: () => {
-    return api.get('/categories')
+  getCategories: (params = {}) => {
+    return api.get('/admin/categories', { params });
   },
 
   createCategory: (categoryData) => {
-    return api.post('/categories', categoryData)
+    return api.post('/admin/categories', categoryData);
   },
 
   updateCategory: (categoryId, categoryData) => {
-    return api.put(`/categories/${categoryId}`, categoryData)
+    return api.put(`/admin/categories/${categoryId}`, categoryData);
   },
 
   deleteCategory: (categoryId) => {
-    return api.delete(`/categories/${categoryId}`)
+    return api.delete(`/admin/categories/${categoryId}`);
   },
 
   uploadImages: (files) => {

@@ -67,6 +67,15 @@ export const productController = {
     res.status(200).json({ success: true, data });
   },
 
+  async createProduct(req, res, next) {
+    try {
+      const data = await productService.createProduct(req.body);
+      res.status(201).json({ success: true, message: "Tạo sản phẩm thành công", data });
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async updateProduct(req, res, next) {
     try {
       const { id } = req.params;

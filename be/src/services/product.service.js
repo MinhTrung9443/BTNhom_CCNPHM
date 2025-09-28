@@ -353,4 +353,10 @@ export const productService = {
       return { message: 'Sản phẩm đã được xóa vĩnh viễn.', productId, softDeleted: false };
     }
   },
+
+  async createProduct(productData) {
+    const product = new Product(productData);
+    await product.save();
+    return product;
+  },
 };

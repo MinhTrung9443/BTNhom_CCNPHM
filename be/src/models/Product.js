@@ -26,13 +26,22 @@ productSchema.index({ stock: 1 });
 
 // Sinh code tự động trước khi lưu
 productSchema.pre("save", async function (next) {
-  if (this.code) return next(); // nếu đã có code thì bỏ qua
-
-  // Lấy số lượng document hiện tại
-  const count = await mongoose.model("Product").countDocuments();
-  // Sinh code, padding 5 chữ số
-  this.code = `PRD-${String(count + 1).padStart(5, "0")}`;
-  next();
+  if (this.isNew && !this.code) {
+    try {
+      const lastProduct = await this.constructor.findOne({}, {}, { sort: { 'code': -1 } });
+      let nextId = 1;
+      if (lastProduct && lastProduct.code) {
+        const lastId = parseInt(lastProduct.code.split('-')[1], 10);
+        nextId = lastId + 1;
+      }
+      this.code = `PRD-${String(nextId).padStart(5, "0")}`;
+      next();
+    } catch (error) {
+      next(error);
+    }
+  } else {
+    next();
+  }
 });
 
 export default mongoose.model("Product", productSchema);

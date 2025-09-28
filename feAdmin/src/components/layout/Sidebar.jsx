@@ -22,6 +22,11 @@ const Sidebar = () => {
       label: 'Quản lý sản phẩm',
     },
     {
+      path: '/categories',
+      icon: 'bi-tags',
+      label: 'Quản lý danh mục',
+    },
+    {
       path: '/orders',
       icon: 'bi-cart-check',
       label: 'Quản lý đơn hàng',
