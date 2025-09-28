@@ -46,6 +46,11 @@ const Sidebar = () => {
       icon: 'bi-gear',
       label: 'Cài đặt',
     },
+    {
+      path: '/chat',
+      icon: 'bi-chat-dots',
+      label: 'Chat hỗ trợ',
+    },
   ]
 
   return (

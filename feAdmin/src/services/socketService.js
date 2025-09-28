@@ -58,9 +58,8 @@ class SocketService {
   }
 
   handleNewOrderNotification(orderData) {
-    // Debounce to prevent multiple toasts for the same event (in case of duplicate emissions)
     const now = Date.now();
-    if (this.lastToastTime && now - this.lastToastTime < 2000) { // 2 second debounce
+    if (this.lastToastTime && now - this.lastToastTime < 2000) { 
       console.log('Ignoring duplicate new order notification');
       return;
     }
@@ -82,23 +81,72 @@ class SocketService {
       draggable: true,
       progress: undefined,
       onClick: () => {
-        // Navigate to orders page or order detail
         window.location.href = `/notifications`;
       },
     });
 
-    // You can also dispatch to Redux store if needed
-    // store.dispatch(addNewOrderNotification(orderData));
+
   }
 
   setOnNewOrderCallback(callback) {
     this.onNewOrderCallback = callback;
   }
 
-  // Method to manually emit events if needed
   emit(event, data) {
     if (this.socket && this.isConnected) {
       this.socket.emit(event, data);
+    }
+  }
+
+  getActiveRooms() {
+    this.emit('getActiveRooms');
+  }
+
+  // Chat methods
+  joinRoom(room) {
+    this.emit('joinRoom', room);
+  }
+
+  leaveRoom(room) {
+    this.emit('leaveRoom', room);
+  }
+
+  sendMessage(room, message) {
+    this.emit('sendMessage', { room, message });
+  }
+
+  setOnMessageCallback(callback) {
+    if (this.socket) {
+      this.socket.off('message');
+      this.socket.on('message', callback);
+    }
+  }
+
+  setOnActiveRoomsCallback(callback) {
+    if (this.socket) {
+      this.socket.off('activeChatRooms');
+      this.socket.on('activeChatRooms', callback);
+    }
+  }
+
+  setOnNewRoomCallback(callback) {
+    if (this.socket) {
+      this.socket.off('newChatRoom');
+      this.socket.on('newChatRoom', callback);
+    }
+  }
+
+  setOnRoomClosedCallback(callback) {
+    if (this.socket) {
+      this.socket.off('chatRoomClosed');
+      this.socket.on('chatRoomClosed', callback);
+    }
+  }
+
+  setOnRoomMessagesCallback(callback) {
+    if (this.socket) {
+      this.socket.off('roomMessages');
+      this.socket.on('roomMessages', callback);
     }
   }
 }
