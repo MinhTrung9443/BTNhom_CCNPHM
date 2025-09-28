@@ -1,19 +1,17 @@
-import React, { useState, useEffect, useRef } from 'react';
-import socketService from '../services/socketService';
-import './ChatPage.css';
+import React, { useState, useEffect, useRef } from "react";
+import socketService from "../services/socketService";
+import "./ChatPage.css";
 
 const ChatPage = () => {
   const [rooms, setRooms] = useState([]);
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [messages, setMessages] = useState([]);
-  const [inputMessage, setInputMessage] = useState('');
+  const [inputMessage, setInputMessage] = useState("");
   const messagesEndRef = useRef(null);
-
-  const userId = localStorage.getItem('userId'); // Get admin userId
 
   useEffect(() => {
     // Assume token is available, e.g., from localStorage
-    const token = localStorage.getItem('accessToken');
+    const token = localStorage.getItem("adminToken");
     if (token) {
       socketService.connect(token);
       socketService.setOnNewOrderCallback(null); // Clear if any
@@ -24,30 +22,16 @@ const ChatPage = () => {
       });
 
       // Listen for new room
-      socketService.setOnNewRoomCallback(({ room, userId }) => {
+      socketService.setOnNewRoomCallback(({ room, adminId }) => {
         setRooms((prev) => [...prev, room]);
       });
 
       // Listen for room closed
       socketService.setOnRoomClosedCallback(({ room }) => {
-        setRooms((prev) => prev.filter(r => r !== room));
+        setRooms((prev) => prev.filter((r) => r !== room));
         if (selectedRoom === room) {
           setSelectedRoom(null);
           setMessages([]);
-        }
-      });
-
-      // Listen for messages
-      socketService.setOnMessageCallback((msg) => {
-        if (selectedRoom && msg.room === selectedRoom) {
-          setMessages((prev) => [...prev, msg]);
-        }
-      });
-
-      // Listen for room messages when joining
-      socketService.setOnRoomMessagesCallback(({ room, messages: msgs }) => {
-        if (room === selectedRoom) {
-          setMessages(msgs);
         }
       });
 
@@ -60,12 +44,48 @@ const ChatPage = () => {
     };
   }, []);
 
+  // Separate useEffect for message handlers that depend on selectedRoom
+  useEffect(() => {
+    // Listen for messages
+    socketService.setOnMessageCallback((msg) => {
+      console.log(
+        "Admin received message:",
+        msg,
+        "selectedRoom:",
+        selectedRoom
+      );
+      if (selectedRoom && msg.room === selectedRoom) {
+        setMessages((prev) => [...prev, msg]);
+      }
+    });
+
+    // Listen for room messages when joining
+    socketService.setOnRoomMessagesCallback(({ room, messages: msgs }) => {
+      console.log(
+        "Admin received room messages:",
+        room,
+        msgs,
+        "selectedRoom:",
+        selectedRoom
+      );
+      if (room === selectedRoom) {
+        setMessages(msgs);
+      }
+    });
+
+    return () => {
+      // Clear callbacks when selectedRoom changes or component unmounts
+      socketService.setOnMessageCallback(null);
+      socketService.setOnRoomMessagesCallback(null);
+    };
+  }, [selectedRoom]);
+
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   const handleSelectRoom = (room) => {
@@ -77,12 +97,12 @@ const ChatPage = () => {
   const handleSendMessage = () => {
     if (inputMessage.trim() && selectedRoom) {
       socketService.sendMessage(selectedRoom, inputMessage.trim());
-      setInputMessage('');
+      setInputMessage("");
     }
   };
 
   const handleKeyPress = (e) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       handleSendMessage();
     }
   };
@@ -114,7 +134,8 @@ const ChatPage = () => {
                 <div
                   key={index}
                   className={`message ${
-                    msg.senderRole === "admin" ? "admin" : "user"}`}
+                    msg.senderRole === "admin" ? "admin" : "user"
+                  }`}
                 >
                   <div className="message-content">{msg.message}</div>
                   <div className="message-time">

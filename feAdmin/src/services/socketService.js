@@ -59,8 +59,8 @@ class SocketService {
 
   handleNewOrderNotification(orderData) {
     const now = Date.now();
-    if (this.lastToastTime && now - this.lastToastTime < 2000) { 
-      console.log('Ignoring duplicate new order notification');
+    if (this.lastToastTime && now - this.lastToastTime < 2000) {
+      console.log("Ignoring duplicate new order notification");
       return;
     }
     this.lastToastTime = now;
@@ -84,8 +84,6 @@ class SocketService {
         window.location.href = `/notifications`;
       },
     });
-
-
   }
 
   setOnNewOrderCallback(callback) {
@@ -99,54 +97,64 @@ class SocketService {
   }
 
   getActiveRooms() {
-    this.emit('getActiveRooms');
+    this.emit("getActiveRooms");
   }
 
   // Chat methods
   joinRoom(room) {
-    this.emit('joinRoom', room);
+    this.emit("joinRoom", room);
   }
 
   leaveRoom(room) {
-    this.emit('leaveRoom', room);
+    this.emit("leaveRoom", room);
   }
 
   sendMessage(room, message) {
-    this.emit('sendMessage', { room, message });
+    this.emit("sendMessage", { room, message });
   }
 
   setOnMessageCallback(callback) {
     if (this.socket) {
-      this.socket.off('message');
-      this.socket.on('message', callback);
+      this.socket.off("message");
+      if (callback) {
+        this.socket.on("message", callback);
+      }
     }
   }
 
   setOnActiveRoomsCallback(callback) {
     if (this.socket) {
-      this.socket.off('activeChatRooms');
-      this.socket.on('activeChatRooms', callback);
+      this.socket.off("activeChatRooms");
+      if (callback) {
+        this.socket.on("activeChatRooms", callback);
+      }
     }
   }
 
   setOnNewRoomCallback(callback) {
     if (this.socket) {
-      this.socket.off('newChatRoom');
-      this.socket.on('newChatRoom', callback);
+      this.socket.off("newChatRoom");
+      if (callback) {
+        this.socket.on("newChatRoom", callback);
+      }
     }
   }
 
   setOnRoomClosedCallback(callback) {
     if (this.socket) {
-      this.socket.off('chatRoomClosed');
-      this.socket.on('chatRoomClosed', callback);
+      this.socket.off("chatRoomClosed");
+      if (callback) {
+        this.socket.on("chatRoomClosed", callback);
+      }
     }
   }
 
   setOnRoomMessagesCallback(callback) {
     if (this.socket) {
-      this.socket.off('roomMessages');
-      this.socket.on('roomMessages', callback);
+      this.socket.off("roomMessages");
+      if (callback) {
+        this.socket.on("roomMessages", callback);
+      }
     }
   }
 }
