@@ -4,6 +4,7 @@ import { ToastContainer } from 'react-toastify'
 import { useSelector } from 'react-redux'
 import ErrorBoundary from './components/common/ErrorBoundary'
 import Layout from './components/layout/Layout'
+import ChatWithAI from './components/ChatWithAI';
 import HomePage from './pages/HomePage'
 import CartPage from './pages/CartPage'
 import ProductsPage from './pages/ProductsPage'
@@ -35,9 +36,10 @@ const ProtectedRoute = ({ children }) => {
 
 function App() {
   return (
-    <BrowserRouter>
-      <ErrorBoundary>
-        <Layout>
+      <BrowserRouter>
+        <ChatWithAI />
+        <ErrorBoundary>
+          <Layout>
         <Routes>
           {/* Public routes */}
           <Route path="/" element={<HomePage />} />
