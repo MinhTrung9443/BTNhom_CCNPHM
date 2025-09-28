@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Container, Row, Col, Card, Table, Badge } from 'react-bootstrap';
+import { Container, Row, Col, Card, Table, Badge, ButtonGroup, Button } from 'react-bootstrap';
 import { useDispatch, useSelector } from 'react-redux';
 // ... other imports
 import {
   fetchDashboardStats,
+  fetchSalesChart,
   // === NEW IMPORTS ===
   fetchCashFlowStats,
   fetchTopProducts,
@@ -46,6 +47,7 @@ const DashboardPage = () => {
   } = useSelector((state) => state.dashboard);
 
   const [deliveredPage, setDeliveredPage] = useState(1);
+  const [chartPeriod, setChartPeriod] = useState('7d');
 
   useEffect(() => {
     dispatch(fetchDashboardStats());
@@ -53,6 +55,10 @@ const DashboardPage = () => {
     dispatch(fetchCashFlowStats());
     dispatch(fetchTopProducts());
   }, [dispatch]);
+
+  useEffect(() => {
+    dispatch(fetchSalesChart(chartPeriod));
+  }, [dispatch, chartPeriod]);
 
   // Fetch delivered orders when page changes
   useEffect(() => {
@@ -133,6 +139,31 @@ const DashboardPage = () => {
           Cập nhật lần cuối: {moment().format('DD/MM/YYYY HH:mm')}
         </small>
       </div>
+      <Row className="mb-4">
+        <Col>
+          <Card className="border-0 shadow-sm">
+            <Card.Header className="bg-white border-0 d-flex justify-content-between align-items-center">
+              <h5 className="fw-bold mb-0">Biểu đồ doanh thu</h5>
+              <ButtonGroup size="sm">
+                <Button variant={chartPeriod === '7d' ? 'primary' : 'outline-secondary'} onClick={() => setChartPeriod('7d')}>7 ngày</Button>
+                <Button variant={chartPeriod === '30d' ? 'primary' : 'outline-secondary'} onClick={() => setChartPeriod('30d')}>30 ngày</Button>
+                <Button variant={chartPeriod === '1y' ? 'primary' : 'outline-secondary'} onClick={() => setChartPeriod('1y')}>1 năm</Button>
+              </ButtonGroup>
+            </Card.Header>
+            <Card.Body>
+              {salesChart.labels && salesChart.labels.length > 0 ? (
+                <Line data={salesChart} options={{ responsive: true, maintainAspectRatio: false }} height={300} />
+              ) : (
+                <div className="text-center py-5 text-muted" style={{ height: '300px' }}>
+                  <i className="bi bi-graph-up" style={{ fontSize: '3rem' }}></i>
+                  <p className="mt-2">Chưa có dữ liệu biểu đồ</p>
+                </div>
+              )}
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
+
       <Row className="mb-4">
         <Col md={3} className="mb-3">
           <Card className="border-0 shadow-sm h-100">

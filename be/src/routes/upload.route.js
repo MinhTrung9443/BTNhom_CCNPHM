@@ -4,14 +4,14 @@ import { protect } from '../middlewares/auth.js';
 
 const router = express.Router();
 
-router.post('/', [protect, upload.single('file')], (req, res) => {
-  if (!req.file) {
-    return res.status(400).send({ message: 'Vui lòng tải lên một tệp' });
+router.post('/', [protect, upload.array('images', 10)], (req, res) => {
+  if (!req.files || req.files.length === 0) {
+    return res.status(400).send({ message: 'Vui lòng tải lên ít nhất một tệp' });
   }
-  const filePath = req.file.path.replace(/\\/g, '/');
+  const filePaths = req.files.map(file => `/${file.path.replace(/\\/g, '/')}`);
   res.status(200).send({
     message: 'Tải lên tệp thành công',
-    filePath: `/${filePath}`,
+    filePaths: filePaths,
   });
 });
 

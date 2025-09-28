@@ -12,7 +12,7 @@ export const fetchDashboardStats = createAsyncThunk(
     }
   }
 );
-// ... các async thunk hiện có ...
+
 export const fetchRecentOrders = createAsyncThunk(
   'dashboard/fetchRecentOrders',
   async (_, { rejectWithValue }) => {
@@ -36,7 +36,6 @@ export const fetchSalesChart = createAsyncThunk(
     }
   }
 )
-
 
 // === NEW ASYNC THUNKS ===
 export const fetchCashFlowStats = createAsyncThunk(
@@ -76,10 +75,12 @@ export const fetchDeliveredOrders = createAsyncThunk(
 );
 
 const initialState = {
-  stats: { /* ... */ },
+  stats: { },
   recentOrders: [],
-  salesChart: { /* ... */ },
-  // === NEW STATE PROPERTIES ===
+  salesChart: {
+    labels: [],
+    datasets: [],
+  },
   cashFlow: {
     shipping: { totalAmount: 0, count: 0 },
     completed: { totalAmount: 0, count: 0 },
@@ -99,9 +100,11 @@ const initialState = {
 const dashboardSlice = createSlice({
   name: 'dashboard',
   initialState,
-  reducers: { clearError: (state) => {
-        state.error = null
-    },},
+  reducers: {
+    clearError: (state) => {
+      state.error = null
+    },
+  },
   extraReducers: (builder) => {
     builder
       // Fetch dashboard stats

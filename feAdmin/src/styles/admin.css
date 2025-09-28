@@ -21,6 +21,25 @@
 .admin-header {
   box-shadow: 0 2px 4px rgba(0,0,0,.1);
   z-index: 1030;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  height: 56px; /* Set explicit height for consistency */
+}
+
+.admin-header .navbar-brand {
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.admin-header .nav-link,
+.admin-header .dropdown-toggle {
+  height: 100%;
+  display: flex;
+  align-items: center;
 }
 
 .admin-sidebar {
@@ -38,10 +57,12 @@
 
 .main-content-col {
   background-color: #f8f9fa;
+  margin-top: 56px; /* Account for fixed header */
 }
 
 .main-content {
   min-height: calc(100vh - 56px);
+  padding-top: 2rem; /* Additional padding to ensure content isn't hidden */
 }
 
 /* Sidebar */

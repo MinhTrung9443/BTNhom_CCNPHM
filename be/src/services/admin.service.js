@@ -137,3 +137,127 @@ export const getDashboardStats = async () => {
     totalProducts,
   };
 };
+export const getAllProductsForAdmin = async (queryParams) => {
+  const page = parseInt(queryParams.page) || 1;
+  const limit = parseInt(queryParams.limit) || 10;
+  const skip = (page - 1) * limit;
+  const { search, category, sortBy, isActive } = queryParams;
+
+  const filter = {};
+  if (search) {
+    filter.name = { $regex: search, $options: 'i' };
+  }
+  if (category) {
+    filter.categoryId = category;
+  }
+  if (isActive !== undefined && isActive !== '') {
+    filter.isActive = isActive === 'true';
+  }
+
+  let sort = { createdAt: -1 };
+  if (sortBy) {
+    const [sortField, sortOrder] = sortBy.split(':');
+    sort = { [sortField]: sortOrder === 'desc' ? -1 : 1 };
+  }
+
+  const [products, total] = await Promise.all([
+    Product.find(filter)
+      .populate('categoryId', 'name')
+      .sort(sort)
+      .skip(skip)
+      .limit(limit)
+      .lean(),
+    Product.countDocuments(filter),
+  ]);
+
+  return {
+    products,
+    pagination: {
+      currentPage: page,
+      totalPages: Math.ceil(total / limit),
+      totalProducts: total,
+    },
+  };
+};
+export const getSalesChartData = async (period) => {
+  let groupBy, fromDate;
+  const now = new Date();
+
+  switch (period) {
+    case '7d':
+      fromDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6);
+      groupBy = { $dateToString: { format: "%Y-%m-%d", date: "$deliveredAt" } };
+      break;
+    case '30d':
+      fromDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 29);
+      groupBy = { $dateToString: { format: "%Y-%m-%d", date: "$deliveredAt" } };
+      break;
+    case '1y':
+      fromDate = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+      groupBy = { year: { $year: "$deliveredAt" }, month: { $month: "$deliveredAt" } };
+      break;
+    default:
+      fromDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6);
+      groupBy = { $dateToString: { format: "%Y-%m-%d", date: "$deliveredAt" } };
+  }
+
+  const salesData = await Order.aggregate([
+    {
+      $match: {
+        status: ORDER_STATUS.COMPLETED,
+        deliveredAt: { $gte: fromDate },
+      },
+    },
+    {
+      $group: {
+        _id: groupBy,
+        totalRevenue: { $sum: '$totalAmount' },
+      },
+    },
+    { $sort: { _id: 1 } },
+  ]);
+
+  const labels = [];
+  const data = [];
+
+  if (period === '1y') {
+    const monthData = {};
+    salesData.forEach(item => {
+      const key = `${item._id.year}-${String(item._id.month).padStart(2, '0')}`;
+      monthData[key] = item.totalRevenue;
+    });
+
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const year = d.getFullYear();
+      const month = d.getMonth() + 1;
+      const key = `${year}-${String(month).padStart(2, '0')}`;
+      labels.push(key);
+      data.push(monthData[key] || 0);
+    }
+  } else {
+    const dayData = {};
+    salesData.forEach(item => {
+      dayData[item._id] = item.totalRevenue;
+    });
+    const days = period === '7d' ? 7 : 30;
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      labels.push(key);
+      data.push(dayData[key] || 0);
+    }
+  }
+  
+  return {
+    labels,
+    datasets: [
+      {
+        label: 'Doanh thu',
+        data,
+        borderColor: 'rgb(75, 192, 192)',
+        backgroundColor: 'rgba(75, 192, 192, 0.5)',
+      },
+    ],
+  };
+};

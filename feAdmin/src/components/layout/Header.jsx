@@ -216,10 +216,6 @@ const Header = () => {
               id="user-dropdown"
               align="end"
             >
-              <NavDropdown.Item href="/profile">
-                <i className="bi bi-person me-2"></i>
-                Thông tin cá nhân
-              </NavDropdown.Item>
               <NavDropdown.Item href="/settings">
                 <i className="bi bi-gear me-2"></i>
                 Cài đặt

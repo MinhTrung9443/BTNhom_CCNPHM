@@ -156,159 +156,6 @@ export const adminController = {
     }
   },
 
-  // // Coupon Management
-  // getAllCoupons: async (req, res, next) => {
-  //   try {
-  //     const { page = 1, limit = 10, status, type } = req.query;
-  //     const skip = (page - 1) * limit;
-
-  //     let filter = {};
-  //     if (status === 'active') {
-  //       filter.isActive = true;
-  //       filter.startDate = { $lte: new Date() };
-  //       filter.endDate = { $gte: new Date() };
-  //     } else if (status === 'expired') {
-  //       filter.endDate = { $lt: new Date() };
-  //     } else if (status === 'inactive') {
-  //       filter.isActive = false;
-  //     }
-
-  //     if (type) {
-  //       filter.discountType = type;
-  //     }
-
-  //     const [coupons, total] = await Promise.all([
-  //       Coupon.find(filter)
-  //         .sort({ createdAt: -1 })
-  //         .skip(skip)
-  //         .limit(parseInt(limit))
-  //         .populate('createdBy', 'name email')
-  //         .populate('applicableProducts', 'name')
-  //         .populate('applicableCategories', 'name'),
-  //       Coupon.countDocuments(filter)
-  //     ]);
-
-  //     res.json({
-  //       success: true,
-  //       message: 'Lấy danh sách mã giảm giá thành công',
-  //       pagination: {
-  //         currentPage: parseInt(page),
-  //         totalPages: Math.ceil(total / limit),
-  //         totalCoupons: total,
-  //         hasNext: page * limit < total,
-  //         hasPrev: page > 1
-  //       },
-  //       data: coupons
-  //     });
-  //   } catch (error) {
-  //     logger.error(`Lỗi lấy danh sách mã giảm giá: ${error.message}`);
-  //     next(new AppError(error.message, 500));
-  //   }
-  // },
-
-  // createCoupon: async (req, res, next) => {
-  //   try {
-  //     const couponData = {
-  //       ...req.body,
-  //       createdBy: req.user._id
-  //     };
-
-  //     const coupon = await Coupon.create(couponData);
-
-  //     await coupon.populate('createdBy', 'name email');
-  //     await coupon.populate('applicableProducts', 'name');
-  //     await coupon.populate('applicableCategories', 'name');
-
-  //     res.status(201).json({
-  //       success: true,
-  //       message: 'Tạo mã giảm giá thành công',
-  //       data: coupon
-  //     });
-  //   } catch (error) {
-  //     logger.error(`Lỗi tạo mã giảm giá: ${error.message}`);
-  //     next(new AppError(error.message, 400));
-  //   }
-  // },
-
-  // updateCoupon: async (req, res, next) => {
-  //   try {
-  //     const { couponId } = req.params;
-
-  //     const coupon = await Coupon.findByIdAndUpdate(
-  //       couponId,
-  //       req.body,
-  //       { new: true, runValidators: true }
-  //     ).populate('createdBy', 'name email')
-  //      .populate('applicableProducts', 'name')
-  //      .populate('applicableCategories', 'name');
-
-  //     if (!coupon) {
-  //       return next(new AppError('Không tìm thấy mã giảm giá', 404));
-  //     }
-
-  //     res.json({
-  //       success: true,
-  //       message: 'Cập nhật mã giảm giá thành công',
-  //       data: coupon
-  //     });
-  //   } catch (error) {
-  //     logger.error(`Lỗi cập nhật mã giảm giá: ${error.message}`);
-  //     next(new AppError(error.message, 400));
-  //   }
-  // },
-
-  // deleteCoupon: async (req, res, next) => {
-  //   try {
-  //     const { couponId } = req.params;
-
-  //     const coupon = await Coupon.findByIdAndDelete(couponId);
-
-  //     if (!coupon) {
-  //       return next(new AppError('Không tìm thấy mã giảm giá', 404));
-  //     }
-
-  //     res.json({
-  //       success: true,
-  //       message: 'Xóa mã giảm giá thành công'
-  //     });
-  //   } catch (error) {
-  //     logger.error(`Lỗi xóa mã giảm giá: ${error.message}`);
-  //     next(new AppError(error.message, 500));
-  //   }
-  // },
-
-  // getCouponStats: async (req, res, next) => {
-  //   try {
-  //     const [totalCoupons, activeCoupons, expiredCoupons, percentageCoupons, fixedCoupons] = await Promise.all([
-  //       Coupon.countDocuments(),
-  //       Coupon.countDocuments({
-  //         isActive: true,
-  //         startDate: { $lte: new Date() },
-  //         endDate: { $gte: new Date() }
-  //       }),
-  //       Coupon.countDocuments({ endDate: { $lt: new Date() } }),
-  //       Coupon.countDocuments({ discountType: 'percentage' }),
-  //       Coupon.countDocuments({ discountType: 'fixed' })
-  //     ]);
-
-  //     res.json({
-  //       success: true,
-  //       message: 'Lấy thống kê mã giảm giá thành công',
-  //       data: {
-  //         totalCoupons,
-  //         activeCoupons,
-  //         expiredCoupons,
-  //         percentageCoupons,
-  //         fixedCoupons
-  //       }
-  //     });
-  //   } catch (error) {
-  //     logger.error(`Lỗi lấy thống kê mã giảm giá: ${error.message}`);
-  //     next(new AppError(error.message, 500));
-  //   }
-  // },
-
-  // Loyalty Points Management
   getAllLoyaltyPoints: async (req, res, next) => {
     try {
       const { page = 1, limit = 10, userId, type } = req.query;
@@ -525,6 +372,31 @@ export const adminController = {
       });
     } catch (error)
     {
+      next(error);
+    }
+  },
+  getAllProductsForAdmin: async (req, res, next) => {
+    try {
+      const result = await adminService.getAllProductsForAdmin(req.query);
+      res.json({
+        success: true,
+        message: "Lấy danh sách sản phẩm cho admin thành công.",
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+  getSalesChartData: async (req, res, next) => {
+    try {
+      const { period = '7d' } = req.query;
+      const data = await adminService.getSalesChartData(period);
+      res.json({
+        success: true,
+        message: 'Lấy dữ liệu biểu đồ doanh thu thành công.',
+        data,
+      });
+    } catch (error) {
       next(error);
     }
   },

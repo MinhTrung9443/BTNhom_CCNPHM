@@ -42,8 +42,8 @@ export const deleteProduct = createAsyncThunk(
   'products/deleteProduct',
   async (productId, { rejectWithValue }) => {
     try {
-      await productService.deleteProduct(productId)
-      return productId
+      const response = await productService.deleteProduct(productId)
+      return response.data
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || error.message)
     }
@@ -101,7 +101,17 @@ const productsSlice = createSlice({
       })
       // Delete product
       .addCase(deleteProduct.fulfilled, (state, action) => {
-        state.products = state.products.filter(product => product._id !== action.payload)
+        const { productId, product, softDeleted } = action.payload;
+        if (softDeleted) {
+          // Soft delete: update the product in the list
+          const index = state.products.findIndex(p => p._id === product._id);
+          if (index !== -1) {
+            state.products[index] = product;
+          }
+        } else {
+          // Hard delete: remove the product from the list
+          state.products = state.products.filter(p => p._id !== productId);
+        }
       })
   },
 })

@@ -66,4 +66,24 @@ export const productController = {
     const data = await productService.getProductsByIds(ids);
     res.status(200).json({ success: true, data });
   },
+
+  async updateProduct(req, res, next) {
+    try {
+      const { id } = req.params;
+      const data = await productService.updateProduct(id, req.body);
+      res.status(200).json({ success: true, message: "Cập nhật sản phẩm thành công", data });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async deleteProduct(req, res, next) {
+    try {
+      const { id } = req.params;
+      const result = await productService.deleteProduct(id);
+      res.status(200).json({ success: true, ...result });
+    } catch (error) {
+      next(error);
+    }
+  },
 };

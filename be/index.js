@@ -13,6 +13,7 @@ import uploadRoutes from "./src/routes/upload.route.js";
 import voucherRoutes from "./src/routes/voucher.route.js";
 import reviewRoutes from "./src/routes/review.route.js";
 import adminRoutes from "./src/routes/admin.route.js";
+import categoryRoutes from "./src/routes/category.route.js";
 import logger from "./src/utils/logger.js";
 import { notFound, errorHandler } from "./src/middlewares/error.js";
 import cartRoutes from "./src/routes/cart.route.js";
@@ -57,6 +58,7 @@ app.use("/api/payments", paymentRoutes);
 app.use("/api/vouchers", voucherRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/categories", categoryRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

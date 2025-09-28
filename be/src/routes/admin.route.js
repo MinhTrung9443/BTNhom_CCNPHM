@@ -1,6 +1,7 @@
 import express from "express";
 import { adminController } from "../controllers/admin.controller.js";
 import * as orderController from "../controllers/order.controller.js";
+import { productController } from "../controllers/product.controller.js";
 import {
   getNotificationsHandler,
   markAsReadHandler,
@@ -20,6 +21,7 @@ router.use(restrictTo("admin"));
 // === DASHBOARD STATS ROUTES (NEW) ===
 router.get("/dashboard/stats", adminController.getDashboardStats);
 router.get("/dashboard/cash-flow", adminController.getCashFlowStats);
+router.get("/dashboard/sales-chart", adminController.getSalesChartData);
 router.get("/dashboard/top-products", adminController.getTopSellingProducts);
 router.get("/dashboard/delivered-orders", adminController.getDeliveredOrders);
 // Giữ lại route thống kê user cũ và bổ sung thêm nếu cần
@@ -31,6 +33,10 @@ router.get("/users/stats", adminController.getUserStats);
 router.get("/users", adminController.getAllUsers);
 router.get("/users/:userId", adminController.getUserById);
 router.patch("/users/:userId/role", adminController.updateUserRole);
+// === PRODUCT MANAGEMENT ROUTES ===
+router.get("/products", adminController.getAllProductsForAdmin);
+router.delete("/products/:id", productController.deleteProduct);
+router.put("/products/:id", productController.updateProduct);
 router.delete("/users/:userId", adminController.deleteUser);
 
 // // === COUPON MANAGEMENT ROUTES ===

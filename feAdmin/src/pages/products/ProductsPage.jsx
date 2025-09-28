@@ -1,5 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import { Container, Row, Col, Card, Table, Button, Form, Badge, InputGroup, Modal } from 'react-bootstrap'
+import { useNavigate } from 'react-router-dom'
+import { API_URL } from '../../services/apiService'
+import productService from '../../services/productService'
 import { useDispatch, useSelector } from 'react-redux'
 import { fetchProducts, createProduct, updateProduct, deleteProduct } from '../../redux/slices/productsSlice'
 import LoadingSpinner from '../../components/common/LoadingSpinner'
@@ -11,6 +14,7 @@ import moment from 'moment'
 const ProductsPage = () => {
   const dispatch = useDispatch()
   const { products, pagination, loading } = useSelector((state) => state.products)
+  const navigate = useNavigate()
 
   const [filters, setFilters] = useState({
     page: 1,
@@ -24,6 +28,7 @@ const ProductsPage = () => {
   const [selectedProduct, setSelectedProduct] = useState(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
+  const [categories, setCategories] = useState([])
 
   const [productForm, setProductForm] = useState({
     name: '',
@@ -37,6 +42,15 @@ const ProductsPage = () => {
 
   useEffect(() => {
     dispatch(fetchProducts(filters))
+    const loadCategories = async () => {
+      try {
+        const res = await productService.getCategories()
+        setCategories(res.data.data)
+      } catch (error) {
+        console.error("Failed to fetch categories", error)
+      }
+    }
+    loadCategories()
   }, [dispatch, filters])
 
   const handleFilterChange = (key, value) => {
@@ -66,18 +80,7 @@ const ProductsPage = () => {
   }
 
   const handleEditProduct = (product) => {
-    setProductForm({
-      name: product.name,
-      description: product.description,
-      price: product.price.toString(),
-      discount: product.discount?.toString() || '',
-      stock: product.stock.toString(),
-      categoryId: product.categoryId?._id || '',
-      images: product.images || [],
-    })
-    setSelectedProduct(product)
-    setIsEditing(true)
-    setShowProductModal(true)
+    navigate(`/products/edit/${product._id}`)
   }
 
   const handleDeleteProduct = (product) => {
@@ -185,10 +188,19 @@ const ProductsPage = () => {
                 onChange={(e) => handleFilterChange('category', e.target.value)}
               >
                 <option value="">Tất cả danh mục</option>
-                <option value="banh-pia">Bánh pía</option>
-                <option value="banh-it">Bánh ít</option>
-                <option value="banh-cam">Bánh cam</option>
-                <option value="kem-bo">Kem bơ</option>
+                {categories.map(cat => (
+                  <option key={cat._id} value={cat._id}>{cat.name}</option>
+                ))}
+              </Form.Select>
+            </Col>
+            <Col md={2}>
+              <Form.Select
+                value={filters.isActive}
+                onChange={(e) => handleFilterChange('isActive', e.target.value)}
+              >
+                <option value="">Tất cả trạng thái</option>
+                <option value="true">Hoạt động</option>
+                <option value="false">Không hoạt động</option>
               </Form.Select>
             </Col>
             <Col md={3}>
@@ -200,16 +212,6 @@ const ProductsPage = () => {
                 <option value="name">Tên A-Z</option>
                 <option value="price">Giá thấp đến cao</option>
                 <option value="-price">Giá cao đến thấp</option>
-              </Form.Select>
-            </Col>
-            <Col md={2}>
-              <Form.Select
-                value={filters.limit}
-                onChange={(e) => handleFilterChange('limit', parseInt(e.target.value))}
-              >
-                <option value={10}>10 / trang</option>
-                <option value={25}>25 / trang</option>
-                <option value={50}>50 / trang</option>
               </Form.Select>
             </Col>
           </Row>
@@ -241,7 +243,7 @@ const ProductsPage = () => {
                       <td>
                         <div className="d-flex align-items-center">
                           <img
-                            src={product.images?.[0] || '/placeholder.jpg'}
+                            src={product.images?.[0]?.startsWith('/uploads') ? `${API_URL}${product.images[0]}` : product.images?.[0] || '/placeholder.jpg'}
                             alt={product.name}
                             className="rounded me-3"
                             style={{ width: '50px', height: '50px', objectFit: 'cover' }}
@@ -281,8 +283,8 @@ const ProductsPage = () => {
                             -{product.discount}%
                           </Badge>
                         )}
-                        <Badge bg={product.stock > 0 ? 'success' : 'secondary'}>
-                          {product.stock > 0 ? 'Hoạt động' : 'Ngừng bán'}
+                        <Badge bg={product.isActive ? 'success' : 'secondary'}>
+                          {product.isActive ? 'Hoạt động' : 'Ngừng bán'}
                         </Badge>
                       </td>
                       <td>

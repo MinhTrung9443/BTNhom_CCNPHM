@@ -7,6 +7,7 @@ import LoginPage from './pages/auth/LoginPage'
 import DashboardPage from './pages/DashboardPage'
 import UsersPage from './pages/users/UsersPage'
 import ProductsPage from './pages/products/ProductsPage'
+import ProductEditPage from './pages/products/ProductEditPage'
 import OrdersPage from './pages/orders/OrdersPage'
 import OrderDetailPage from './pages/orders/OrderDetailPage'
 import CouponsPage from './pages/coupons/CouponsPage'
@@ -54,6 +55,7 @@ function App() {
                   <Route path="/dashboard" element={<DashboardPage />} />
                   <Route path="/users" element={<UsersPage />} />
                   <Route path="/products" element={<ProductsPage />} />
+                  <Route path="/products/edit/:productId" element={<ProductEditPage />} />
                   <Route path="/orders" element={<OrdersPage />} />
                   <Route path="/orders/:orderId" element={<OrderDetailPage />} />
                   <Route path="/coupons" element={<CouponsPage />} />

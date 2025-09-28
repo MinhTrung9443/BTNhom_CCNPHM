@@ -321,4 +321,36 @@ export const productService = {
     return Product.find({ '_id': { $in: ids } })
       .select('name price discount images stock');
   }
+,
+  async updateProduct(id, updateData) {
+    const product = await Product.findByIdAndUpdate(id, updateData, {
+      new: true,
+      runValidators: true,
+    });
+    if (!product) {
+      throw new AppError("Không tìm thấy sản phẩm", 404);
+    }
+    return product;
+  },
+
+  async deleteProduct(productId) {
+    // Check if the product is part of any order
+    const orderCount = await Order.countDocuments({ 'orderLines.productId': productId });
+
+    if (orderCount > 0) {
+      // If the product is in an order, deactivate it (soft delete)
+      const product = await Product.findByIdAndUpdate(productId, { isActive: false }, { new: true });
+      if (!product) {
+        throw new AppError("Không tìm thấy sản phẩm", 404);
+      }
+      return { message: 'Sản phẩm đã được vô hiệu hóa vì đã có trong đơn hàng.', product, softDeleted: true };
+    } else {
+      // If the product is not in any order, delete it permanently
+      const product = await Product.findByIdAndDelete(productId);
+      if (!product) {
+        throw new AppError("Không tìm thấy sản phẩm", 404);
+      }
+      return { message: 'Sản phẩm đã được xóa vĩnh viễn.', productId, softDeleted: false };
+    }
+  },
 };
