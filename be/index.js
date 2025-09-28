@@ -24,22 +24,42 @@ import paymentRoutes from "./src/routes/payment.route.js";
 dotenv.config();
 const app = express();
 
+// In-memory storage for chat
+let activeRooms = new Set();
+let chatMessages = {};
+
 // Tạo HTTP server và Socket.IO
 const server = createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: process.env.FRONTEND_URL || "http://localhost:5173",
-    methods: ["GET", "POST"]
-  }
+    origin:
+      process.env.NODE_ENV === "production"
+        ? [process.env.FRONTEND_URL, process.env.ADMIN_URL].filter(Boolean)
+        : [
+            "http://localhost:5173",
+            "http://localhost:5174",
+            "http://localhost:3000",
+          ],
+    methods: ["GET", "POST"],
+  },
 });
 
 if (process.env.NODE_ENV !== "production") {
   app.use(morgan("dev", { stream: logger.stream }));
 }
 
-// CORS configuration
 app.use(
-  cors()
+  cors({
+    origin:
+      process.env.NODE_ENV === "production"
+        ? [process.env.FRONTEND_URL, process.env.ADMIN_URL].filter(Boolean)
+        : [
+            "http://localhost:5173",
+            "http://localhost:5174",
+            "http://localhost:3000",
+          ],
+    credentials: true,
+  })
 );
 app.use(express.json());
 app.use("/uploads", express.static("uploads"));
@@ -65,32 +85,111 @@ app.use(errorHandler);
 
 // Socket.IO connection handling
 io.use((socket, next) => {
+  logger.info('Socket connection attempt from:', socket.handshake.address);
   const token = socket.handshake.auth.token;
   if (!token) {
-    return next(new Error('Authentication error'));
+    logger.error('No token provided for socket connection');
+    return next(new Error("Authentication error"));
   }
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     socket.userId = decoded.id;
     socket.userRole = decoded.role;
+    logger.info(`Socket auth successful for user ${socket.userId} with role ${socket.userRole}`);
     next();
   } catch (err) {
-    next(new Error('Authentication error'));
+    logger.error(`Socket auth failed for token: ${err.message}`);
+    next(new Error("Authentication error"));
   }
 });
 
-io.on('connection', (socket) => {
+io.on("connection", (socket) => {
   logger.info(`User ${socket.userId} connected with role ${socket.userRole}`);
 
-  // Join admin room if user is admin
-  if (socket.userRole === 'admin') {
-    socket.join('admin');
+  if (socket.userRole === "user") {
+    // Don't create room yet, wait for first message
+    logger.info(`user ${socket.userId} connected`);
+  } else if (socket.userRole === "admin") {
+    socket.join("admin");
     logger.info(`Admin ${socket.userId} joined admin room`);
   }
 
-  socket.on('disconnect', () => {
+  // Handle sendMessage event
+  socket.on("sendMessage", (data) => {
+    const { room, message } = data;
+    if (!room || !message) return;
+
+    logger.info(
+      `Message from ${socket.userRole} ${socket.userId} to room ${room}: ${message}`
+    );
+
+    // For customer, room is chat_${userId}, join if not already
+    if (socket.userRole === "user") {
+      socket.join(room);
+      if (!activeRooms.has(room)) {
+        logger.info(`Creating new room ${room} for user ${socket.userId}`);
+        activeRooms.add(room);
+        chatMessages[room] = [];
+        io.to("admin").emit("newChatRoom", { room, userId: socket.userId });
+        // Update all admins with new active rooms list
+        logger.info(
+          `Emitting active rooms to admins: ${Array.from(activeRooms)}`
+        );
+        io.to("admin").emit("activeChatRooms", Array.from(activeRooms));
+      }
+    }
+
+    const msg = {
+      sender: socket.userId,
+      senderRole: socket.userRole,
+      message,
+      room,
+      timestamp: new Date().toISOString(),
+    };
+
+    if (!chatMessages[room]) {
+      chatMessages[room] = [];
+    }
+    chatMessages[room].push(msg);
+
+    // Emit to the room
+    io.to(room).emit("message", msg);
+  });
+
+  // Handle joinRoom for admin (to listen to specific room)
+  socket.on("joinRoom", (room) => {
+    if (socket.userRole === "admin" && activeRooms.has(room)) {
+      socket.join(room);
+      // Send existing messages
+      socket.emit("roomMessages", { room, messages: chatMessages[room] || [] });
+    }
+  });
+
+  // Handle leaveRoom for admin
+  socket.on("leaveRoom", (room) => {
+    if (socket.userRole === "admin") {
+      socket.leave(room);
+    }
+  });
+
+  socket.on("getActiveRooms", () => {
+    socket.emit("activeChatRooms", Array.from(activeRooms));
+  });
+
+  socket.on("disconnect", () => {
     logger.info(`User ${socket.userId} disconnected`);
+    if (socket.userRole === "user") {
+      const room = `chat_${socket.userId}`;
+      socket.leave(room);
+      const roomSockets = io.sockets.adapter.rooms.get(room);
+      if (!roomSockets || roomSockets.size === 0) {
+        activeRooms.delete(room);
+        delete chatMessages[room];
+        io.to("admin").emit("chatRoomClosed", { room });
+        io.to("admin").emit("activeChatRooms", Array.from(activeRooms));
+      }
+    }
   });
 });
 

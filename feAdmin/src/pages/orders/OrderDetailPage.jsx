@@ -109,7 +109,6 @@ const OrderDetailPage = () => {
     try {
       await dispatch(updateOrderStatus({
         orderId: order._id,
-        orderId: order._id,
         status: statusForm.status,
         metadata: { reason: statusForm.reason },
       })).unwrap()

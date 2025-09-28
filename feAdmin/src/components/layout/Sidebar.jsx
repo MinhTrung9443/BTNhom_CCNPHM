@@ -1,25 +1,27 @@
-import React from 'react'
-import { Nav } from 'react-bootstrap'
-import { Link, useLocation } from 'react-router-dom'
+import React from "react";
+import { Nav, Badge } from "react-bootstrap";
+import { Link, useLocation } from "react-router-dom";
+import { useChatContext } from "../../contexts/ChatContext";
 
 const Sidebar = () => {
-  const location = useLocation()
+  const location = useLocation();
+  const { getTotalUnreadCount } = useChatContext();
 
   const menuItems = [
     {
-      path: '/dashboard',
-      icon: 'bi-speedometer2',
-      label: 'Dashboard',
+      path: "/dashboard",
+      icon: "bi-speedometer2",
+      label: "Dashboard",
     },
     {
-      path: '/users',
-      icon: 'bi-people',
-      label: 'Quản lý người dùng',
+      path: "/users",
+      icon: "bi-people",
+      label: "Quản lý người dùng",
     },
     {
-      path: '/products',
-      icon: 'bi-box-seam',
-      label: 'Quản lý sản phẩm',
+      path: "/products",
+      icon: "bi-box-seam",
+      label: "Quản lý sản phẩm",
     },
     {
       path: '/categories',
@@ -32,26 +34,31 @@ const Sidebar = () => {
       label: 'Quản lý đơn hàng',
     },
     {
-      path: '/notifications',
-      icon: 'bi-bell',
-      label: 'Thông báo',
+      path: "/notifications",
+      icon: "bi-bell",
+      label: "Thông báo",
     },
     {
-      path: '/coupons',
-      icon: 'bi-ticket-perforated',
-      label: 'Mã giảm giá',
+      path: "/coupons",
+      icon: "bi-ticket-perforated",
+      label: "Mã giảm giá",
     },
     {
-      path: '/loyalty-points',
-      icon: 'bi-star',
-      label: 'Điểm thưởng',
+      path: "/loyalty-points",
+      icon: "bi-star",
+      label: "Điểm thưởng",
     },
     {
-      path: '/settings',
-      icon: 'bi-gear',
-      label: 'Cài đặt',
+      path: "/settings",
+      icon: "bi-gear",
+      label: "Cài đặt",
     },
-  ]
+    {
+      path: "/chat",
+      icon: "bi-chat-dots",
+      label: "Chat hỗ trợ",
+    },
+  ];
 
   return (
     <div className="admin-sidebar bg-light">
@@ -62,16 +69,21 @@ const Sidebar = () => {
             as={Link}
             to={item.path}
             className={`sidebar-link d-flex align-items-center py-3 px-3 mb-1 rounded ${
-              location.pathname === item.path ? 'active' : ''
+              location.pathname === item.path ? "active" : ""
             }`}
           >
             <i className={`bi ${item.icon} me-3`}></i>
             <span>{item.label}</span>
+            {item.path === "/chat" && getTotalUnreadCount() > 0 && (
+              <Badge bg="danger" className="ms-auto">
+                {getTotalUnreadCount()}
+              </Badge>
+            )}
           </Nav.Link>
         ))}
       </Nav>
     </div>
-  )
-}
+  );
+};
 
-export default Sidebar
+export default Sidebar;
