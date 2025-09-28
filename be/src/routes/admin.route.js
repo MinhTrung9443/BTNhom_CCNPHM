@@ -17,10 +17,18 @@ const router = express.Router();
 router.use(protect);
 router.use(restrictTo("admin"));
 
+// === DASHBOARD STATS ROUTES (NEW) ===
+router.get("/dashboard/stats", adminController.getDashboardStats);
+router.get("/dashboard/cash-flow", adminController.getCashFlowStats);
+router.get("/dashboard/top-products", adminController.getTopSellingProducts);
+router.get("/dashboard/delivered-orders", adminController.getDeliveredOrders);
+// Giữ lại route thống kê user cũ và bổ sung thêm nếu cần
+router.get("/users/stats", adminController.getUserStats);
+
+
 // === USER MANAGEMENT ROUTES ===
 
 router.get("/users", adminController.getAllUsers);
-router.get("/users/stats", adminController.getUserStats);
 router.get("/users/:userId", adminController.getUserById);
 router.patch("/users/:userId/role", adminController.updateUserRole);
 router.delete("/users/:userId", adminController.deleteUser);

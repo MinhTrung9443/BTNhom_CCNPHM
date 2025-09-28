@@ -4,6 +4,7 @@ import LoyaltyPoints from "../models/LoyaltyPoints.js";
 import logger from "../utils/logger.js";
 import AppError from "../utils/AppError.js";
 import * as orderService from "../services/order.service.js";
+import * as adminService from '../services/admin.service.js';
 
 export const adminController = {
   // User Management
@@ -469,5 +470,62 @@ export const adminController = {
       message: "Cập nhật trạng thái đơn hàng thành công.",
       data: updatedOrder,
     });
+  },
+
+  // === NEW DASHBOARD CONTROLLERS ===
+
+  getCashFlowStats: async (req, res, next) => {
+    try {
+      const stats = await adminService.getCashFlowStats();
+      res.json({
+        success: true,
+        message: "Lấy thống kê dòng tiền thành công.",
+        data: stats,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  getTopSellingProducts: async (req, res, next) => {
+    try {
+      const topProducts = await adminService.getTopSellingProducts(10); // Lấy top 10
+      res.json({
+        success: true,
+        message: "Lấy danh sách sản phẩm bán chạy nhất thành công.",
+        data: topProducts,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  getDeliveredOrders: async (req, res, next) => {
+    try {
+      const { page = 1, limit = 5 } = req.query;
+      const result = await adminService.getDeliveredOrders({ page, limit });
+      res.json({
+        success: true,
+        message: "Lấy danh sách đơn hàng đã giao thành công.",
+        data: result.orders,
+        meta: result.pagination,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  getDashboardStats: async (req, res, next) => {
+    try {
+      const stats = await adminService.getDashboardStats();
+      res.json({
+        success: true,
+        message: "Lấy thống kê tổng quan thành công.",
+        data: stats,
+      });
+    } catch (error)
+    {
+      next(error);
+    }
   },
 };

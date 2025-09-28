@@ -1,25 +1,23 @@
-import api from './apiService'
+import api from './apiService';
 
 const dashboardService = {
   getDashboardStats: () => {
-    return api.get('/dashboard/stats')
+    return api.get('/admin/dashboard/stats');
+  },
+  // ... các hàm hiện có ...
+
+  // === NEW FUNCTIONS ===
+  getCashFlowStats: () => {
+    return api.get('/admin/dashboard/cash-flow');
   },
 
-  getRecentOrders: (limit = 10) => {
-    return api.get(`/dashboard/recent-orders?limit=${limit}`)
+  getTopProducts: () => {
+    return api.get('/admin/dashboard/top-products');
   },
 
-  getSalesChart: (period = '7d') => {
-    return api.get(`/dashboard/sales-chart?period=${period}`)
+  getDeliveredOrders: (params = {}) => {
+    return api.get('/admin/dashboard/delivered-orders', { params });
   },
+};
 
-  getTopProducts: (limit = 5) => {
-    return api.get(`/dashboard/top-products?limit=${limit}`)
-  },
-
-  getUserGrowth: (period = '30d') => {
-    return api.get(`/dashboard/user-growth?period=${period}`)
-  },
-}
-
-export default dashboardService
+export default dashboardService;
