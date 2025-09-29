@@ -7,11 +7,13 @@ import Layout from './components/layout/Layout'
 import LoginPage from './pages/auth/LoginPage'
 import DashboardPage from './pages/DashboardPage'
 import UsersPage from './pages/users/UsersPage'
+import UserDetailPage from './pages/users/UserDetailPage'
 import ProductsPage from './pages/products/ProductsPage'
 import ProductEditPage from './pages/products/ProductEditPage'
 import OrdersPage from './pages/orders/OrdersPage'
 import OrderDetailPage from './pages/orders/OrderDetailPage'
-import CouponsPage from './pages/coupons/CouponsPage'
+import VouchersPage from './pages/vouchers/VouchersPage'
+import VoucherFormPage from './pages/vouchers/VoucherFormPage'
 import CategoriesPage from './pages/categories/CategoriesPage'
 import LoyaltyPointsPage from './pages/loyalty/LoyaltyPointsPage'
 import SettingsPage from './pages/SettingsPage'
@@ -64,11 +66,14 @@ function App() {
                   <Route path="/" element={<Navigate to="/dashboard" replace />} />
                   <Route path="/dashboard" element={<DashboardPage />} />
                   <Route path="/users" element={<UsersPage />} />
+                  <Route path="/users/:id" element={<UserDetailPage />} />
                   <Route path="/products" element={<ProductsPage />} />
                   <Route path="/products/edit/:productId" element={<ProductEditPage />} />
                   <Route path="/orders" element={<OrdersPage />} />
                   <Route path="/orders/:orderId" element={<OrderDetailPage />} />
-                  <Route path="/coupons" element={<CouponsPage />} />
+                  <Route path="/vouchers" element={<VouchersPage />} />
+                  <Route path="/vouchers/create" element={<VoucherFormPage />} />
+                  <Route path="/vouchers/edit/:id" element={<VoucherFormPage />} />
                   <Route path="/categories" element={<CategoriesPage />} />
                   <Route path="/loyalty-points" element={<LoyaltyPointsPage />} />
                   <Route path="/notifications" element={<Notifications />} />

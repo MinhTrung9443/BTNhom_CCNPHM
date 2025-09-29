@@ -26,12 +26,12 @@ export const updateUserRole = createAsyncThunk(
   }
 )
 
-export const deleteUser = createAsyncThunk(
-  'users/deleteUser',
+export const toggleUserStatus = createAsyncThunk(
+  'users/toggleUserStatus',
   async (userId, { rejectWithValue }) => {
     try {
-      await adminService.deleteUser(userId)
-      return userId
+      const response = await adminService.toggleUserStatus(userId)
+      return { userId, isActive: response.data.data.isActive }
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || error.message)
     }
@@ -96,9 +96,13 @@ const usersSlice = createSlice({
           state.users[index] = updatedUser
         }
       })
-      // Delete user
-      .addCase(deleteUser.fulfilled, (state, action) => {
-        state.users = state.users.filter(user => user._id !== action.payload)
+      // Toggle user status
+      .addCase(toggleUserStatus.fulfilled, (state, action) => {
+        const { userId, isActive } = action.payload
+        const index = state.users.findIndex(user => user._id === userId)
+        if (index !== -1) {
+          state.users[index].isActive = isActive
+        }
       })
       // Fetch stats
       .addCase(fetchUserStats.fulfilled, (state, action) => {

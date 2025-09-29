@@ -103,6 +103,26 @@ export const getOrderByAdmin = async (req, res, next) => {
     });
 };
 
+export const getUserOrdersByAdmin = async (req, res, next) => {
+  const { userId } = req.params;
+  const { page = 1, limit = 10, status, search } = req.query;
+
+  const result = await OrderService.getUserOrders(
+    userId,
+    parseInt(page),
+    parseInt(limit),
+    status,
+    search
+  );
+
+  res.json({
+    success: true,
+    message: 'Lấy danh sách đơn hàng của người dùng thành công',
+    pagination: result.pagination,
+    data: result.orders,
+  });
+};
+
 export const getUserOrderStats = async (req, res, next) => {
   const userId = req.user._id;
   const stats = await OrderService.getOrderStats(userId);

@@ -3,7 +3,7 @@ import { Container, Row, Col, Card, Table, Button, Form, Badge, InputGroup } fro
 import { useDispatch, useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import { fetchOrders, updateOrderStatus } from '../../redux/slices/ordersSlice'
-import LoadingSpinner from '../../components/common/LoadingSpinner'
+import { SkeletonOrderRow } from '../../components/common/Skeleton'
 import Pagination from '../../components/common/Pagination'
 import { toast } from 'react-toastify'
 import moment from 'moment'
@@ -161,7 +161,24 @@ const OrdersPage = () => {
       <Card className="border-0 shadow-sm">
         <Card.Body className="p-0">
           {loading ? (
-            <LoadingSpinner />
+            <Table responsive className="mb-0">
+              <thead className="bg-light">
+                <tr>
+                  <th>Mã đơn hàng</th>
+                  <th>Khách hàng</th>
+                  <th>Sản phẩm</th>
+                  <th>Tổng tiền</th>
+                  <th>Trạng thái</th>
+                  <th>Ngày tạo</th>
+                  <th>Hành động</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Array.from({ length: filters.limit }).map((_, index) => (
+                  <SkeletonOrderRow key={index} />
+                ))}
+              </tbody>
+            </Table>
           ) : orders.length > 0 ? (
             <>
               <Table responsive className="mb-0">

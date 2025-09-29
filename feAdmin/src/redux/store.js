@@ -3,7 +3,7 @@ import authSlice from './slices/authSlice'
 import usersSlice from './slices/usersSlice'
 import productsSlice from './slices/productsSlice'
 import ordersSlice from './slices/ordersSlice'
-import couponsSlice from './slices/couponsSlice'
+import vouchersSlice from './slices/vouchersSlice'
 import loyaltySlice from './slices/loyaltySlice'
 import dashboardSlice from './slices/dashboardSlice'
 import notificationsSlice from './slices/notificationsSlice'
@@ -15,7 +15,7 @@ export const store = configureStore({
     users: usersSlice,
     products: productsSlice,
     orders: ordersSlice,
-    coupons: couponsSlice,
+    vouchers: vouchersSlice,
     loyalty: loyaltySlice,
     dashboard: dashboardSlice,
     notifications: notificationsSlice,
@@ -28,3 +28,4 @@ export const store = configureStore({
       },
     }),
 })
+

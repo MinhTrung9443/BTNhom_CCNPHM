@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react'
 import { Container, Row, Col, Card, Table, Button, Form, Badge, InputGroup } from 'react-bootstrap'
 import { useDispatch, useSelector } from 'react-redux'
-import { fetchUsers, updateUserRole, deleteUser, fetchUserStats } from '../../redux/slices/usersSlice'
-import LoadingSpinner from '../../components/common/LoadingSpinner'
+import { useNavigate } from 'react-router-dom'
+import { fetchUsers, toggleUserStatus, fetchUserStats } from '../../redux/slices/usersSlice'
+import { SkeletonCard, SkeletonUserRow } from '../../components/common/Skeleton'
 import Pagination from '../../components/common/Pagination'
 import ConfirmModal from '../../components/common/ConfirmModal'
 import { toast } from 'react-toastify'
@@ -10,17 +11,18 @@ import moment from 'moment'
 
 const UsersPage = () => {
   const dispatch = useDispatch()
+  const navigate = useNavigate()
   const { users, stats, pagination, loading } = useSelector((state) => state.users)
 
   const [filters, setFilters] = useState({
     page: 1,
     limit: 10,
     search: '',
-    role: '',
+    role: 'user', // Only show customers
   })
-  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [showToggleModal, setShowToggleModal] = useState(false)
   const [selectedUser, setSelectedUser] = useState(null)
-  const [deleteLoading, setDeleteLoading] = useState(false)
+  const [toggleLoading, setToggleLoading] = useState(false)
 
   useEffect(() => {
     dispatch(fetchUsers(filters))
@@ -39,33 +41,29 @@ const UsersPage = () => {
     setFilters(prev => ({ ...prev, page }))
   }
 
-  const handleRoleChange = async (userId, newRole) => {
-    try {
-      await dispatch(updateUserRole({ userId, role: newRole })).unwrap()
-      toast.success('Cập nhật vai trò thành công')
-    } catch (error) {
-      toast.error(error || 'Có lỗi xảy ra khi cập nhật vai trò')
-    }
+  const handleViewUser = (userId) => {
+    navigate(`/users/${userId}`)
   }
 
-  const handleDeleteUser = (user) => {
+  const handleToggleUserStatus = (user) => {
     setSelectedUser(user)
-    setShowDeleteModal(true)
+    setShowToggleModal(true)
   }
 
-  const confirmDeleteUser = async () => {
+  const confirmToggleStatus = async () => {
     if (!selectedUser) return
 
-    setDeleteLoading(true)
+    setToggleLoading(true)
     try {
-      await dispatch(deleteUser(selectedUser._id)).unwrap()
-      toast.success('Xóa người dùng thành công')
-      setShowDeleteModal(false)
+      await dispatch(toggleUserStatus(selectedUser._id)).unwrap()
+      const action = selectedUser.isActive ? 'vô hiệu hóa' : 'kích hoạt'
+      toast.success(`${action.charAt(0).toUpperCase() + action.slice(1)} tài khoản thành công`)
+      setShowToggleModal(false)
       setSelectedUser(null)
     } catch (error) {
-      toast.error(error || 'Có lỗi xảy ra khi xóa người dùng')
+      toast.error(error || 'Có lỗi xảy ra khi thay đổi trạng thái tài khoản')
     } finally {
-      setDeleteLoading(false)
+      setToggleLoading(false)
     }
   }
 
@@ -94,7 +92,7 @@ const UsersPage = () => {
   return (
     <Container fluid>
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2 className="fw-bold">Quản lý người dùng</h2>
+        <h2 className="fw-bold">Quản lý khách hàng</h2>
       </div>
 
       {/* Stats Cards */}
@@ -143,7 +141,7 @@ const UsersPage = () => {
       <Card className="border-0 shadow-sm mb-4">
         <Card.Body>
           <Row>
-            <Col md={6}>
+            <Col md={9}>
               <InputGroup>
                 <InputGroup.Text>
                   <i className="bi bi-search"></i>
@@ -155,16 +153,6 @@ const UsersPage = () => {
                   onChange={(e) => handleFilterChange('search', e.target.value)}
                 />
               </InputGroup>
-            </Col>
-            <Col md={3}>
-              <Form.Select
-                value={filters.role}
-                onChange={(e) => handleFilterChange('role', e.target.value)}
-              >
-                <option value="">Tất cả vai trò</option>
-                <option value="user">Người dùng</option>
-                <option value="admin">Quản trị viên</option>
-              </Form.Select>
             </Col>
             <Col md={3}>
               <Form.Select
@@ -184,7 +172,22 @@ const UsersPage = () => {
       <Card className="border-0 shadow-sm">
         <Card.Body className="p-0">
           {loading ? (
-            <LoadingSpinner />
+            <Table responsive className="mb-0">
+              <thead className="bg-light">
+                <tr>
+                  <th>Người dùng</th>
+                  <th>Liên hệ</th>
+                  <th>Trạng thái</th>
+                  <th>Ngày tham gia</th>
+                  <th>Hành động</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Array.from({ length: filters.limit }).map((_, index) => (
+                  <SkeletonUserRow key={index} />
+                ))}
+              </tbody>
+            </Table>
           ) : users.length > 0 ? (
             <>
               <Table responsive className="mb-0">
@@ -192,7 +195,6 @@ const UsersPage = () => {
                   <tr>
                     <th>Người dùng</th>
                     <th>Liên hệ</th>
-                    <th>Vai trò</th>
                     <th>Trạng thái</th>
                     <th>Ngày tham gia</th>
                     <th>Hành động</th>
@@ -214,22 +216,26 @@ const UsersPage = () => {
                       </td>
                       <td>
                         <div>
-                          <div>{user.phone}</div>
-                          <small className="text-muted">{user.address}</small>
+                          <div>{user.phone || 'Chưa cập nhật'}</div>
+                          <small className="text-muted">{user.address || 'Chưa cập nhật'}</small>
                         </div>
                       </td>
                       <td>
-                        <Form.Select
-                          size="sm"
-                          value={user.role}
-                          onChange={(e) => handleRoleChange(user._id, e.target.value)}
-                          style={{ width: '120px' }}
-                        >
-                          <option value="user">User</option>
-                          <option value="admin">Admin</option>
-                        </Form.Select>
+                        <div className="d-flex flex-column gap-1">
+                          {getVerificationBadge(user.isVerified)}
+                          {user.isActive ? (
+                            <Badge bg="success">
+                              <i className="bi bi-check-circle me-1"></i>
+                              Đang hoạt động
+                            </Badge>
+                          ) : (
+                            <Badge bg="danger">
+                              <i className="bi bi-x-circle me-1"></i>
+                              Đã vô hiệu hóa
+                            </Badge>
+                          )}
+                        </div>
                       </td>
-                      <td>{getVerificationBadge(user.isVerified)}</td>
                       <td>
                         <small className="text-muted">
                           {moment(user.createdAt).format('DD/MM/YYYY')}
@@ -240,17 +246,18 @@ const UsersPage = () => {
                           <Button
                             variant="outline-primary"
                             size="sm"
+                            onClick={() => handleViewUser(user._id)}
                             title="Xem chi tiết"
                           >
                             <i className="bi bi-eye"></i>
                           </Button>
                           <Button
-                            variant="outline-danger"
+                            variant={user.isActive ? "outline-warning" : "outline-success"}
                             size="sm"
-                            onClick={() => handleDeleteUser(user)}
-                            title="Xóa người dùng"
+                            onClick={() => handleToggleUserStatus(user)}
+                            title={user.isActive ? "Vô hiệu hóa tài khoản" : "Kích hoạt tài khoản"}
                           >
-                            <i className="bi bi-trash"></i>
+                            <i className={user.isActive ? "bi bi-lock" : "bi bi-unlock"}></i>
                           </Button>
                         </div>
                       </td>
@@ -277,16 +284,20 @@ const UsersPage = () => {
         </Card.Body>
       </Card>
 
-      {/* Delete Confirmation Modal */}
+      {/* Toggle Status Confirmation Modal */}
       <ConfirmModal
-        show={showDeleteModal}
-        onHide={() => setShowDeleteModal(false)}
-        onConfirm={confirmDeleteUser}
-        title="Xác nhận xóa người dùng"
-        message={`Bạn có chắc chắn muốn xóa người dùng "${selectedUser?.name}"? Hành động này không thể hoàn tác.`}
-        confirmText="Xóa"
-        variant="danger"
-        loading={deleteLoading}
+        show={showToggleModal}
+        onHide={() => setShowToggleModal(false)}
+        onConfirm={confirmToggleStatus}
+        title={selectedUser?.isActive ? "Xác nhận vô hiệu hóa tài khoản" : "Xác nhận kích hoạt tài khoản"}
+        message={
+          selectedUser?.isActive
+            ? `Bạn có chắc chắn muốn vô hiệu hóa tài khoản "${selectedUser?.name}"? Người dùng sẽ không thể đăng nhập vào hệ thống.`
+            : `Bạn có chắc chắn muốn kích hoạt lại tài khoản "${selectedUser?.name}"? Người dùng sẽ có thể đăng nhập trở lại.`
+        }
+        confirmText={selectedUser?.isActive ? "Vô hiệu hóa" : "Kích hoạt"}
+        variant={selectedUser?.isActive ? "warning" : "success"}
+        loading={toggleLoading}
       />
     </Container>
   )
