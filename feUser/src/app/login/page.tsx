@@ -1,0 +1,131 @@
+"use client";
+
+import { useState } from 'react';
+import { signIn } from 'next-auth/react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Loader2, ShoppingBag } from 'lucide-react';
+import Link from 'next/link';
+
+export default function LoginPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get('callbackUrl') || '/';
+  
+  const [email, setEmail] = useState('user1@example.com');
+  const [password, setPassword] = useState('12345678');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const result = await signIn('credentials', {
+        email,
+        password,
+        redirect: false,
+      });
+
+      if (result?.error) {
+        setError(result.error);
+      } else if (result?.ok) {
+        router.push(callbackUrl);
+        router.refresh();
+      }
+    } catch (error: any) {
+      console.log(error);
+      setError(error.message || 'Đã xảy ra lỗi khi đăng nhập');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-green-100 p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader className="space-y-1">
+          <div className="flex items-center justify-center mb-4">
+            <div className="bg-green-600 p-3 rounded-full">
+              <ShoppingBag className="w-8 h-8 text-white" />
+            </div>
+          </div>
+          <CardTitle className="text-2xl text-center">Đăng nhập</CardTitle>
+          <CardDescription className="text-center">
+            Đăng nhập để truy cập giỏ hàng và các tính năng khác
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {error && (
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="user1@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                disabled={isLoading}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="password">Mật khẩu</Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                disabled={isLoading}
+              />
+            </div>
+
+            <Button
+              type="submit"
+              className="w-full bg-green-600 hover:bg-green-700"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Đang đăng nhập...
+                </>
+              ) : (
+                'Đăng nhập'
+              )}
+            </Button>
+
+            <div className="text-center text-sm text-gray-600">
+              <p className="mb-2">Thông tin demo:</p>
+              <p className="font-mono text-xs bg-gray-100 p-2 rounded">
+                Email: user1@example.com<br />
+                Password: 12345678
+              </p>
+            </div>
+
+            <div className="text-center">
+              <Link href="/" className="text-sm text-green-600 hover:underline">
+                ← Quay lại trang chủ
+              </Link>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
