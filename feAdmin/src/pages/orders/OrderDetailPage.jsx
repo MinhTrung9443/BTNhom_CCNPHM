@@ -107,10 +107,16 @@ const OrderDetailPage = () => {
     }
 
     try {
+      // Chỉ truyền reason nếu có giá trị
+      const metadata = {};
+      if (statusForm.reason && statusForm.reason.trim()) {
+        metadata.reason = statusForm.reason.trim();
+      }
+
       await dispatch(updateOrderStatus({
         orderId: order._id,
         status: statusForm.status,
-        metadata: { reason: statusForm.reason },
+        metadata,
       })).unwrap()
       toast.success('Cập nhật trạng thái thành công')
       setShowStatusModal(false)
@@ -341,7 +347,7 @@ const OrderDetailPage = () => {
               </Form.Select>
             </Form.Group>
             <Form.Group className="mb-3">
-              <Form.Label>Mô tả</Form.Label>
+              <Form.Label>Mô tả <small className="text-muted">(tùy chọn)</small></Form.Label>
               <Form.Control
                 as="textarea"
                 rows={3}
@@ -349,7 +355,7 @@ const OrderDetailPage = () => {
                 onChange={(e) =>
                   setStatusForm((prev) => ({ ...prev, reason: e.target.value }))
                 }
-                placeholder="Nhập lý do cập nhật (nếu có)"
+                placeholder="Nhập lý do cập nhật (tùy chọn)"
               />
             </Form.Group>
           </Form>

@@ -10,7 +10,18 @@ const orderService = {
   },
 
   updateOrderStatus: (orderId, status, metadata = {}) => {
-    return api.patch(`/admin/orders/${orderId}/status`, { status, ...metadata });
+    // Chỉ gửi reason nếu có giá trị
+    const payload = { status };
+    if (metadata.reason && metadata.reason.trim()) {
+      payload.reason = metadata.reason.trim();
+    }
+    // Thêm các metadata khác nếu có
+    Object.keys(metadata).forEach(key => {
+      if (key !== 'reason' && metadata[key] !== undefined && metadata[key] !== '') {
+        payload[key] = metadata[key];
+      }
+    });
+    return api.patch(`/admin/orders/${orderId}/status`, payload);
   },
 
   addOrderNote: (orderId, description, metadata = {}) => {
