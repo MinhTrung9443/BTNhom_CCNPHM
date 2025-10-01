@@ -13,7 +13,7 @@ import { Loader2, User, Mail, Camera, Save, Edit3, CheckCircle, XCircle } from "
 import { userService } from "@/services/userService";
 
 export default function ProfilePage() {
-  const { data: session } = useSession();
+  const { data: session, update } = useSession();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [isEditing, setIsEditing] = useState(false);
@@ -102,6 +102,23 @@ export default function ProfilePage() {
 
       if (response.success) {
         setUser((prev: any) => (prev ? { ...prev, avatar: response.data.user.avatar } : null));
+
+        // Cập nhật session để header hiển thị ảnh mới
+        await update({
+          ...session,
+          user: {
+            ...session?.user,
+            avatar: response.data.user.avatar,
+          },
+        });
+
+        // Dispatch custom event để header biết avatar đã thay đổi
+        window.dispatchEvent(
+          new CustomEvent("avatarUpdated", {
+            detail: { avatar: response.data.user.avatar },
+          })
+        );
+
         setSuccess("Cập nhật ảnh đại diện thành công!");
       } else {
         setError(response.message || "Không thể upload ảnh");
