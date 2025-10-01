@@ -54,7 +54,7 @@ const toggleFavorite = async (userId, productId) => {
 const getFavorites = async (userId) => {
   const favorites = await Favorite.find({ userId }).populate({
     path: 'productId',
-    select: 'name price images discount',
+    select: 'slug name price images discount',
   });
   return favorites.map(fav => fav.productId);
 };

@@ -15,9 +15,6 @@ const dashboardService = {
     return api.get('/admin/dashboard/top-products');
   },
 
-  getDeliveredOrders: (params = {}) => {
-    return api.get('/admin/dashboard/delivered-orders', { params });
-  },
 
   getSalesChart: (period = '7d') => {
     return api.get(`/admin/dashboard/sales-chart?period=${period}`);

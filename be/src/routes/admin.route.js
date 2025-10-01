@@ -26,7 +26,6 @@ router.get("/dashboard/stats", adminController.getDashboardStats);
 router.get("/dashboard/cash-flow", adminController.getCashFlowStats);
 router.get("/dashboard/sales-chart", adminController.getSalesChartData);
 router.get("/dashboard/top-products", adminController.getTopSellingProducts);
-router.get("/dashboard/delivered-orders", adminController.getDeliveredOrders);
 // Giữ lại route thống kê user cũ và bổ sung thêm nếu cần
 router.get("/users/stats", adminController.getUserStats);
 
