@@ -8,56 +8,16 @@ const Sidebar = () => {
   const { getTotalUnreadCount } = useChatContext();
 
   const menuItems = [
-    {
-      path: "/dashboard",
-      icon: "bi-speedometer2",
-      label: "Dashboard",
-    },
-    {
-      path: "/users",
-      icon: "bi-people",
-      label: "Quản lý người dùng",
-    },
-    {
-      path: "/products",
-      icon: "bi-box-seam",
-      label: "Quản lý sản phẩm",
-    },
-    {
-      path: '/categories',
-      icon: 'bi-tags',
-      label: 'Quản lý danh mục',
-    },
-    {
-      path: '/orders',
-      icon: 'bi-cart-check',
-      label: 'Quản lý đơn hàng',
-    },
-    {
-      path: "/notifications",
-      icon: "bi-bell",
-      label: "Thông báo",
-    },
-    {
-      path: "/coupons",
-      icon: "bi-ticket-perforated",
-      label: "Mã giảm giá",
-    },
-    {
-      path: "/loyalty-points",
-      icon: "bi-star",
-      label: "Điểm thưởng",
-    },
-    {
-      path: "/settings",
-      icon: "bi-gear",
-      label: "Cài đặt",
-    },
-    {
-      path: "/chat",
-      icon: "bi-chat-dots",
-      label: "Chat hỗ trợ",
-    },
+    { path: "/dashboard", icon: "bi-speedometer2", label: "Dashboard" },
+    { path: "/users", icon: "bi-people", label: "Quản lý người dùng" },
+    { path: "/products", icon: "bi-box-seam", label: "Quản lý sản phẩm" },
+    { path: "/categories", icon: "bi-tags", label: "Quản lý danh mục" },
+    { path: "/orders", icon: "bi-cart-check", label: "Quản lý đơn hàng" },
+    { path: "/notifications", icon: "bi-bell", label: "Thông báo" },
+    { path: "/vouchers", icon: "bi-ticket-perforated", label: "Quản lý voucher" },
+    { path: "/loyalty-points", icon: "bi-star", label: "Điểm thưởng" },
+    { path: "/settings", icon: "bi-gear", label: "Cài đặt" },
+    { path: "/chat", icon: "bi-chat-dots", label: "Chat hỗ trợ" },
   ];
 
   return (
@@ -68,16 +28,12 @@ const Sidebar = () => {
             key={item.path}
             as={Link}
             to={item.path}
-            className={`sidebar-link d-flex align-items-center py-3 px-3 mb-1 rounded ${
-              location.pathname === item.path ? "active" : ""
-            }`}
+            className={`sidebar-link d-flex align-items-center py-3 px-3 mb-1 rounded ${location.pathname === item.path ? "active" : ""}`}
           >
             <i className={`bi ${item.icon} me-3`}></i>
             <span>{item.label}</span>
             {item.path === "/chat" && getTotalUnreadCount() > 0 && (
-              <Badge bg="danger" className="ms-auto">
-                {getTotalUnreadCount()}
-              </Badge>
+              <Badge bg="danger" className="ms-auto">{getTotalUnreadCount()}</Badge>
             )}
           </Nav.Link>
         ))}

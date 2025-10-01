@@ -5,6 +5,7 @@ import logger from "../utils/logger.js";
 import AppError from "../utils/AppError.js";
 import * as orderService from "../services/order.service.js";
 import * as adminService from '../services/admin.service.js';
+import voucherService from '../services/voucher.service.js';
 
 export const adminController = {
   // User Management
@@ -59,9 +60,7 @@ export const adminController = {
       const { userId } = req.params;
 
       const user = await User.findById(userId)
-        .select("-password")
-        .populate("vouchers", "code discountValue")
-        .populate("favorites", "name price images");
+        .select("-password");
 
       if (!user) {
         return next(new AppError("Không tìm thấy người dùng", 404));
@@ -108,22 +107,32 @@ export const adminController = {
     }
   },
 
-  deleteUser: async (req, res, next) => {
+  toggleUserStatus: async (req, res, next) => {
     try {
       const { userId } = req.params;
 
-      const user = await User.findByIdAndDelete(userId);
+      const user = await User.findById(userId);
 
       if (!user) {
         return next(new AppError("Không tìm thấy người dùng", 404));
       }
 
+      // Toggle the isActive status
+      user.isActive = !user.isActive;
+      await user.save();
+
       res.json({
         success: true,
-        message: "Xóa người dùng thành công",
+        message: user.isActive 
+          ? "Kích hoạt tài khoản thành công" 
+          : "Vô hiệu hóa tài khoản thành công",
+        data: {
+          userId: user._id,
+          isActive: user.isActive
+        }
       });
     } catch (error) {
-      logger.error(`Lỗi xóa người dùng: ${error.message}`);
+      logger.error(`Lỗi thay đổi trạng thái người dùng: ${error.message}`);
       next(new AppError(error.message, 500));
     }
   },
@@ -395,6 +404,55 @@ export const adminController = {
         success: true,
         message: 'Lấy dữ liệu biểu đồ doanh thu thành công.',
         data,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  // Voucher Management
+  getVouchers: async (req, res, next) => {
+    try {
+      const filters = req.query;
+      const result = await voucherService.getAdminVouchers(filters);
+      res.json({
+        success: true,
+        message: "Vouchers retrieved successfully",
+        data: result.data,
+        pagination: result.pagination
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  getVoucherById: async (req, res, next) => {
+    try {
+      const { id } = req.params;
+      const result = await voucherService.getAdminVoucherById(id);
+      res.json({
+        success: true,
+        message: "Voucher retrieved successfully",
+        data: {
+          voucher: result.voucher,
+          usageStats: result.usageStats
+        }
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  deactivateVoucher: async (req, res, next) => {
+    try {
+      const { id } = req.params;
+      const result = await voucherService.deactivateVoucher(id);
+      res.json({
+        success: true,
+        message: "Voucher deactivated successfully",
+        data: {
+          reclaimedUses: result.reclaimedUses
+        }
       });
     } catch (error) {
       next(error);

@@ -9,9 +9,11 @@ import {
   deleteNotificationHandler,
 } from "../controllers/notification.controller.js";
 import { categoryController } from "../controllers/category.controller.js";
+import { voucherController } from "../controllers/voucher.controller.js";
 import { protect, restrictTo } from "../middlewares/auth.js";
 import { validate } from "../middlewares/validate.js";
 import { getOrderById, updateOrderStatus } from "../schemas/order.schema.js";
+import { adminGetVouchersSchema, adminVoucherIdParamsSchema, adminCreateVoucherSchema, adminUpdateVoucherSchema } from "../schemas/voucher.schema.js";
 
 const router = express.Router();
 
@@ -34,15 +36,37 @@ router.get("/users/stats", adminController.getUserStats);
 router.get("/users", adminController.getAllUsers);
 router.get("/users/:userId", adminController.getUserById);
 router.patch("/users/:userId/role", adminController.updateUserRole);
-router.post("/products", productController.createProduct);
+router.patch("/users/:userId/toggle-status", adminController.toggleUserStatus);
+
 // === PRODUCT MANAGEMENT ROUTES ===
+router.post("/products", productController.createProduct);
 router.get("/products", adminController.getAllProductsForAdmin);
 router.delete("/products/:id", productController.deleteProduct);
 router.put("/products/:id", productController.updateProduct);
-router.delete("/users/:userId", adminController.deleteUser);
 
 // // === COUPON MANAGEMENT ROUTES ===
 
+// === VOUCHER MANAGEMENT ROUTES ===
+router.post("/vouchers",
+  validate(adminCreateVoucherSchema),
+  voucherController.createVoucher
+);
+router.put("/vouchers/:id",
+  validate(adminUpdateVoucherSchema),
+  voucherController.updateVoucher
+);
+router.get("/vouchers",
+  validate(adminGetVouchersSchema),
+  voucherController.getAdminVouchers
+);
+router.get("/vouchers/:id",
+  validate(adminVoucherIdParamsSchema),
+  voucherController.getAdminVoucherById
+);
+router.delete("/vouchers/:id",
+  validate(adminVoucherIdParamsSchema),
+  voucherController.deactivateVoucher
+);
 // router.get('/coupons', adminController.getAllCoupons);
 // router.get('/coupons/stats', adminController.getCouponStats);
 // router.post('/coupons', adminController.createCoupon);
@@ -74,8 +98,8 @@ router.patch("/notifications/mark-all-read", markAllAsReadHandler);
 router.delete("/notifications/:id", deleteNotificationHandler);
 
 // === ORDER MANAGEMENT ROUTES ===
-// === ORDER MANAGEMENT ROUTES ===
 router.get("/orders", orderController.getAllOrdersByAdmin);
+router.get("/users/:userId/orders", orderController.getUserOrdersByAdmin);
 router.get(
   "/orders/:orderId",
   validate(getOrderById),

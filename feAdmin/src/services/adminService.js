@@ -14,12 +14,16 @@ const adminService = {
     return api.patch(`/admin/users/${userId}/role`, { role })
   },
 
-  deleteUser: (userId) => {
-    return api.delete(`/admin/users/${userId}`)
+  toggleUserStatus: (userId) => {
+    return api.patch(`/admin/users/${userId}/toggle-status`)
   },
 
   getUserStats: () => {
     return api.get('/admin/users/stats')
+  },
+
+  getUserOrders: (userId, params = {}) => {
+    return api.get(`/admin/users/${userId}/orders`, { params })
   },
 
   // Loyalty Points Management

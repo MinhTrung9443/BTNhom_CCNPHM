@@ -1,0 +1,85 @@
+.multi-select-with-search {
+  position: relative;
+}
+
+.multi-select-with-search .badge {
+  cursor: default;
+  user-select: none;
+  transition: all 0.2s ease;
+}
+
+.multi-select-with-search .badge:hover {
+  opacity: 0.9;
+}
+
+.multi-select-with-search .badge i {
+  font-size: 1rem;
+  transition: transform 0.2s ease;
+}
+
+.multi-select-with-search .badge i:hover {
+  transform: scale(1.2);
+}
+
+.multi-select-with-search .list-group-item {
+  transition: all 0.2s ease;
+  border-left: 3px solid transparent;
+}
+
+.multi-select-with-search .list-group-item:hover {
+  background-color: #f8f9fa;
+  border-left-color: #0d6efd;
+}
+
+.multi-select-with-search .list-group-item.active {
+  background-color: #0d6efd;
+  border-color: #0d6efd;
+  border-left-color: #0a58ca;
+}
+
+.multi-select-with-search .list-group-item.active:hover {
+  background-color: #0b5ed7;
+}
+
+/* Scrollbar styling */
+.multi-select-with-search .position-absolute::-webkit-scrollbar {
+  width: 8px;
+}
+
+.multi-select-with-search .position-absolute::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.multi-select-with-search .position-absolute::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+.multi-select-with-search .position-absolute::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Animation cho dropdown */
+.multi-select-with-search .position-absolute {
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .multi-select-with-search .badge {
+    font-size: 0.75rem;
+    padding: 0.3rem 0.5rem;
+  }
+}
