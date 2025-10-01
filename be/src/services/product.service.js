@@ -11,7 +11,7 @@ export const productService = {
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
-      .select('name description price discount images categoryId createdAt stock');
+      .select('name slug description price discount images categoryId createdAt stock');
 
     const totalPages = Math.ceil(total / limit);
 
@@ -48,7 +48,7 @@ export const productService = {
     const productIds = bestSellers.map(item => item._id);
     const products = await Product.find({ _id: { $in: productIds } })
       .populate('categoryId', 'name')
-      .select('name description price discount images categoryId createdAt stock');
+      .select('name slug description price discount images categoryId createdAt stock');
 
     const totalBestSellers = await Order.aggregate([
       { $match: { status: { $in: ["paid", "shipped", "completed"] } } },
@@ -103,7 +103,7 @@ export const productService = {
     const productIds = mostViewed.map(item => item._id);
     const products = await Product.find({ _id: { $in: productIds } })
       .populate('categoryId', 'name')
-      .select('name description price discount images categoryId createdAt stock');
+      .select('name slug description price discount images categoryId createdAt stock');
 
     const totalViewed = await ProductView.aggregate([
       {
@@ -147,7 +147,7 @@ export const productService = {
       .sort({ discount: -1 })
       .skip(skip)
       .limit(limit)
-      .select('name description price discount images categoryId createdAt stock');
+      .select('name slug description price discount images categoryId createdAt stock');
 
     const totalPages = Math.ceil(total / limit);
 
@@ -202,7 +202,7 @@ export const productService = {
       .sort(sort)
       .skip(skip)
       .limit(limit)
-      .select('name description price discount images categoryId createdAt stock');
+      .select('name slug description price discount images categoryId createdAt stock');
 
     const totalPages = Math.ceil(total / limit);
 
@@ -270,6 +270,60 @@ export const productService = {
     };
   },
 
+  async getProductDetailBySlug(slug, userId) {
+    const productPromise = Product.findOne({ slug })
+      .populate('categoryId', 'name description');
+
+    const product = await productPromise;
+
+    if (!product) {
+      throw new AppError("Không tìm thấy sản phẩm", 404);
+    }
+
+    const id = product._id;
+    const successfulOrderStatuses = ['completed', 'shipped', 'delivered', 'paid'];
+    const buyerCountPromise = Order.distinct('userId', {
+      'orderLines.productId': id,
+      'status': { $in: successfulOrderStatuses }
+    }).countDocuments();
+
+    const reviewerCountPromise = Review.distinct('userId', {
+      'productId': id
+    }).countDocuments();
+
+    let isSavedPromise = Promise.resolve(false);
+    if (userId) {
+      isSavedPromise = Favorite.exists({ userId, productId: id }).then(fav => !!fav);
+    }
+
+    const [buyerCount, reviewerCount, isSaved] = await Promise.all([
+      buyerCountPromise,
+      reviewerCountPromise,
+      isSavedPromise
+    ]);
+
+    if (userId) {
+      await ProductView.findOneAndUpdate(
+        { userId, productId: id },
+        { $inc: { viewCount: 1 }, lastViewedAt: new Date() },
+        { upsert: true, new: true }
+      );
+    } else {
+      await ProductView.findOneAndUpdate(
+        { userId: null, productId: id },
+        { $inc: { viewCount: 1 }, lastViewedAt: new Date() },
+        { upsert: true, new: true }
+      );
+    }
+
+    return {
+      ...product.toObject(),
+      buyerCount,
+      reviewerCount,
+      isSaved,
+    };
+  },
+
   async getRelatedProducts(id) {
     const currentProduct = await Product.findById(id).select('categoryId');
     if (!currentProduct) {
@@ -282,7 +336,7 @@ export const productService = {
     })
       .limit(4)
       .populate('categoryId', 'name')
-      .select('name price discount images categoryId stock');
+      .select('name slug price discount images categoryId stock');
   },
 
   async recordProductView(productId, userId) {
@@ -319,7 +373,7 @@ export const productService = {
       throw new AppError("IDs must be an array", 400);
     }
     return Product.find({ '_id': { $in: ids } })
-      .select('name price discount images stock');
+      .select('name slug price discount images stock');
   }
 ,
   async updateProduct(id, updateData) {

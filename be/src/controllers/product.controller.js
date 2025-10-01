@@ -42,6 +42,13 @@ export const productController = {
     res.status(200).json({ success: true, data });
   },
 
+  async getProductBySlug(req, res, next) {
+    const { slug } = req.params;
+    const userId = req.user?.id;
+    const data = await productService.getProductDetailBySlug(slug, userId);
+    res.status(200).json({ success: true, data });
+  },
+
   async getRelatedProducts(req, res, next) {
     const { id } = req.params;
     const data = await productService.getRelatedProducts(id);
