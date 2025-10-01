@@ -32,8 +32,8 @@ const calculateShippingFee = async (shippingMethod) => {
 };
 export const getUserOrders = async (userId, page = 1, limit = 10, status = null, search = null) => {
   const filter = { userId };
-  if (status && STATUS_MAP[status]) {
-    filter.status = { $in: STATUS_MAP[status] };
+  if (status) {
+    filter.status = { $in: status };
   }
 
   if (search) {
@@ -479,7 +479,7 @@ export const placeOrder = async (userId, { previewOrder: clientPreview }) => {
 
 export const getOrderStats = async (userId = null) => {
   const filter = userId ? { userId } : {};
-
+  console.log("Order Stats Filter:", userId);
   const stats = await Order.aggregate([
     { $match: filter },
     {
@@ -489,29 +489,23 @@ export const getOrderStats = async (userId = null) => {
       },
     },
   ]);
-
+  console.log("Raw Order Stats:", stats);
   const result = {};
   // Initialize all business statuses with 0 count
   for (const status of Object.values(ORDER_STATUS)) {
     result[status] = { count: 0 };
   }
 
-  // Create a reverse map from detailed status to business status
-  const reverseStatusMap = {};
-  for (const businessStatus in STATUS_MAP) {
-    for (const detailedStatus of STATUS_MAP[businessStatus]) {
-      reverseStatusMap[detailedStatus] = businessStatus;
-    }
-  }
-
-  // Aggregate counts from detailed statuses to business statuses
+  // Vì database đã lưu business status (pending, processing, shipping, v.v.)
+  // nên chỉ cần map trực tiếp từ aggregate results
   stats.forEach(stat => {
-    const businessStatus = reverseStatusMap[stat._id];
-    if (businessStatus) {
-      result[businessStatus].count += stat.count;
+    const businessStatus = stat._id;
+    // Chỉ cập nhật nếu businessStatus tồn tại trong ORDER_STATUS
+    if (result[businessStatus] !== undefined) {
+      result[businessStatus].count = stat.count;
     }
   });
-
+  console.log("Order Stats Result:", result);
   return result;
 
 };

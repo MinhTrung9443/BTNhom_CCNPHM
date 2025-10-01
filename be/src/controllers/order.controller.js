@@ -20,7 +20,6 @@ export const placeOrder = async (req, res) => {
 export const getUserOrders = async (req, res, next) => {
   const userId = req.user._id;
   const { page = 1, limit = 10, status, search } = req.query;
-
   const result = await OrderService.getUserOrders(
     userId,
     parseInt(page),
