@@ -1,7 +1,7 @@
 import User from "../models/User.js";
-import Product from '../models/Product.js';
-import ProductView from '../models/ProductView.js';
-import Favorite from '../models/Favorite.js';
+import Product from "../models/Product.js";
+import ProductView from "../models/ProductView.js";
+import Favorite from "../models/Favorite.js";
 import { AppError } from "../utils/AppError.js";
 
 const updateUserProfile = async (userId, updateData, file) => {
@@ -19,7 +19,7 @@ const updateUserProfile = async (userId, updateData, file) => {
   }
 
   if (Object.keys(updates).length === 0) {
-    throw new AppError(400, "Không có thông tin hợp lệ để cập nhật.");
+    throw new AppError("Không có thông tin hợp lệ để cập nhật.", 400);
   }
 
   const user = await User.findByIdAndUpdate(userId, updates, {
@@ -28,7 +28,7 @@ const updateUserProfile = async (userId, updateData, file) => {
   }).select("-password");
 
   if (!user) {
-    throw new AppError(404, "Không tìm thấy người dùng để cập nhật.");
+    throw new AppError("Không tìm thấy người dùng để cập nhật.", 404);
   }
 
   return user;
@@ -37,7 +37,7 @@ const updateUserProfile = async (userId, updateData, file) => {
 const toggleFavorite = async (userId, productId) => {
   const product = await Product.findById(productId);
   if (!product) {
-    throw new AppError('Sản phẩm không tồn tại', 404);
+    throw new AppError("Sản phẩm không tồn tại", 404);
   }
 
   const existingFavorite = await Favorite.findOne({ userId, productId });
@@ -53,21 +53,18 @@ const toggleFavorite = async (userId, productId) => {
 
 const getFavorites = async (userId) => {
   const favorites = await Favorite.find({ userId }).populate({
-    path: 'productId',
-    select: 'slug name price images discount',
+    path: "productId",
+    select: "slug name price images discount",
   });
-  return favorites.map(fav => fav.productId);
+  return favorites.map((fav) => fav.productId);
 };
 
 const getRecentlyViewed = async (userId) => {
-  const views = await ProductView.find({ userId })
-    .sort({ lastViewedAt: -1 })
-    .limit(10)
-    .populate({
-      path: 'productId',
-      select: 'name price images discount',
-      model: 'Product'
-    });
+  const views = await ProductView.find({ userId }).sort({ lastViewedAt: -1 }).limit(10).populate({
+    path: "productId",
+    select: "name price images discount",
+    model: "Product",
+  });
 
   const uniqueProducts = [];
   const seenProductIds = new Set();
@@ -79,6 +76,5 @@ const getRecentlyViewed = async (userId) => {
   }
   return uniqueProducts;
 };
-
 
 export { updateUserProfile, toggleFavorite, getFavorites, getRecentlyViewed };

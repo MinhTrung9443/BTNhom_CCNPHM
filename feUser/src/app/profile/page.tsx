@@ -94,26 +94,17 @@ export default function ProfilePage() {
     setError("");
 
     try {
-      // Bước 1: Upload file lên server và lấy filePaths
-      const formDataUpload = new FormData();
-      formDataUpload.append("images", file); // Sử dụng "images" như trong upload.route.js
+      // Dùng FormData để gửi file trực tiếp tới /api/users/me
+      const formData = new FormData();
+      formData.append("avatar", file); // Backend expect "avatar" field
 
-      const uploadResponse = await userService.uploadFiles(formDataUpload, session.user.accessToken);
+      const response = await userService.updateProfile(formData, session.user.accessToken);
 
-      // Kiểm tra response structure từ upload API
-      if (uploadResponse && uploadResponse.filePaths?.length > 0) {
-        const avatarPath = uploadResponse.filePaths[0]; // Lấy đường dẫn ảnh đầu tiên
-
-        // Bước 2: Cập nhật profile với đường dẫn ảnh mới
-        const updateData = { avatar: avatarPath };
-        const updateResponse = await userService.updateProfile(updateData, session.user.accessToken);
-
-        if (updateResponse.success) {
-          setUser((prev: any) => (prev ? { ...prev, avatar: updateResponse.data.user.avatar } : null));
-          setSuccess("Cập nhật ảnh đại diện thành công!");
-        }
+      if (response.success) {
+        setUser((prev: any) => (prev ? { ...prev, avatar: response.data.user.avatar } : null));
+        setSuccess("Cập nhật ảnh đại diện thành công!");
       } else {
-        setError("Không thể upload ảnh");
+        setError(response.message || "Không thể upload ảnh");
       }
     } catch (error: unknown) {
       console.error("Error uploading avatar:", error);
@@ -243,7 +234,13 @@ export default function ProfilePage() {
           <div className="flex items-center space-x-6">
             <div className="relative">
               <Avatar className="w-24 h-24">
-                <AvatarImage src={user.avatar} alt={user.name} className="object-cover" />
+                {(() => {
+                  const avatarUrl = user.avatar
+                    ? `${process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api", "") || "http://localhost:5000"}${user.avatar}`
+                    : "";
+                  console.log("Avatar URL:", avatarUrl);
+                  return <AvatarImage src={avatarUrl} alt={user.name} className="object-cover" />;
+                })()}
                 <AvatarFallback className="text-xl font-semibold bg-green-100 text-green-700">
                   {user.name?.charAt(0).toUpperCase() || "U"}
                 </AvatarFallback>
