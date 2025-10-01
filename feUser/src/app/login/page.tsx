@@ -39,9 +39,10 @@ export default function LoginPage() {
         router.push(callbackUrl);
         router.refresh();
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.log(error);
-      setError(error.message || 'Đã xảy ra lỗi khi đăng nhập');
+      const errorMessage = error instanceof Error ? error.message : 'Đã xảy ra lỗi khi đăng nhập';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -116,6 +117,13 @@ export default function LoginPage() {
                 Email: user1@example.com<br />
                 Password: 12345678
               </p>
+            </div>
+
+            <div className="text-center text-sm text-gray-600">
+              Chưa có tài khoản?{' '}
+              <Link href="/register" className="text-green-600 hover:underline font-medium">
+                Đăng ký ngay
+              </Link>
             </div>
 
             <div className="text-center">

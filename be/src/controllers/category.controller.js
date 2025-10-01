@@ -11,12 +11,21 @@ export const categoryController = {
   },
   
   async getAllCategories(req, res, next) {
-    try {
-      const data = await categoryService.getAllCategories();
-      res.status(200).json({ success: true, message: 'Lấy danh sách danh mục thành công', data });
-    } catch (error) {
-      next(error);
-    }
+    const data = await categoryService.getAllCategories();
+    res.status(200).json({ 
+      success: true, 
+      message: 'Lấy danh sách danh mục thành công', 
+      data 
+    });
+  },
+
+  async getAllCategoriesSimple(req, res, next) {
+    const data = await categoryService.getAllCategoriesSimple();
+    res.status(200).json({ 
+      success: true, 
+      message: 'Lấy danh sách danh mục đơn giản thành công', 
+      data 
+    });
   },
 
   async createCategory(req, res, next) {

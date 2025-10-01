@@ -102,4 +102,39 @@ export const productController = {
       next(error);
     }
   },
+
+  async searchProducts(req, res, next) {
+    const {
+      keyword,
+      categoryId,
+      minPrice,
+      maxPrice,
+      minRating,
+      inStock,
+      page,
+      limit,
+      sortBy,
+      sortOrder
+    } = req.query;
+
+    const result = await productService.searchProducts({
+      keyword,
+      categoryId,
+      minPrice: minPrice ? parseFloat(minPrice) : null,
+      maxPrice: maxPrice ? parseFloat(maxPrice) : null,
+      minRating: minRating ? parseFloat(minRating) : null,
+      inStock: inStock !== undefined ? inStock === 'true' : null,
+      page: parseInt(page) || 1,
+      limit: parseInt(limit) || 12,
+      sortBy,
+      sortOrder
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Tìm kiếm sản phẩm thành công",
+      meta: result.meta,
+      data: result.data
+    });
+  }
 };

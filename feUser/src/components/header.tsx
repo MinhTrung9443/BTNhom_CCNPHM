@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
 import { useCart } from '@/contexts/cart-context';
 import { Button } from '@/components/ui/button';
@@ -17,11 +18,12 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { HeaderSearch } from '@/components/header-search';
 
 const navigation = [
   { name: 'Trang Chủ', href: '/' },
   { name: 'Giới Thiệu', href: '/about' },
-  { name: 'Sản Phẩm', href: '/products' },
+  { name: 'Sản Phẩm', href: '/search' },
   { name: 'Liên Hệ', href: '/contact' },
 ];
 
@@ -29,7 +31,7 @@ export default function Header() {
   const [isOpen, setIsOpen] = useState(false);
   const { data: session, status } = useSession();
   const { cartCount, isLoading: cartLoading } = useCart();
-  
+
   const isLoggedIn = status === 'authenticated';
   const user = {
     name: session?.user?.name ?? 'User',
@@ -70,14 +72,7 @@ export default function Header() {
 
           {/* Search Bar */}
           <div className="hidden lg:flex flex-1 max-w-md mx-8">
-            <div className="relative w-full">
-              <Input
-                type="text"
-                placeholder="Tìm kiếm sản phẩm..."
-                className="pl-10 bg-white/90 border-white/20 focus:bg-white"
-              />
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-green-600 w-4 h-4" />
-            </div>
+            <HeaderSearch className="w-full" />
           </div>
 
           {/* Actions */}
@@ -135,7 +130,7 @@ export default function Header() {
                       <span>Đơn hàng của tôi</span>
                     </Link>
                   </DropdownMenuItem>
-                   <DropdownMenuItem asChild>
+                  <DropdownMenuItem asChild>
                     <Link href="/yeu-thich">
                       <Heart className="mr-2 h-4 w-4" />
                       <span>Sản phẩm yêu thích</span>
@@ -161,7 +156,7 @@ export default function Header() {
                     Đăng nhập
                   </Button>
                 </Link>
-                <Link href="/login">
+                <Link href="/register">
                   <Button size="sm" className="bg-white text-green-600 hover:bg-green-50 font-semibold">
                     Đăng ký
                   </Button>
@@ -177,15 +172,8 @@ export default function Header() {
               </SheetTrigger>
               <SheetContent side="right" className="w-64">
                 <div className="flex flex-col space-y-4 mt-6">
-                  <div className="relative">
-                    <Input
-                      type="text"
-                      placeholder="Tìm kiếm..."
-                      className="pl-10"
-                    />
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                  </div>
-                  
+                  <MobileSearch onSearch={() => setIsOpen(false)} />
+
                   {/* Mobile Profile Section */}
                   {isLoggedIn ? (
                     <div className="border-b pb-4">
@@ -226,9 +214,9 @@ export default function Header() {
                             Yêu thích
                           </Button>
                         </Link>
-                        <Button 
-                          variant="ghost" 
-                          className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50" 
+                        <Button
+                          variant="ghost"
+                          className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
                           size="sm"
                           onClick={() => {
                             handleLogout();
@@ -243,22 +231,22 @@ export default function Header() {
                   ) : (
                     <div className="border-b pb-4 space-y-2">
                       <Link href="/login" className="block">
-                        <Button 
-                          className="w-full" 
+                        <Button
+                          className="w-full"
                           size="sm"
                           onClick={() => setIsOpen(false)}
                         >
                           Đăng nhập
                         </Button>
                       </Link>
-                      <Link href="/login" className="block">
+                      <Link href="/register" className="block">
                         <Button variant="outline" className="w-full" size="sm" onClick={() => setIsOpen(false)}>
                           Đăng ký
                         </Button>
                       </Link>
                     </div>
                   )}
-                  
+
                   <nav className="flex flex-col space-y-2">
                     {navigation.map((item) => (
                       <Link
@@ -278,5 +266,46 @@ export default function Header() {
         </div>
       </div>
     </header>
+  );
+}
+
+function MobileSearch({ onSearch }: { onSearch: () => void }) {
+  const [keyword, setKeyword] = useState('');
+  const router = useRouter();
+
+  const handleSearch = () => {
+    if (keyword.trim()) {
+      router.push(`/search?keyword=${encodeURIComponent(keyword.trim())}`);
+    } else {
+      router.push('/search');
+    }
+    onSearch();
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  };
+
+  return (
+    <div className="relative flex">
+      <Input
+        type="text"
+        placeholder="Tìm kiếm..."
+        value={keyword}
+        onChange={(e) => setKeyword(e.target.value)}
+        onKeyPress={handleKeyPress}
+        className="pl-10 pr-4"
+      />
+      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+      <Button
+        onClick={handleSearch}
+        size="sm"
+        className="ml-2"
+      >
+        Tìm
+      </Button>
+    </div>
   );
 }

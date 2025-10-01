@@ -135,14 +135,28 @@ export default function ProductCard({ product, isFavorited }: ProductCardProps) 
             {product.description}
           </p>
 
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
               <span className="text-lg font-bold text-green-600">
                 {new Intl.NumberFormat('vi-VN', {
                   style: 'currency',
                   currency: 'VND',
                 }).format(product.price)}
               </span>
+            </div>
+            
+            {/* Sold Count and Stock Info */}
+            <div className="flex items-center justify-between text-xs">
+              {(product.buyerCount !== undefined && product.buyerCount > 0) && (
+                <span className="text-gray-600 font-medium">
+                  Đã bán: {product.buyerCount}
+                </span>
+              )}
+              {product.stock !== undefined && (
+                <span className={product.stock > 0 ? 'text-gray-500' : 'text-red-500 font-medium'}>
+                  {product.stock > 0 ? `Còn ${product.stock}` : 'Hết hàng'}
+                </span>
+              )}
             </div>
           </div>
         </div>

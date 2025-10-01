@@ -31,7 +31,48 @@ export const categoryService = {
   },
 
   async getAllCategories() {
-    return Category.find({ isActive: true }).sort({ name: 1 });
+    // Lấy danh sách category kèm số lượng sản phẩm
+    const categories = await Category.aggregate([
+      { $match: { isActive: true } },
+      {
+        $lookup: {
+          from: 'products',
+          let: { categoryId: '$_id' },
+          pipeline: [
+            { $match: { $expr: { $and: [
+              { $eq: ['$categoryId', '$$categoryId'] },
+              { $eq: ['$isActive', true] }
+            ]}}},
+            { $count: 'count' }
+          ],
+          as: 'productCount'
+        }
+      },
+      {
+        $project: {
+          _id: 1,
+          name: 1,
+          description: 1,
+          isActive: 1,
+          createdAt: 1,
+          updatedAt: 1,
+          productCount: { 
+            $ifNull: [{ $arrayElemAt: ['$productCount.count', 0] }, 0] 
+          }
+        }
+      },
+      { $sort: { name: 1 } }
+    ]);
+
+    return categories;
+  },
+
+  async getAllCategoriesSimple() {
+    // Phiên bản đơn giản không có productCount cho dropdown/select
+    return Category.find({ isActive: true })
+      .select('_id name')
+      .sort({ name: 1 })
+      .lean();
   },
 
   async createCategory(categoryData) {

@@ -13,6 +13,7 @@ const productSchema = new mongoose.Schema({
   categoryId: { type: mongoose.Schema.Types.ObjectId, ref: "Category", required: true },
   averageRating: { type: Number, default: 0, min: 0, max: 5 },
   totalReviews: { type: Number, default: 0, min: 0 },
+  soldCount: { type: Number, default: 0, min: 0 },
   isActive: { type: Boolean, default: true },
   viewCount: { type: Number, default: 0, min: 0 }
 }, { timestamps: true });
@@ -25,6 +26,7 @@ productSchema.index({ averageRating: -1 });
 productSchema.index({ createdAt: -1 });
 productSchema.index({ isActive: 1 });
 productSchema.index({ stock: 1 });
+productSchema.index({ soldCount: -1 });
 
 // Hàm helper để tạo slug từ tên
 function generateSlug(name) {

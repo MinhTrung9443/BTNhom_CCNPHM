@@ -1,5 +1,5 @@
 import { apiFetch } from '@/lib/api'; // Dùng hàm apiFetch đã được chuẩn hóa
-import { Product, ProductListResponse } from '@/types/product';
+import { Product, ProductListResponse, SearchFilters, SearchProduct, SearchMeta, SearchResponse } from '@/types/product';
 import { ApiResponse } from '@/types/api';
 
 class ProductService {
@@ -25,6 +25,34 @@ class ProductService {
 
   async getBestsellerProducts(accessToken?: string): Promise<ApiResponse<ProductListResponse>> {
     return await apiFetch<ApiResponse<ProductListResponse>>('/products/bestsellers', accessToken);
+  }
+
+  // Tìm kiếm sản phẩm
+  async searchProducts(filters: SearchFilters, accessToken?: string): Promise<SearchResponse> {
+    const searchParams = new URLSearchParams();
+    
+    // Thêm các filter vào query params
+    if (filters.keyword) searchParams.append('keyword', filters.keyword);
+    if (filters.categoryId) searchParams.append('categoryId', filters.categoryId);
+    if (filters.minPrice !== undefined) searchParams.append('minPrice', filters.minPrice.toString());
+    if (filters.maxPrice !== undefined) searchParams.append('maxPrice', filters.maxPrice.toString());
+    if (filters.minRating !== undefined) searchParams.append('minRating', filters.minRating.toString());
+    if (filters.inStock !== undefined) searchParams.append('inStock', filters.inStock.toString());
+    if (filters.page) searchParams.append('page', filters.page.toString());
+    if (filters.limit) searchParams.append('limit', filters.limit.toString());
+    if (filters.sortBy) searchParams.append('sortBy', filters.sortBy);
+    if (filters.sortOrder) searchParams.append('sortOrder', filters.sortOrder);
+
+    const endpoint = `/products/search?${searchParams.toString()}`;
+    
+    return await apiFetch<SearchResponse>(
+      endpoint, 
+      accessToken,
+      {
+        method: 'GET',
+        next: { revalidate: 300 } // Cache 5 phút cho search results
+      }
+    );
   }
 }
 

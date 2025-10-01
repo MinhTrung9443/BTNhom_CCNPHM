@@ -413,4 +413,125 @@ export const productService = {
     await product.save();
     return product;
   },
+
+  async searchProducts({
+    keyword = null,
+    categoryId = null,
+    minPrice = null,
+    maxPrice = null,
+    minRating = null,
+    inStock = null,
+    page = 1,
+    limit = 12,
+    sortBy = 'createdAt',
+    sortOrder = 'desc'
+  }) {
+    // Xây dựng filter object
+    const filter = { isActive: true };
+
+    // Text search - không phân biệt hoa thường
+    if (keyword && keyword.trim()) {
+      const searchRegex = new RegExp(keyword.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+      filter.$or = [
+        { name: searchRegex },
+        { description: searchRegex }
+      ];
+    }
+
+    // Filter theo danh mục
+    if (categoryId) {
+      filter.categoryId = categoryId;
+    }
+
+    // Filter theo khoảng giá
+    if (minPrice !== null || maxPrice !== null) {
+      filter.price = {};
+      if (minPrice !== null) filter.price.$gte = minPrice;
+      if (maxPrice !== null) filter.price.$lte = maxPrice;
+    }
+
+    // Filter theo đánh giá tối thiểu
+    if (minRating !== null) {
+      filter.averageRating = { $gte: minRating };
+    }
+
+    // Filter theo tình trạng còn hàng
+    if (inStock === true) {
+      filter.stock = { $gt: 0 };
+    } else if (inStock === false) {
+      filter.stock = 0;
+    }
+
+    // Xây dựng sort object
+    const sort = {};
+    sort[sortBy] = sortOrder === 'asc' ? 1 : -1;
+
+    // Nếu không sort theo createdAt, thêm createdAt làm sort thứ hai để đảm bảo consistent
+    if (sortBy !== 'createdAt') {
+      sort.createdAt = -1;
+    }
+
+    // Tính toán pagination
+    const skip = (page - 1) * limit;
+
+    // Thực hiện truy vấn song song
+    const [products, total] = await Promise.all([
+      Product.find(filter)
+        .populate('categoryId', 'name slug')
+        .sort(sort)
+        .skip(skip)
+        .limit(limit)
+        .select('name slug price discount images averageRating totalReviews soldCount stock categoryId createdAt')
+        .lean(),
+      Product.countDocuments(filter)
+    ]);
+
+    // Tính toán thông tin phân trang
+    const totalPages = Math.ceil(total / limit);
+
+    // Format dữ liệu trả về
+    const formattedProducts = products.map(product => ({
+      _id: product._id,
+      name: product.name,
+      slug: product.slug,
+      mainImage: product.images?.[0] || null,
+      price: product.price,
+      discount: product.discount,
+      finalPrice: product.price * (1 - product.discount / 100),
+      averageRating: product.averageRating || 0,
+      totalReviews: product.totalReviews || 0,
+      soldCount: product.soldCount || 0,
+      stock: product.stock,
+      category: product.categoryId,
+      createdAt: product.createdAt
+    }));
+
+    const meta = {
+      currentPage: page,
+      totalPages,
+      totalProducts: total,
+      hasNext: page < totalPages,
+      hasPrev: page > 1,
+      limit,
+      filters: {
+        keyword: keyword || null,
+        categoryId: categoryId || null,
+        priceRange: {
+          min: minPrice,
+          max: maxPrice
+        },
+        minRating: minRating || null,
+        inStock
+      },
+      sort: {
+        sortBy,
+        sortOrder
+      }
+    };
+
+    return {
+      meta,
+      data: formattedProducts
+    };
+  }
 };

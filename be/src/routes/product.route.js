@@ -1,10 +1,13 @@
 import express from "express";
 import { productController } from "../controllers/product.controller.js";
 import { protect } from "../middlewares/auth.js";
+import { validate } from "../middlewares/validate.js";
+import { searchProductsSchema } from "../schemas/product.schema.js";
 
 const router = express.Router();
 
 // Public routes
+router.get("/search", validate(searchProductsSchema), productController.searchProducts);
 router.get("/latest", productController.getLatestProducts);
 router.get("/bestsellers", productController.getBestSellerProducts);
 router.get("/most-viewed", productController.getMostViewedProducts);
