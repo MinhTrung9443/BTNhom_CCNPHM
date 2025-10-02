@@ -49,6 +49,11 @@ export function ReviewForm({ isOpen, onClose, product, orderId, existingReview, 
   }, [existingReview]);
 
   const handleSubmit = async () => {
+    // Prevent submission if already submitting
+    if (isSubmitting) {
+      return;
+    }
+
     if (!session?.user?.accessToken) {
       toast.error("Vui lòng đăng nhập để đánh giá!");
       return;
@@ -60,8 +65,8 @@ export function ReviewForm({ isOpen, onClose, product, orderId, existingReview, 
     }
 
     const trimmedComment = (comment || "").trim();
-    if (trimmedComment.length < 10) {
-      toast.error("Bình luận phải có ít nhất 10 ký tự!");
+    if (trimmedComment.length === 0) {
+      toast.error("Vui lòng nhập bình luận của bạn!");
       return;
     }
 
@@ -206,16 +211,13 @@ export function ReviewForm({ isOpen, onClose, product, orderId, existingReview, 
             </Label>
             <Textarea
               id="comment"
-              placeholder="Chia sẻ trải nghiệm của bạn về sản phẩm này... (tối thiểu 10 ký tự)"
+              placeholder="Chia sẻ trải nghiệm của bạn về sản phẩm này..."
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               className="min-h-[120px] resize-none"
               maxLength={500}
             />
-            <div className="flex justify-between text-xs">
-              <span className={cn("transition-colors", (comment || "").trim().length < 10 ? "text-red-500" : "text-muted-foreground")}>
-                Tối thiểu 10 ký tự {(comment || "").trim().length < 10 && `(còn ${10 - (comment || "").trim().length})`}
-              </span>
+            <div className="flex justify-end text-xs">
               <span className={cn("transition-colors", (comment || "").length > 450 ? "text-orange-500" : "text-muted-foreground")}>
                 {(comment || "").length}/500
               </span>
@@ -227,7 +229,7 @@ export function ReviewForm({ isOpen, onClose, product, orderId, existingReview, 
           <Button variant="outline" onClick={handleClose} disabled={isSubmitting}>
             Hủy
           </Button>
-          <Button onClick={handleSubmit} disabled={isSubmitting || rating === 0} className="min-w-[120px]">
+          <Button onClick={handleSubmit} disabled={isSubmitting} className="min-w-[120px]">
             {isSubmitting ? (
               <>
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
