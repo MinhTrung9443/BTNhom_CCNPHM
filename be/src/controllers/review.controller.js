@@ -1,5 +1,5 @@
-import * as reviewService from '../services/review.service.js';
-import { AppError } from '../utils/AppError.js';
+import * as reviewService from "../services/review.service.js";
+import { AppError } from "../utils/AppError.js";
 
 const createReview = async (req, res, next) => {
   const { productId, orderId, rating, comment } = req.body;
@@ -9,7 +9,7 @@ const createReview = async (req, res, next) => {
 
   res.status(201).json({
     success: true,
-    message: 'Đánh giá của bạn đã được ghi nhận. Cảm ơn bạn đã chia sẻ!',
+    message: "Đánh giá của bạn đã được ghi nhận. Cảm ơn bạn đã chia sẻ!",
     review,
     voucher,
   });
@@ -34,7 +34,32 @@ const updateReview = async (req, res, next) => {
 
   const review = await reviewService.updateReview(reviewId, userId, rating, comment);
 
-  res.status(200).json({ success: true, message: 'Đánh giá đã được cập nhật.', review });
+  res.status(200).json({ success: true, message: "Đánh giá đã được cập nhật.", review });
 };
 
-export { createReview, getProductReviews, getUserReviews, updateReview };
+const getExistingReview = async (req, res, next) => {
+  const { productId, orderId } = req.query;
+  const userId = req.user._id;
+
+  if (!productId || !orderId) {
+    throw new AppError(400, "Thiếu thông tin productId hoặc orderId");
+  }
+
+  const existingReview = await reviewService.getExistingReview(userId, productId, orderId);
+
+  if (existingReview) {
+    res.status(200).json({
+      success: true,
+      message: "Đã tìm thấy đánh giá",
+      data: existingReview,
+    });
+  } else {
+    res.status(200).json({
+      success: true,
+      message: "Chưa có đánh giá",
+      data: null,
+    });
+  }
+};
+
+export { createReview, getProductReviews, getUserReviews, updateReview, getExistingReview };

@@ -2,43 +2,36 @@
  * Order Detail Page (Server Component)
  * Trang chi tiết đơn hàng được render phía máy chủ
  */
-import { Suspense } from 'react';
-import { notFound, redirect } from 'next/navigation';
-import Image from 'next/image';
-import Link from 'next/link';
-import { auth } from '@/auth';
-import { orderService } from '@/services/orderService';
-import { OrderStatusBadge } from '@/components/order-status-badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { 
-  ArrowLeft, 
-  MapPin, 
-  CreditCard, 
-  Package, 
-  CheckCircle2,
-  Clock,
-  AlertTriangle
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { OrderDetailClient } from './_components/order-detail-client';
+import { Suspense } from "react";
+import { notFound, redirect } from "next/navigation";
+import Image from "next/image";
+import Link from "next/link";
+import { auth } from "@/auth";
+import { orderService } from "@/services/orderService";
+import { OrderStatusBadge } from "@/components/order-status-badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { ArrowLeft, MapPin, CreditCard, Package, CheckCircle2, Clock, AlertTriangle, Star } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { OrderDetailClient } from "./_components/order-detail-client";
+import { ReviewButton } from "@/components/review-button";
 
 // Helper functions for formatting
 const formatPrice = (price: number) => {
-  return new Intl.NumberFormat('vi-VN', {
-    style: 'currency',
-    currency: 'VND',
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
   }).format(price);
 };
 
 const formatDate = (dateString: string) => {
-  return new Intl.DateTimeFormat('vi-VN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
+  return new Intl.DateTimeFormat("vi-VN", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
   }).format(new Date(dateString));
 };
 
@@ -48,27 +41,25 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
   const session = await auth();
 
   if (!session?.user?.accessToken) {
-    redirect('/login');
+    redirect("/login");
   }
 
   const response = await orderService.getOrderById(session.user.accessToken, params.id);
 
   if (!response.success || !response.data) {
     return (
-        <div className="container mx-auto px-4 py-8">
-            <Card>
-                <CardContent className="flex flex-col items-center justify-center py-12">
-                    <AlertTriangle className="h-16 w-16 text-destructive mb-4" />
-                    <h3 className="text-xl font-semibold mb-2">Không thể tải đơn hàng</h3>
-                    <p className="text-muted-foreground mb-4 text-center">
-                        {response.message || 'Đơn hàng không tồn tại hoặc bạn không có quyền xem.'}
-                    </p>
-                    <Button asChild>
-                        <Link href="/don-hang">Quay lại danh sách đơn hàng</Link>
-                    </Button>
-                </CardContent>
-            </Card>
-        </div>
+      <div className="container mx-auto px-4 py-8">
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <AlertTriangle className="h-16 w-16 text-destructive mb-4" />
+            <h3 className="text-xl font-semibold mb-2">Không thể tải đơn hàng</h3>
+            <p className="text-muted-foreground mb-4 text-center">{response.message || "Đơn hàng không tồn tại hoặc bạn không có quyền xem."}</p>
+            <Button asChild>
+              <Link href="/don-hang">Quay lại danh sách đơn hàng</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
@@ -87,12 +78,8 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
       {/* Header */}
       <div className="flex justify-between items-start mb-6">
         <div>
-          <h1 className="text-3xl font-bold mb-2">
-            Đơn hàng #{order._id.slice(-8).toUpperCase()}
-          </h1>
-          <p className="text-muted-foreground">
-            Đặt hàng lúc {formatDate(order.createdAt)}
-          </p>
+          <h1 className="text-3xl font-bold mb-2">Đơn hàng #{order._id.slice(-8).toUpperCase()}</h1>
+          <p className="text-muted-foreground">Đặt hàng lúc {formatDate(order.createdAt)}</p>
         </div>
         <OrderStatusBadge status={order.status} />
       </div>
@@ -115,27 +102,15 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
                   return (
                     <div key={event._id} className="flex gap-4">
                       <div className="flex flex-col items-center">
-                        <div className={cn(
-                          "rounded-full p-1.5",
-                          isLast ? "bg-primary" : "bg-muted"
-                        )}>
-                          <CheckCircle2 className={cn(
-                            "h-4 w-4",
-                            isLast ? "text-primary-foreground" : "text-muted-foreground"
-                          )} />
+                        <div className={cn("rounded-full p-1.5", isLast ? "bg-primary" : "bg-muted")}>
+                          <CheckCircle2 className={cn("h-4 w-4", isLast ? "text-primary-foreground" : "text-muted-foreground")} />
                         </div>
-                        {!isLast && (
-                          <div className="w-0.5 h-full bg-muted mt-2" />
-                        )}
+                        {!isLast && <div className="w-0.5 h-full bg-muted mt-2" />}
                       </div>
                       <div className="flex-1 pb-4">
                         <p className="font-medium">{event.description}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {formatDate(event.timestamp)}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1 capitalize">
-                          Thực hiện bởi: {event.performedBy}
-                        </p>
+                        <p className="text-sm text-muted-foreground">{formatDate(event.timestamp)}</p>
+                        <p className="text-xs text-muted-foreground mt-1 capitalize">Thực hiện bởi: {event.performedBy}</p>
                       </div>
                     </div>
                   );
@@ -158,46 +133,41 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
                   <div key={index}>
                     <div className="flex gap-4">
                       <div className="relative w-24 h-24 flex-shrink-0 rounded-md overflow-hidden bg-gray-100">
-                        <Image
-                          src={item.productImage}
-                          alt={item.productName}
-                          fill
-                          className="object-cover"
-                        />
+                        <Image src={item.productImage} alt={item.productName} fill className="object-cover" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <h4 className="font-medium mb-1">{item.productName}</h4>
-                        <p className="text-sm text-muted-foreground mb-2">
-                          Mã SP: {item.productCode}
-                        </p>
+                        <p className="text-sm text-muted-foreground mb-2">Mã SP: {item.productCode}</p>
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             {item.discount > 0 && (
                               <>
-                                <span className="text-sm line-through text-muted-foreground">
-                                  {formatPrice(item.productPrice)}
-                                </span>
-                                <span className="text-xs bg-red-100 text-red-800 px-2 py-0.5 rounded">
-                                  -{item.discount}%
-                                </span>
+                                <span className="text-sm line-through text-muted-foreground">{formatPrice(item.productPrice)}</span>
+                                <span className="text-xs bg-red-100 text-red-800 px-2 py-0.5 rounded">-{item.discount}%</span>
                               </>
                             )}
                           </div>
                           <p className="text-muted-foreground">x{item.quantity}</p>
                         </div>
-                        <p className="font-semibold mt-1">
-                          {formatPrice(item.productActualPrice)}
-                        </p>
+                        <div className="flex items-center justify-between mt-2">
+                          <p className="font-semibold">{formatPrice(item.productActualPrice)}</p>
+                          {order.status === "completed" && (
+                            <ReviewButton
+                              product={{
+                                id: item.productId,
+                                name: item.productName,
+                                image: item.productImage,
+                              }}
+                              orderId={order._id}
+                            />
+                          )}
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <p className="font-bold">
-                          {formatPrice(item.lineTotal)}
-                        </p>
+                      <div className="text-right flex flex-col items-end gap-2">
+                        <p className="font-bold">{formatPrice(item.lineTotal)}</p>
                       </div>
                     </div>
-                    {index < order.orderLines.length - 1 && (
-                      <Separator className="mt-4" />
-                    )}
+                    {index < order.orderLines.length - 1 && <Separator className="mt-4" />}
                   </div>
                 ))}
               </div>
