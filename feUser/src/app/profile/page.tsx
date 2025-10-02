@@ -112,6 +112,7 @@ export default function ProfilePage() {
         });
 
         // Dispatch custom event để header biết avatar đã thay đổi
+        console.log("Profile: Dispatching avatarUpdated event with avatar:", response.data.user.avatar);
         window.dispatchEvent(
           new CustomEvent("avatarUpdated", {
             detail: { avatar: response.data.user.avatar },
@@ -251,7 +252,7 @@ export default function ProfilePage() {
               <Avatar className="w-24 h-24">
                 {(() => {
                   const avatarUrl = user.avatar
-                    ? `${process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api", "") || "http://localhost:5000"}${user.avatar}`
+                    ? `${process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api", "") || "http://localhost:5000"}${user.avatar}?t=${Date.now()}`
                     : "";
                   console.log("Avatar URL:", avatarUrl);
                   return <AvatarImage src={avatarUrl} alt={user.name} className="object-cover" />;
