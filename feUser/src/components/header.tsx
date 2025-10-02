@@ -1,14 +1,14 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useSession, signOut } from 'next-auth/react';
-import { useCart } from '@/contexts/cart-context';
-import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Menu, ShoppingCart, Heart, Search, User, LogOut, Settings, Package } from 'lucide-react';
-import { Input } from '@/components/ui/input';
+import Link from "next/link";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useSession, signOut } from "next-auth/react";
+import { useCart } from "@/contexts/cart-context";
+import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Menu, ShoppingCart, Heart, Search, User, LogOut, Settings, Package } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,31 +16,42 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { HeaderSearch } from '@/components/header-search';
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { HeaderSearch } from "@/components/header-search";
 
 const navigation = [
-  { name: 'Trang Chủ', href: '/' },
-  { name: 'Giới Thiệu', href: '/about' },
-  { name: 'Sản Phẩm', href: '/search' },
-  { name: 'Liên Hệ', href: '/contact' },
+  { name: "Trang Chủ", href: "/" },
+  { name: "Giới Thiệu", href: "/about" },
+  { name: "Sản Phẩm", href: "/search" },
+  { name: "Liên Hệ", href: "/contact" },
 ];
 
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false);
-  const { data: session, status } = useSession();
+  const [refreshKey, setRefreshKey] = useState(0);
+  const { data: session, status, update } = useSession();
+  const [currentAvatar, setCurrentAvatar] = useState(session?.user.avatar || "");
+
   const { cartCount, isLoading: cartLoading } = useCart();
 
-  const isLoggedIn = status === 'authenticated';
+  const isLoggedIn = status === "authenticated";
+
+  // Sử dụng currentAvatar state thay vì session avatar
   const user = {
-    name: session?.user?.name ?? 'User',
-    email: session?.user?.email ?? '',
-    avatar: session?.user?.avatar ?? ''
+    name: session?.user?.name ?? "User",
+    email: session?.user?.email ?? "",
   };
 
+  // Sync avatar từ session khi component mount
+  useEffect(() => {
+    if (session?.user?.avatar) {
+      setCurrentAvatar(session.user.avatar);
+    }
+  }, [session?.user?.avatar]);
+
   const handleLogout = async () => {
-    await signOut({ callbackUrl: '/' });
+    await signOut({ callbackUrl: "/" });
   };
 
   return (
@@ -89,7 +100,7 @@ export default function Header() {
                 <ShoppingCart className="w-4 h-4" />
                 {isLoggedIn && cartCount > 0 && (
                   <span className="absolute -top-1 -right-1 text-xs bg-green-600 text-white rounded-full px-1.5 py-0.5 min-w-[18px] text-center leading-none">
-                    {cartLoading ? '...' : cartCount > 99 ? '99+' : cartCount}
+                    {cartLoading ? "..." : cartCount > 99 ? "99+" : cartCount}
                   </span>
                 )}
               </Button>
@@ -101,9 +112,13 @@ export default function Header() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                     <Avatar className="h-8 w-8">
-                      <AvatarImage src={user.avatar} alt={user.name} />
+                      <AvatarImage src={currentAvatar} alt={user.name} />
                       <AvatarFallback className="bg-green-600 text-white">
-                        {user.name.split(' ').map((n: string) => n[0]).join('').toUpperCase()}
+                        {user.name
+                          .split(" ")
+                          .map((n: string) => n[0])
+                          .join("")
+                          .toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                   </Button>
@@ -112,9 +127,7 @@ export default function Header() {
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
                       <p className="text-sm font-medium leading-none">{user.name}</p>
-                      <p className="text-xs leading-none text-muted-foreground">
-                        {user.email}
-                      </p>
+                      <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
@@ -179,9 +192,13 @@ export default function Header() {
                     <div className="border-b pb-4">
                       <div className="flex items-center space-x-3 mb-3">
                         <Avatar className="h-10 w-10">
-                          <AvatarImage src={user.avatar} alt={user.name} />
+                          <AvatarImage src={currentAvatar} alt={user.name} className="object-cover" />
                           <AvatarFallback className="bg-green-600 text-white">
-                            {user.name.split(' ').map((n: string) => n[0]).join('').toUpperCase()}
+                            {user.name
+                              .split(" ")
+                              .map((n: string) => n[0])
+                              .join("")
+                              .toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
                         <div>
@@ -231,11 +248,7 @@ export default function Header() {
                   ) : (
                     <div className="border-b pb-4 space-y-2">
                       <Link href="/login" className="block">
-                        <Button
-                          className="w-full"
-                          size="sm"
-                          onClick={() => setIsOpen(false)}
-                        >
+                        <Button className="w-full" size="sm" onClick={() => setIsOpen(false)}>
                           Đăng nhập
                         </Button>
                       </Link>
@@ -270,20 +283,20 @@ export default function Header() {
 }
 
 function MobileSearch({ onSearch }: { onSearch: () => void }) {
-  const [keyword, setKeyword] = useState('');
+  const [keyword, setKeyword] = useState("");
   const router = useRouter();
 
   const handleSearch = () => {
     if (keyword.trim()) {
       router.push(`/search?keyword=${encodeURIComponent(keyword.trim())}`);
     } else {
-      router.push('/search');
+      router.push("/search");
     }
     onSearch();
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       handleSearch();
     }
   };
@@ -299,11 +312,7 @@ function MobileSearch({ onSearch }: { onSearch: () => void }) {
         className="pl-10 pr-4"
       />
       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-      <Button
-        onClick={handleSearch}
-        size="sm"
-        className="ml-2"
-      >
+      <Button onClick={handleSearch} size="sm" className="ml-2">
         Tìm
       </Button>
     </div>

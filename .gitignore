@@ -19,3 +19,10 @@ digest.txt
 /fe/.qoder
 /fe/.clinerules
 /fe/digest.txt
+/feUser/node_modules
+/feUser/dist
+/feUser/.next
+/feAdmin/node_modules
+/feAdmin/dist
+/feAdmin/.env
+

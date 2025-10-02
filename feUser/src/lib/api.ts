@@ -1,7 +1,7 @@
-import { ApiErrorResponse, ApiResponse } from '@/types/api';
-import { Product } from '@/types/product';
+import { ApiErrorResponse, ApiResponse } from "@/types/api";
+import { Product } from "@/types/product";
 
-const API_URL = 'https://fakestoreapi.com';
+const API_URL = "https://fakestoreapi.com";
 
 /**
  * Custom HTTP Error class - giống cấu trúc axios error
@@ -14,7 +14,7 @@ export class HttpError<T = ApiErrorResponse> extends Error {
 
   constructor(status: number, data: T, message: string) {
     super(message);
-    this.name = 'HttpError';
+    this.name = "HttpError";
     this.response = {
       status,
       data,
@@ -22,8 +22,7 @@ export class HttpError<T = ApiErrorResponse> extends Error {
   }
 }
 
-const isApiResponse = <T = unknown>(x: any): x is ApiResponse<T> =>
-  x && typeof x === 'object' && 'success' in x && 'message' in x;
+const isApiResponse = <T = unknown>(x: any): x is ApiResponse<T> => x && typeof x === "object" && "success" in x && "message" in x;
 
 /**
  * Hàm wrapper cho fetch với error handling giống axios
@@ -31,18 +30,17 @@ const isApiResponse = <T = unknown>(x: any): x is ApiResponse<T> =>
  * @param accessToken - JWT token, có thể là null hoặc undefined
  * @param options - Các tùy chọn của fetch (method, body, cache, next...)
  */
-export async function apiFetch<T = unknown>(
-  endpoint: string,
-  accessToken: string | null | undefined,
-  options: RequestInit = {}
-): Promise<T> {
-  const defaultHeaders: HeadersInit = {
-    'Content-Type': 'application/json',
-  };
+export async function apiFetch<T = unknown>(endpoint: string, accessToken: string | null | undefined, options: RequestInit = {}): Promise<T> {
+  const defaultHeaders: HeadersInit = {};
+
+  // Chỉ set Content-Type nếu body KHÔNG phải FormData
+  if (!(options.body instanceof FormData)) {
+    defaultHeaders["Content-Type"] = "application/json";
+  }
 
   // Chỉ thêm header Authorization nếu có accessToken
   if (accessToken) {
-    defaultHeaders['Authorization'] = `Bearer ${accessToken}`;
+    defaultHeaders["Authorization"] = `Bearer ${accessToken}`;
   }
 
   const config: RequestInit = {
@@ -53,21 +51,18 @@ export async function apiFetch<T = unknown>(
     },
   };
 
-  const response = await fetch(
-    `${process.env.NEXT_PUBLIC_API_BASE_URL || API_URL}${endpoint}`,
-    config
-  );
+  const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || API_URL}${endpoint}`, config);
 
   // Parse response body trước khi check error
-  const contentType = response.headers.get('content-type') || '';
-  const isJson = contentType.toLowerCase().includes('application/json');
-  
+  const contentType = response.headers.get("content-type") || "";
+  const isJson = contentType.toLowerCase().includes("application/json");
+
   let body: any = undefined;
   if (isJson) {
     try {
       body = await response.json();
     } catch {
-      body = { success: false, message: 'Invalid JSON response' };
+      body = { success: false, message: "Invalid JSON response" };
     }
   } else {
     body = { success: false, message: await response.text() };
@@ -76,27 +71,19 @@ export async function apiFetch<T = unknown>(
   // Nếu response không ok, throw error với cấu trúc giống axios
   if (!response.ok) {
     // Nếu body có cấu trúc ApiErrorResponse, dùng luôn
-    const errorData: ApiErrorResponse = body?.message 
-      ? body 
+    const errorData: ApiErrorResponse = body?.message
+      ? body
       : {
           success: false,
           message: body?.message || `Request failed with status ${response.status}`,
         };
 
-    throw new HttpError(
-      response.status,
-      errorData,
-      errorData.message
-    );
+    throw new HttpError(response.status, errorData, errorData.message);
   }
 
   // Nếu API trả về ApiResponse với success: false
   if (isApiResponse<T>(body) && !body.success) {
-    throw new HttpError(
-      response.status,
-      body as ApiErrorResponse,
-      body.message
-    );
+    throw new HttpError(response.status, body as ApiErrorResponse, body.message);
   }
 
   // Return data
@@ -109,7 +96,7 @@ export async function apiFetch<T = unknown>(
 
 /**
  * CÁCH SỬ DỤNG:
- * 
+ *
  * try {
  *   const data = await apiFetch<User>('/api/user', token);
  *   console.log(data); // Chỉ có data, không có success/message wrapper
@@ -120,7 +107,6 @@ export async function apiFetch<T = unknown>(
  *   }
  * }
  */
-
 
 /**
  * Helper function để fetch data từ FakeStoreAPI
@@ -169,5 +155,5 @@ export async function getProductById(id: string): Promise<Product | null> {
 }
 
 export async function getAllProducts(): Promise<Product[]> {
-  return await fetchAPI('/products');
+  return await fetchAPI("/products");
 }
