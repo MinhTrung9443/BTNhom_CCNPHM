@@ -22,6 +22,50 @@ export interface ExistingReview {
   createdAt: string;
 }
 
+export interface Review {
+  _id: string;
+  userId: {
+    _id: string;
+    name: string;
+    avatar?: string;
+  };
+  productId: string;
+  orderId: string;
+  rating: number;
+  comment: string;
+  isApproved: boolean;
+  editCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ReviewsResponse {
+  success: boolean;
+  message: string;
+  data: {
+    reviews: Review[];
+    pagination: {
+      currentPage: number;
+      totalPages: number;
+      totalReviews: number;
+      hasNext: boolean;
+      hasPrev: boolean;
+      limit: number;
+    };
+    summary: {
+      averageRating: number;
+      totalReviews: number;
+      ratingDistribution: {
+        1: number;
+        2: number;
+        3: number;
+        4: number;
+        5: number;
+      };
+    };
+  };
+}
+
 export interface ReviewResponse {
   success: boolean;
   message: string;
@@ -52,22 +96,39 @@ class ReviewService {
     }
   }
 
-  async getProductReviews(productId: string): Promise<ReviewResponse> {
+  async getProductReviews(productId: string, page: number = 1, limit: number = 10, accessToken?: string): Promise<ReviewsResponse> {
     try {
-      const result = await apiFetch(`${this.baseUrl}/product/${productId}`, null, {
-        method: "GET",
-      });
+      console.log("Making API call to:", `/reviews/product/${productId}?page=${page}&limit=${limit}`);
+      const result = (await apiFetch(`${this.baseUrl}/product/${productId}?page=${page}&limit=${limit}`, accessToken)) as any;
+
+      console.log("API result:", result);
 
       return {
         success: true,
         message: "Lấy đánh giá thành công",
-        data: result,
+        data: result.data || result, // Fallback nếu result không có .data
       };
     } catch (error: any) {
-      console.error("Get reviews error:", error);
+      console.error("Get product reviews error:", error);
       return {
         success: false,
-        message: error?.response?.data?.message || "Không thể kết nối đến máy chủ",
+        message: error?.response?.data?.message || "Không thể tải đánh giá",
+        data: {
+          reviews: [],
+          pagination: {
+            currentPage: 1,
+            totalPages: 0,
+            totalReviews: 0,
+            hasNext: false,
+            hasPrev: false,
+            limit: 10,
+          },
+          summary: {
+            averageRating: 0,
+            totalReviews: 0,
+            ratingDistribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+          },
+        },
       };
     }
   }

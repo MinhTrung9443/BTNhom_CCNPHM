@@ -72,8 +72,51 @@ const createReview = async (userId, orderId, productId, rating, comment) => {
   return { review, voucher };
 };
 
-const getProductReviews = async (productId) => {
-  return Review.find({ productId, isApproved: true }).populate("userId", "name avatar").sort({ createdAt: -1 });
+const getProductReviews = async (productId, page = 1, limit = 10) => {
+  const skip = (page - 1) * limit;
+
+  // Get reviews with pagination
+  const reviews = await Review.find({ productId, isApproved: true })
+    .populate("userId", "name avatar")
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limit);
+
+  // Get total count
+  const totalReviews = await Review.countDocuments({ productId, isApproved: true });
+
+  // Calculate summary statistics
+  const allReviews = await Review.find({ productId, isApproved: true });
+  const totalRating = allReviews.reduce((sum, review) => sum + review.rating, 0);
+  const averageRating = allReviews.length > 0 ? totalRating / allReviews.length : 0;
+
+  // Rating distribution
+  const ratingDistribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+  allReviews.forEach((review) => {
+    ratingDistribution[review.rating] = (ratingDistribution[review.rating] || 0) + 1;
+  });
+
+  // Pagination info
+  const totalPages = Math.ceil(totalReviews / limit);
+  const hasNext = page < totalPages;
+  const hasPrev = page > 1;
+
+  return {
+    reviews,
+    pagination: {
+      currentPage: page,
+      totalPages,
+      totalReviews,
+      hasNext,
+      hasPrev,
+      limit,
+    },
+    summary: {
+      averageRating: parseFloat(averageRating.toFixed(1)),
+      totalReviews: allReviews.length,
+      ratingDistribution,
+    },
+  };
 };
 
 const getUserReviews = async (userId) => {

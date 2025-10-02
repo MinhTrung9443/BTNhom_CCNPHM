@@ -75,11 +75,14 @@ export function ReviewButton({ product, orderId }: ReviewButtonProps) {
     }
   };
 
-
   const renderStars = (rating: number) => {
-    return Array.from({ length: 5 }, (_, i) => (
-      <Star key={i} className={`w-3 h-3 ${i < rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`} />
-    ));
+    return (
+      <div className="flex items-center">
+        {Array.from({ length: 5 }, (_, i) => (
+          <Star key={i} className={`w-3 h-3 ${i < rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`} />
+        ))}
+      </div>
+    );
   };
 
   return (
@@ -88,7 +91,7 @@ export function ReviewButton({ product, orderId }: ReviewButtonProps) {
         <div className="space-y-2">
           {/* Display existing review info */}
           <div className="flex items-center gap-2 p-2 bg-yellow-50 border border-yellow-200 rounded-md">
-            <div className="flex items-center gap-1">{renderStars(existingReview.rating)}</div>
+            {renderStars(existingReview.rating)}
             <span className="text-sm text-gray-600">
               "{(existingReview.comment || "").length > 30 ? (existingReview.comment || "").substring(0, 30) + "..." : existingReview.comment || ""}"
             </span>

@@ -17,8 +17,16 @@ const createReview = async (req, res, next) => {
 
 const getProductReviews = async (req, res, next) => {
   const { productId } = req.params;
-  const reviews = await reviewService.getProductReviews(productId);
-  res.status(200).json({ success: true, reviews });
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+
+  const result = await reviewService.getProductReviews(productId, page, limit);
+
+  res.status(200).json({
+    success: true,
+    message: "Lấy đánh giá thành công",
+    data: result,
+  });
 };
 
 const getUserReviews = async (req, res, next) => {
