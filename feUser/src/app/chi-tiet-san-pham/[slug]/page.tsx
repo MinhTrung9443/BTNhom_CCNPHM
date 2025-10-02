@@ -1,14 +1,15 @@
-import { notFound } from 'next/navigation';
-import { Suspense } from 'react';
-import ImageGallery from '@/components/image-gallery';
-import AddToCartButton from '@/components/add-to-cart-button';
-import { FavoriteButton } from '@/components/favorite-button';
-import { productService } from '@/services/productService';
-import { Star } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
-import { auth } from '@/auth';
-import { Product } from '@/types/product';
-import { ApiResponse } from '@/types/api';
+import { notFound } from "next/navigation";
+import { Suspense } from "react";
+import ImageGallery from "@/components/image-gallery";
+import AddToCartButton from "@/components/add-to-cart-button";
+import { FavoriteButton } from "@/components/favorite-button";
+import { productService } from "@/services/productService";
+import { Star } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { auth } from "@/auth";
+import { Product } from "@/types/product";
+import { ApiResponse } from "@/types/api";
+import { ReviewsSection } from "@/components/reviews-section";
 
 interface ProductPageProps {
   params: Promise<{ slug: string }>;
@@ -16,10 +17,10 @@ interface ProductPageProps {
 
 export async function generateMetadata(props: ProductPageProps) {
   const params = await props.params;
-  
+
   // Thử lấy sản phẩm theo slug trước, nếu thất bại thì thử theo ID
   let response = await productService.getBySlug(params.slug);
-  
+
   // Nếu không tìm thấy bằng slug, thử tìm bằng ID (fallback cho trường hợp slug là _id)
   if (!response.success || !response.data) {
     response = await productService.getById(params.slug);
@@ -27,7 +28,7 @@ export async function generateMetadata(props: ProductPageProps) {
 
   if (!response.success || !response.data) {
     return {
-      title: 'Sản phẩm không tồn tại',
+      title: "Sản phẩm không tồn tại",
     };
   }
   const product = response.data;
@@ -48,7 +49,7 @@ function ProductDetailSkeleton() {
           ))}
         </div>
       </div>
-      
+
       <div className="space-y-6">
         <Skeleton className="h-8 w-3/4" />
         <div className="flex items-center gap-2">
@@ -69,10 +70,10 @@ function ProductDetailSkeleton() {
 async function ProductDetail({ slug }: { slug: string }) {
   const session = await auth();
   const accessToken = session?.user?.accessToken;
-  
+
   // Thử lấy sản phẩm theo slug trước, nếu thất bại thì thử theo ID
   let response: ApiResponse<Product> = await productService.getBySlug(slug, accessToken);
-  
+
   // Nếu không tìm thấy bằng slug, thử tìm bằng ID (fallback cho trường hợp slug là _id)
   if (!response.success || !response.data) {
     response = await productService.getById(slug, accessToken);
@@ -92,21 +93,12 @@ async function ProductDetail({ slug }: { slug: string }) {
 
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">
-            {product.name}
-          </h1>
-          
+          <h1 className="text-3xl font-bold text-gray-900 mb-4">{product.name}</h1>
+
           <div className="flex items-center gap-4 mb-4">
             <div className="flex items-center">
               {[...Array(5)].map((_, i) => (
-                <Star
-                  key={i}
-                  className={`w-5 h-5 ${
-                    i < Math.floor(product.averageRating)
-                      ? 'text-yellow-400 fill-current'
-                      : 'text-gray-300'
-                  }`}
-                />
+                <Star key={i} className={`w-5 h-5 ${i < Math.floor(product.averageRating) ? "text-yellow-400 fill-current" : "text-gray-300"}`} />
               ))}
             </div>
             <span className="text-gray-600">
@@ -116,32 +108,25 @@ async function ProductDetail({ slug }: { slug: string }) {
 
           <div className="flex items-center gap-4 mb-6">
             <span className="text-3xl font-bold text-green-600">
-              {new Intl.NumberFormat('vi-VN', {
-                style: 'currency',
-                currency: 'VND'
+              {new Intl.NumberFormat("vi-VN", {
+                style: "currency",
+                currency: "VND",
               }).format(product.price * (1 - product.discount / 100))}
             </span>
             {product.discount > 0 && (
               <span className="text-xl text-gray-500 line-through">
-                {new Intl.NumberFormat('vi-VN', {
-                  style: 'currency',
-                  currency: 'VND'
+                {new Intl.NumberFormat("vi-VN", {
+                  style: "currency",
+                  currency: "VND",
                 }).format(product.price)}
               </span>
             )}
           </div>
 
-          <p className="text-gray-700 mb-6 leading-relaxed">
-            {product.description}
-          </p>
+          <p className="text-gray-700 mb-6 leading-relaxed">{product.description}</p>
         </div>
 
-        <AddToCartButton 
-          productId={product._id}
-          showQuantityControls={true}
-          size="lg"
-          className="w-full"
-        />
+        <AddToCartButton productId={product._id} showQuantityControls={true} size="lg" className="w-full" />
 
         <div className="mt-4">
           <FavoriteButton
@@ -165,12 +150,17 @@ async function ProductDetail({ slug }: { slug: string }) {
               <span className="text-gray-600">Trong kho:</span>
               <span className="font-medium">{product.stock}</span>
             </div>
-             <div className="flex justify-between">
+            <div className="flex justify-between">
               <span className="text-gray-600">Đã bán:</span>
               <span className="font-medium">{product.buyerCount}</span>
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Section đánh giá sản phẩm */}
+      <div className="col-span-1 lg:col-span-2 mt-12">
+        <ReviewsSection productId={product._id} />
       </div>
     </div>
   );

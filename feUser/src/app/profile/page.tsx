@@ -16,7 +16,6 @@ export default function ProfilePage() {
   const { data: session, update } = useSession();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -113,6 +112,7 @@ export default function ProfilePage() {
         });
 
         // Dispatch custom event để header biết avatar đã thay đổi
+        console.log("Profile: Dispatching avatarUpdated event with avatar:", response.data.user.avatar);
         window.dispatchEvent(
           new CustomEvent("avatarUpdated", {
             detail: { avatar: response.data.user.avatar },
@@ -148,7 +148,6 @@ export default function ProfilePage() {
       if (response.success) {
         setUser((prev: any) => (prev ? { ...prev, ...formData } : null));
         setSuccess("Cập nhật thông tin thành công!");
-        setIsEditing(false);
       }
     } catch (error: unknown) {
       console.error("Error updating profile:", error);
@@ -253,7 +252,7 @@ export default function ProfilePage() {
               <Avatar className="w-24 h-24">
                 {(() => {
                   const avatarUrl = user.avatar
-                    ? `${process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api", "") || "http://localhost:5000"}${user.avatar}`
+                    ? `${process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api", "") || "http://localhost:5000"}${user.avatar}?t=${Date.now()}`
                     : "";
                   console.log("Avatar URL:", avatarUrl);
                   return <AvatarImage src={avatarUrl} alt={user.name} className="object-cover" />;
@@ -308,75 +307,40 @@ export default function ProfilePage() {
           <div className="space-y-4">
             <div className="flex justify-between items-center">
               <h4 className="text-lg font-medium">Chi tiết thông tin</h4>
-              {!isEditing && (
-                <Button variant="outline" size="sm" onClick={() => setIsEditing(true)} className="flex items-center gap-2">
-                  <Edit3 className="w-4 h-4" />
-                  Chỉnh sửa
-                </Button>
-              )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Họ và tên</Label>
-                <Input id="name" name="name" value={formData.name} onChange={handleInputChange} disabled={!isEditing} placeholder="Nhập họ và tên" />
+                <Input id="name" name="name" value={formData.name} onChange={handleInputChange} placeholder="Nhập họ và tên" />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="phone">Số điện thoại</Label>
-                <Input
-                  id="phone"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleInputChange}
-                  disabled={!isEditing}
-                  placeholder="Nhập số điện thoại"
-                />
+                <Input id="phone" name="phone" value={formData.phone} onChange={handleInputChange} placeholder="Nhập số điện thoại" />
               </div>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="address">Địa chỉ</Label>
-              <Input
-                id="address"
-                name="address"
-                value={formData.address}
-                onChange={handleInputChange}
-                disabled={!isEditing}
-                placeholder="Nhập địa chỉ"
-              />
+              <Input id="address" name="address" value={formData.address} onChange={handleInputChange} placeholder="Nhập địa chỉ" />
             </div>
 
-            {isEditing && (
-              <div className="flex gap-3 pt-4">
-                <Button onClick={handleUpdateProfile} disabled={isSaving} className="bg-green-600 hover:bg-green-700">
-                  {isSaving ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Đang lưu...
-                    </>
-                  ) : (
-                    <>
-                      <Save className="mr-2 h-4 w-4" />
-                      Lưu thay đổi
-                    </>
-                  )}
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setIsEditing(false);
-                    setFormData({
-                      name: user.name || "",
-                      phone: user.phone || "",
-                      address: user.address || "",
-                    });
-                  }}
-                >
-                  Hủy
-                </Button>
-              </div>
-            )}
+            <div className="flex gap-3 pt-4">
+              <Button onClick={handleUpdateProfile} disabled={isSaving} className="bg-green-600 hover:bg-green-700">
+                {isSaving ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Đang cập nhật...
+                  </>
+                ) : (
+                  <>
+                    <Save className="mr-2 h-4 w-4" />
+                    Lưu thay đổi
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>

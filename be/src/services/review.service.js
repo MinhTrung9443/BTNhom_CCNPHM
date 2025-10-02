@@ -1,5 +1,5 @@
-import { Review, Product, Voucher, Order } from '../models/index.js';
-import { AppError } from '../utils/AppError.js';
+import { Review, Product, Voucher, Order } from "../models/index.js";
+import { AppError } from "../utils/AppError.js";
 
 const generateReviewVoucher = async (userId, reviewId) => {
   const voucherCode = `REVIEW_${Date.now()}`;
@@ -11,7 +11,7 @@ const generateReviewVoucher = async (userId, reviewId) => {
     maxDiscountAmount: 50000,
     startDate: new Date(),
     endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
-    source: 'review',
+    source: "review",
     sourceId: reviewId,
   });
   await voucher.save();
@@ -39,22 +39,19 @@ const createReview = async (userId, orderId, productId, rating, comment) => {
   // 1. Validate Purchase: Check if the order exists, belongs to the user, is delivered, and contains the product.
   const order = await Order.findOne({
     _id: orderId,
-    'userId': userId,
-    status: 'completed',
-    'orderLines.productId': productId,
+    userId: userId,
+    status: "completed",
+    "orderLines.productId": productId,
   });
 
   if (!order) {
-    throw new AppError(
-      'Đơn hàng không hợp lệ hoặc bạn không thể đánh giá sản phẩm từ đơn hàng này.',
-      403,
-    );
+    throw new AppError("Đơn hàng không hợp lệ hoặc bạn không thể đánh giá sản phẩm từ đơn hàng này.", 403);
   }
 
   // 2. Check for Duplicate Review for the same product in the same order
   const existingReview = await Review.findOne({ userId, productId, orderId });
   if (existingReview) {
-    throw new AppError('Bạn đã đánh giá sản phẩm này cho đơn hàng này rồi.', 409);
+    throw new AppError("Bạn đã đánh giá sản phẩm này cho đơn hàng này rồi.", 409);
   }
 
   const review = new Review({
@@ -75,31 +72,70 @@ const createReview = async (userId, orderId, productId, rating, comment) => {
   return { review, voucher };
 };
 
-const getProductReviews = async (productId) => {
-  return Review.find({ productId, isApproved: true })
-    .populate('userId', 'name avatar')
-    .sort({ createdAt: -1 });
+const getProductReviews = async (productId, page = 1, limit = 10) => {
+  const skip = (page - 1) * limit;
+
+  // Get reviews with pagination
+  const reviews = await Review.find({ productId, isApproved: true })
+    .populate("userId", "name avatar")
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limit);
+
+  // Get total count
+  const totalReviews = await Review.countDocuments({ productId, isApproved: true });
+
+  // Calculate summary statistics
+  const allReviews = await Review.find({ productId, isApproved: true });
+  const totalRating = allReviews.reduce((sum, review) => sum + review.rating, 0);
+  const averageRating = allReviews.length > 0 ? totalRating / allReviews.length : 0;
+
+  // Rating distribution
+  const ratingDistribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+  allReviews.forEach((review) => {
+    ratingDistribution[review.rating] = (ratingDistribution[review.rating] || 0) + 1;
+  });
+
+  // Pagination info
+  const totalPages = Math.ceil(totalReviews / limit);
+  const hasNext = page < totalPages;
+  const hasPrev = page > 1;
+
+  return {
+    reviews,
+    pagination: {
+      currentPage: page,
+      totalPages,
+      totalReviews,
+      hasNext,
+      hasPrev,
+      limit,
+    },
+    summary: {
+      averageRating: parseFloat(averageRating.toFixed(1)),
+      totalReviews: allReviews.length,
+      ratingDistribution,
+    },
+  };
 };
 
 const getUserReviews = async (userId) => {
-  return Review.find({ userId })
-    .populate('productId', 'name images')
-    .sort({ createdAt: -1 });
+  return Review.find({ userId }).populate("productId", "name images").sort({ createdAt: -1 });
 };
 
 const updateReview = async (reviewId, userId, rating, comment) => {
   const review = await Review.findById(reviewId);
 
   if (!review) {
-    throw new AppError('Không tìm thấy đánh giá.', 404);
+    throw new AppError("Không tìm thấy đánh giá.", 404);
   }
 
   if (review.userId.toString() !== userId.toString()) {
-    throw new AppError('Bạn không có quyền chỉnh sửa đánh giá này.', 403);
+    throw new AppError("Bạn không có quyền chỉnh sửa đánh giá này.", 403);
   }
 
   if (review.editCount > 0) {
-    throw new AppError('Bạn chỉ có thể chỉnh sửa đánh giá này một lần.', 403);
+    throw new AppError("Bạn chỉ có thể chỉnh sửa đánh giá này một lần.", 403);
   }
 
   // Optional: Add a time limit for editing
@@ -107,7 +143,7 @@ const updateReview = async (reviewId, userId, rating, comment) => {
   const reviewDate = new Date(review.createdAt);
   const diffDays = Math.ceil(Math.abs(now - reviewDate) / (1000 * 60 * 60 * 24));
   if (diffDays > 30) {
-      throw new AppError('Bạn không thể chỉnh sửa đánh giá sau 30 ngày.', 403);
+    throw new AppError("Bạn không thể chỉnh sửa đánh giá sau 30 ngày.", 403);
   }
 
   review.rating = rating;
@@ -119,5 +155,15 @@ const updateReview = async (reviewId, userId, rating, comment) => {
   return review;
 };
 
+const getExistingReview = async (userId, productId, orderId) => {
+  // Chỉ tìm đánh giá của người dùng hiện tại cho sản phẩm và đơn hàng cụ thể
+  const existingReview = await Review.findOne({
+    userId: userId,
+    productId: productId,
+    orderId: orderId,
+  }).populate("productId", "name images");
 
-export { generateReviewVoucher, calculateProductRating, createReview, getProductReviews, getUserReviews, updateReview };
+  return existingReview;
+};
+
+export { generateReviewVoucher, calculateProductRating, createReview, getProductReviews, getUserReviews, updateReview, getExistingReview };

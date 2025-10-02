@@ -30,8 +30,9 @@ const navigation = [
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [isMounted, setIsMounted] = useState(false);
   const { data: session, status, update } = useSession();
-  const [currentAvatar, setCurrentAvatar] = useState(session?.user.avatar || "");
+  const [currentAvatar, setCurrentAvatar] = useState("");
 
   const { cartCount, isLoading: cartLoading } = useCart();
 
@@ -43,12 +44,42 @@ export default function Header() {
     email: session?.user?.email ?? "",
   };
 
-  // Sync avatar từ session khi component mount
+  // Prevent hydration mismatch
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  // Initialize avatar from session
   useEffect(() => {
     if (session?.user?.avatar) {
       setCurrentAvatar(session.user.avatar);
+      console.log("Header: Initial avatar set from session:", session.user.avatar);
     }
   }, [session?.user?.avatar]);
+
+  // Listen for avatar update events from profile page
+  useEffect(() => {
+    const handleAvatarUpdate = (event: CustomEvent) => {
+      const newAvatar = event.detail?.avatar;
+      console.log("Header: Received avatarUpdated event with:", newAvatar);
+
+      if (newAvatar) {
+        setCurrentAvatar(newAvatar);
+        setRefreshKey((prev) => {
+          const newKey = prev + 1;
+          console.log("Header: Avatar state updated to:", newAvatar, "RefreshKey:", newKey);
+          return newKey;
+        });
+      }
+    };
+
+    // Add event listener
+    window.addEventListener("avatarUpdated", handleAvatarUpdate as EventListener);
+    // Cleanup
+    return () => {
+      window.removeEventListener("avatarUpdated", handleAvatarUpdate as EventListener);
+    };
+  }, []); // Empty dependency array - chỉ setup một lần
 
   const handleLogout = async () => {
     await signOut({ callbackUrl: "/" });
@@ -88,7 +119,7 @@ export default function Header() {
 
           {/* Actions */}
           <div className="flex items-center space-x-4">
-            {isLoggedIn && (
+            {isMounted && isLoggedIn && (
               <Link href="/yeu-thich">
                 <Button variant="ghost" size="sm" className="hidden sm:flex">
                   <Heart className="w-4 h-4" />
@@ -98,7 +129,7 @@ export default function Header() {
             <Link href="/cart">
               <Button variant="ghost" size="sm" className="relative">
                 <ShoppingCart className="w-4 h-4" />
-                {isLoggedIn && cartCount > 0 && (
+                {isMounted && isLoggedIn && cartCount > 0 && (
                   <span className="absolute -top-1 -right-1 text-xs bg-green-600 text-white rounded-full px-1.5 py-0.5 min-w-[18px] text-center leading-none">
                     {cartLoading ? "..." : cartCount > 99 ? "99+" : cartCount}
                   </span>
@@ -107,12 +138,25 @@ export default function Header() {
             </Link>
 
             {/* Profile Section */}
-            {isLoggedIn ? (
+            {!isMounted ? (
+              // Skeleton loading state để tránh layout shift
+              <div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse"></div>
+            ) : isLoggedIn ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src={currentAvatar} alt={user.name} />
+                    <Avatar className="h-8 w-8" key={`desktop-avatar-${refreshKey}`}>
+                      <AvatarImage
+                        src={
+                          currentAvatar
+                            ? `${
+                                process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api", "") || "http://localhost:5000"
+                              }${currentAvatar}?t=${refreshKey}`
+                            : ""
+                        }
+                        alt={user.name}
+                        className="object-cover"
+                      />
                       <AvatarFallback className="bg-green-600 text-white">
                         {user.name
                           .split(" ")
@@ -162,7 +206,7 @@ export default function Header() {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-            ) : (
+            ) : isMounted ? (
               <div className="hidden sm:flex items-center space-x-2">
                 <Link href="/login">
                   <Button variant="ghost" size="sm" className="bg-green-500 text-white hover:text-white hover:bg-green-500">
@@ -175,7 +219,7 @@ export default function Header() {
                   </Button>
                 </Link>
               </div>
-            )}
+            ) : null}
             {/* Mobile menu button */}
             <Sheet open={isOpen} onOpenChange={setIsOpen}>
               <SheetTrigger asChild>
@@ -188,11 +232,21 @@ export default function Header() {
                   <MobileSearch onSearch={() => setIsOpen(false)} />
 
                   {/* Mobile Profile Section */}
-                  {isLoggedIn ? (
+                  {isMounted && isLoggedIn ? (
                     <div className="border-b pb-4">
                       <div className="flex items-center space-x-3 mb-3">
-                        <Avatar className="h-10 w-10">
-                          <AvatarImage src={currentAvatar} alt={user.name} className="object-cover" />
+                        <Avatar className="h-10 w-10" key={`mobile-avatar-${refreshKey}`}>
+                          <AvatarImage
+                            src={
+                              currentAvatar
+                                ? `${
+                                    process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api", "") || "http://localhost:5000"
+                                  }${currentAvatar}?t=${refreshKey}`
+                                : ""
+                            }
+                            alt={user.name}
+                            className="object-cover"
+                          />
                           <AvatarFallback className="bg-green-600 text-white">
                             {user.name
                               .split(" ")
@@ -245,7 +299,7 @@ export default function Header() {
                         </Button>
                       </div>
                     </div>
-                  ) : (
+                  ) : isMounted ? (
                     <div className="border-b pb-4 space-y-2">
                       <Link href="/login" className="block">
                         <Button className="w-full" size="sm" onClick={() => setIsOpen(false)}>
@@ -258,7 +312,7 @@ export default function Header() {
                         </Button>
                       </Link>
                     </div>
-                  )}
+                  ) : null}
 
                   <nav className="flex flex-col space-y-2">
                     {navigation.map((item) => (
