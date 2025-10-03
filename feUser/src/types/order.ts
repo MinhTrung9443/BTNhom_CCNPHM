@@ -76,6 +76,9 @@ export interface Timeline {
   description: string;
   timestamp: string;
   performedBy: PerformerRole;
+  metadata?: {
+    reason?: string;
+  };
 }
 
 export interface Order {
@@ -104,6 +107,8 @@ export interface Order {
   cancelledReason?: string;
   cancellationRequestedAt?: string;
   cancellationRequestReason?: string;
+  returnRequestedAt?: string;
+  returnRequestReason?: string;
   __v: number;
 }
 

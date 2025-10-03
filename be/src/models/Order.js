@@ -55,7 +55,6 @@ const DETAILED_ORDER_STATUS = {
   RETURN_REQUESTED: "return_requested", // Yêu cầu trả hàng/hoàn tiền (thủ công bởi user)
   REFUNDED: "refunded", // Đã hoàn tiền (thủ công bởi admin)
 };
-
 const STATUS_MAP = {
   [ORDER_STATUS.PENDING]: [DETAILED_ORDER_STATUS.NEW],
   [ORDER_STATUS.PROCESSING]: [
@@ -173,6 +172,11 @@ const orderSchema = new mongoose.Schema(
     cancelledReason: { type: String },
     cancellationRequestedAt: { type: Date },
     cancellationRequestReason: { type: String },
+
+    // Thông tin trả hàng/hoàn tiền
+    returnRequestedAt: { type: Date },
+    returnRequestReason: { type: String },
+    refundedAt: { type: Date },
     
     // Timeline theo dõi lịch sử thay đổi trạng thái
     timeline: [timelineEntrySchema],

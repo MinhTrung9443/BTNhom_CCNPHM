@@ -79,12 +79,38 @@ export const approveCancellation = createAsyncThunk(
   }
 )
 
+export const fetchPendingReturns = createAsyncThunk(
+  'orders/fetchPendingReturns',
+  async (params = {}, { rejectWithValue }) => {
+    try {
+      const response = await orderService.getPendingReturns(params)
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || error.message)
+    }
+  }
+)
+
+export const approveReturn = createAsyncThunk(
+  'orders/approveReturn',
+  async (orderId, { rejectWithValue }) => {
+    try {
+      const response = await orderService.approveReturn(orderId)
+      return response.data.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || error.message)
+    }
+  }
+)
+
 const initialState = {
   orders: [],
   order: null, // Đổi tên cho nhất quán
   cancellationRequests: [],
+  returnRequests: [],
   meta: {}, // Đổi tên cho nhất quán với API
   cancellationMeta: {},
+  returnMeta: {},
   loading: false,
   error: null,
 }
@@ -101,6 +127,9 @@ const ordersSlice = createSlice({
     },
     clearCancellationRequests: (state) => {
       state.cancellationRequests = [];
+    },
+    clearReturnRequests: (state) => {
+      state.returnRequests = [];
     },
   },
   extraReducers: (builder) => {
@@ -184,8 +213,34 @@ const ordersSlice = createSlice({
           state.order = updatedOrder;
         }
       })
+      // Fetch pending returns
+      .addCase(fetchPendingReturns.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchPendingReturns.fulfilled, (state, action) => {
+        state.loading = false;
+        state.returnRequests = action.payload.data;
+        state.returnMeta = action.payload.meta;
+      })
+      .addCase(fetchPendingReturns.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      // Approve return
+      .addCase(approveReturn.fulfilled, (state, action) => {
+        const updatedOrder = action.payload;
+        // Remove from return requests
+        state.returnRequests = state.returnRequests.filter(
+          order => order._id !== updatedOrder._id
+        );
+        // Update order if it's currently loaded
+        if (state.order && state.order._id === updatedOrder._id) {
+          state.order = updatedOrder;
+        }
+      })
   },
 })
 
-export const { clearError, clearOrder, clearCancellationRequests } = ordersSlice.actions;
+export const { clearError, clearOrder, clearCancellationRequests, clearReturnRequests } = ordersSlice.actions;
 export default ordersSlice.reducer

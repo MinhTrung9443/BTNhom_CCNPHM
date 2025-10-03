@@ -662,8 +662,8 @@ export const createTimelineEntry = (status, performer, metadata = {}) => {
     [DETAILED_ORDER_STATUS.PAYMENT_OVERDUE]: "Đơn hàng đã bị hủy do quá hạn thanh toán.",
     [DETAILED_ORDER_STATUS.CANCELLED]: "Đơn hàng đã được hủy.",
     [DETAILED_ORDER_STATUS.DELIVERY_FAILED]: "Giao hàng không thành công.",
-    [DETAILED_ORDER_STATUS.RETURN_REQUESTED]: "Yêu cầu trả hàng/hoàn tiền đã được ghi nhận.",
-    [DETAILED_ORDER_STATUS.REFUNDED]: "Đơn hàng đã được hoàn tiền.",
+    [DETAILED_ORDER_STATUS.RETURN_REQUESTED]: "Yêu cầu trả hàng/hoàn tiền đã được ghi nhận. Vui lòng chờ admin xử lý.",
+    [DETAILED_ORDER_STATUS.REFUNDED]: "Admin đã chấp nhận yêu cầu trả hàng/hoàn tiền. Đơn hàng đã được hoàn tiền.",
   };
 
   const entry = {
@@ -885,6 +885,81 @@ export const approveCancellationRequest = async (orderId, adminId) => {
   await _revertOrderSideEffects(order);
 
   // TODO: Notify user that their cancellation request was approved.
+
+  return order;
+};
+
+export const requestReturn = async (userId, orderId, reason) => {
+  const order = await Order.findOne({ _id: orderId, userId: userId });
+
+  if (!order) {
+    throw new AppError("Không tìm thấy đơn hàng hoặc bạn không có quyền truy cập.", 404);
+  }
+
+  const latestDetailedStatus = order.timeline[order.timeline.length - 1]?.status;
+
+  if (order.status !== ORDER_STATUS.SHIPPING || latestDetailedStatus !== DETAILED_ORDER_STATUS.DELIVERED) {
+    throw new AppError("Chỉ có thể yêu cầu trả hàng khi đơn hàng đã được giao thành công.", 400);
+  }
+
+  order.status = ORDER_STATUS.RETURN_REFUND;
+  order.returnRequestedAt = new Date();
+  order.returnRequestReason = reason;
+  order.timeline.push(createTimelineEntry(DETAILED_ORDER_STATUS.RETURN_REQUESTED, "user", { reason }));
+
+  await order.save();
+  // TODO: Notify admin about the return request
+
+  return order;
+};
+
+export const getPendingReturns = async (page = 1, limit = 10) => {
+  const filter = {
+    status: ORDER_STATUS.RETURN_REFUND,
+    refundedAt: { $exists: false },
+  };
+
+  const skip = (page - 1) * limit;
+
+  const [orders, total] = await Promise.all([
+    Order.find(filter)
+      .populate("userId", "name email")
+      .sort({ returnRequestedAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean(),
+    Order.countDocuments(filter),
+  ]);
+
+  return {
+    data: orders,
+    meta: {
+      currentPage: page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+      totalItems: total,
+    },
+  };
+};
+
+export const approveReturn = async (orderId) => {
+  const order = await Order.findById(orderId);
+
+  if (!order) {
+    throw new AppError("Không tìm thấy đơn hàng.", 404);
+  }
+
+  const latestDetailedStatus = order.timeline[order.timeline.length - 1]?.status;
+  if (order.status !== ORDER_STATUS.RETURN_REFUND || latestDetailedStatus !== DETAILED_ORDER_STATUS.RETURN_REQUESTED) {
+    throw new AppError("Đơn hàng này không có yêu cầu trả hàng nào đang chờ xử lý.", 400);
+  }
+
+  order.refundedAt = new Date();
+  order.timeline.push(createTimelineEntry(DETAILED_ORDER_STATUS.REFUNDED, "admin", {}));
+
+  await order.save();
+  await _revertOrderSideEffects(order);
+  // TODO: Notify user that their return request was approved and refunded.
 
   return order;
 };

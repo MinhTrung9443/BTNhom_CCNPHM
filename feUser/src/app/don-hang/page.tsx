@@ -29,11 +29,11 @@ const getStatusTabsWithCounts = (stats?: OrderStats) => {
   return [
     { value: 'all' as const, label: 'Tất cả', count: allCount },
     { value: 'pending' as ApiOrderStatus, label: 'Chờ xác nhận', count: stats?.pending.count || 0 },
-    { value: 'processing' as ApiOrderStatus, label: 'Đang xử lý', count: stats?.processing.count || 0 },
-    { value: 'shipping' as ApiOrderStatus, label: 'Đang giao hàng', count: stats?.shipping.count || 0 },
+    { value: 'processing' as ApiOrderStatus, label: 'Chờ lấy hàng', count: stats?.processing.count || 0 },
+    { value: 'shipping' as ApiOrderStatus, label: 'Chờ giao hàng', count: stats?.shipping.count || 0 },
     { value: 'completed' as ApiOrderStatus, label: 'Hoàn thành', count: stats?.completed.count || 0 },
     { value: 'cancelled' as ApiOrderStatus, label: 'Đã hủy', count: stats?.cancelled.count || 0 },
-    { value: 'return_refund' as ApiOrderStatus, label: 'Đã hoàn tiền', count: stats?.return_refund.count || 0 },
+    { value: 'return_refund' as ApiOrderStatus, label: 'Trả hàng/hoàn tiền', count: stats?.return_refund.count || 0 },
   ];
 };
 

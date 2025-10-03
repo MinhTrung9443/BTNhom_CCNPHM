@@ -65,6 +65,23 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
 
   const order = response.data;
 
+  // Lấy trạng thái chi tiết mới nhất
+  const getLatestDetailedStatus = () => {
+    if (!order.timeline || order.timeline.length === 0) return undefined;
+    return order.timeline[order.timeline.length - 1]?.status;
+  };
+
+  const latestDetailedStatus = getLatestDetailedStatus();
+
+  // Kiểm tra có thể hủy đơn
+  const canCancelOrder = 
+    order.status === 'pending' || 
+    (order.status === 'processing' && ['confirmed', 'preparing'].includes(latestDetailedStatus || ''));
+
+  // Kiểm tra có thể yêu cầu trả hàng: status=shipping và detailed status=delivered
+  const canRequestReturn = 
+    order.status === 'shipping' && latestDetailedStatus === 'delivered';
+
   return (
     <div className="bg-muted/40">
       <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
@@ -94,8 +111,10 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
               <Suspense fallback={null}>
                 <OrderDetailClient
                   orderId={order._id}
-                  canCancel={order.status === 'pending' || order.status === 'processing'}
+                  canCancel={canCancelOrder}
+                  canReturn={canRequestReturn}
                   orderStatus={order.status}
+                  latestDetailedStatus={latestDetailedStatus}
                 />
               </Suspense>
             </div>
@@ -186,6 +205,12 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
                             <p className="font-medium">{event.description}</p>
                             <p className="text-sm text-muted-foreground">{formatDate(event.timestamp)}</p>
                             <p className="text-xs text-muted-foreground mt-1 capitalize">Thực hiện bởi: {event.performedBy}</p>
+                            {event.metadata?.reason && (
+                              <div className="mt-2 p-2 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 rounded text-sm">
+                                <span className="font-medium text-amber-900 dark:text-amber-100">Lý do: </span>
+                                <span className="text-amber-800 dark:text-amber-200">{event.metadata.reason}</span>
+                              </div>
+                            )}
                           </div>
                         </div>
                       );

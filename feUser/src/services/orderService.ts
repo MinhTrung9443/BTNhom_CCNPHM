@@ -61,6 +61,14 @@ class OrderService {
     });
     return response;
   }
+
+  async requestReturn(accessToken: string, orderId: string, reason: string): Promise<ApiResponse<Order>> {
+    const response: ApiResponse<Order> = await apiFetch(`/orders/${orderId}/request-return`, accessToken, {
+      method: 'POST',
+      body: JSON.stringify({ reason })
+    });
+    return response;
+  }
 }
 
 export const orderService = new OrderService();

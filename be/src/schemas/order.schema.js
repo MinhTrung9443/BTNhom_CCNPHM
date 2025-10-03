@@ -21,6 +21,20 @@ const getOrderById = {
   }),
 };
 export { getUserOrders, getOrderById };
+export const requestReturn = {
+  params: Joi.object().keys({
+    orderId: Joi.string().hex().length(24).required(),
+  }),
+  body: Joi.object().keys({
+    reason: Joi.string().required(),
+  }),
+};
+
+export const approveReturn = {
+  params: Joi.object().keys({
+    orderId: Joi.string().hex().length(24).required(),
+  }),
+};
 const addressSchema = Joi.object({
   province: Joi.string().required(),
   district: Joi.string().required(),
@@ -88,7 +102,8 @@ export const updateOrderStatus = {
       'delivered',
       'cancelled',
       'delivery_failed',
-      'refunded'
+      'refunded',
+      'return_requested'
     ).required(),
     reason: Joi.string().optional(),
   }),
