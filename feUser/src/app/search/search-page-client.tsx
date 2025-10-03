@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { ProductSearch } from '@/components/product-search';
 import { SearchResults } from '@/components/search-results';
 import { SearchFilters, SearchResponse } from '@/types/product';
@@ -11,10 +12,84 @@ interface SearchPageClientProps {
 }
 
 export function SearchPageClient({ initialData, initialFilters }: SearchPageClientProps) {
+  // 1. Sử dụng initialData từ server cho lần render đầu tiên
+  const [results, setResults] = useState<SearchResponse>(initialData);
   const [filters, setFilters] = useState<SearchFilters>(initialFilters);
+  const [isLoading, setIsLoading] = useState(false);
 
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // 2. Effect để fetch dữ liệu từ client khi URL thay đổi
+  useEffect(() => {
+    // Kiểm tra xem URL hiện tại có khác với initialFilters không
+    const currentKeyword = searchParams.get('keyword') || '';
+    const currentPage = searchParams.get('page') ? Number(searchParams.get('page')) : 1;
+    const currentCategoryId = searchParams.get('categoryId') || '';
+    
+    // Nếu URL vẫn là mặc định, không cần fetch lại
+    const isDefaultState = 
+      !currentKeyword && 
+      currentPage === 1 && 
+      !currentCategoryId &&
+      !searchParams.get('minPrice') &&
+      !searchParams.get('maxPrice') &&
+      !searchParams.get('minRating') &&
+      !searchParams.get('inStock');
+
+    if (isDefaultState) {
+      return;
+    }
+
+    // Fetch dữ liệu mới từ client khi URL thay đổi
+    const fetchClientSideResults = async () => {
+      setIsLoading(true);
+      
+      try {
+        // Gọi API Route Handler
+        const response = await fetch(`/api/search?${searchParams.toString()}`);
+        const data: SearchResponse = await response.json();
+        
+        setResults(data);
+        
+        // Cập nhật filters state để sync với URL
+        const newFilters: SearchFilters = {
+          keyword: currentKeyword,
+          categoryId: currentCategoryId,
+          minPrice: searchParams.get('minPrice') ? Number(searchParams.get('minPrice')) : undefined,
+          maxPrice: searchParams.get('maxPrice') ? Number(searchParams.get('maxPrice')) : undefined,
+          minRating: searchParams.get('minRating') ? Number(searchParams.get('minRating')) : undefined,
+          inStock: searchParams.get('inStock') ? searchParams.get('inStock') === 'true' : undefined,
+          sortBy: (searchParams.get('sortBy') || 'createdAt') as SearchFilters['sortBy'],
+          sortOrder: (searchParams.get('sortOrder') || 'desc') as SearchFilters['sortOrder'],
+          page: currentPage,
+          limit: 12,
+        };
+        setFilters(newFilters);
+      } catch (error) {
+        console.error('Client-side search failed:', error);
+        // Giữ nguyên results hiện tại nếu có lỗi
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchClientSideResults();
+  }, [searchParams]);
+
+  // 3. Hàm xử lý khi người dùng nhấn tìm kiếm (cập nhật URL)
   const handleSearch = (newFilters: SearchFilters) => {
-    setFilters(newFilters);
+    const params = new URLSearchParams();
+    
+    // Chỉ thêm các params có giá trị
+    Object.entries(newFilters).forEach(([key, value]) => {
+      if (value !== undefined && value !== '' && value !== null) {
+        params.set(key, value.toString());
+      }
+    });
+    
+    // Cập nhật URL, useEffect ở trên sẽ tự động fetch dữ liệu
+    router.push(`/search?${params.toString()}`);
   };
 
   return (
@@ -60,9 +135,9 @@ export function SearchPageClient({ initialData, initialFilters }: SearchPageClie
           {/* Main Content - Results */}
           <div className="flex-1 min-w-0">
             <SearchResults 
-              filters={filters}
-              onFiltersChange={setFilters}
-              initialData={initialData}
+              data={isLoading ? null : results}
+              isLoading={isLoading}
+              onPageChange={(page) => handleSearch({ ...filters, page })}
             />
           </div>
         </div>

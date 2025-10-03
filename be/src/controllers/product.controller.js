@@ -37,14 +37,14 @@ export const productController = {
 
   async getProductDetail(req, res, next) {
     const { id } = req.params;
-    const userId = req.user?.id;
+    const userId = req.user?._id; // Lấy userId nếu user đã đăng nhập
     const data = await productService.getProductDetail(id, userId);
     res.status(200).json({ success: true, data });
   },
 
   async getProductBySlug(req, res, next) {
     const { slug } = req.params;
-    const userId = req.user?.id;
+    const userId = req.user?._id; // Lấy userId nếu user đã đăng nhập
     const data = await productService.getProductDetailBySlug(slug, userId);
     res.status(200).json({ success: true, data });
   },

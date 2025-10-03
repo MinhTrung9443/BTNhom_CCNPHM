@@ -102,7 +102,7 @@ export default function ProfilePage() {
       if (response.success) {
         setUser((prev: any) => (prev ? { ...prev, avatar: response.data.user.avatar } : null));
 
-        // Cập nhật session để header hiển thị ảnh mới
+        // ✅ Chỉ cần gọi hàm update của useSession
         await update({
           ...session,
           user: {
@@ -110,14 +110,6 @@ export default function ProfilePage() {
             avatar: response.data.user.avatar,
           },
         });
-
-        // Dispatch custom event để header biết avatar đã thay đổi
-        console.log("Profile: Dispatching avatarUpdated event with avatar:", response.data.user.avatar);
-        window.dispatchEvent(
-          new CustomEvent("avatarUpdated", {
-            detail: { avatar: response.data.user.avatar },
-          })
-        );
 
         setSuccess("Cập nhật ảnh đại diện thành công!");
       } else {
