@@ -12,6 +12,8 @@ import ProductsPage from './pages/products/ProductsPage'
 import ProductEditPage from './pages/products/ProductEditPage'
 import OrdersPage from './pages/orders/OrdersPage'
 import OrderDetailPage from './pages/orders/OrderDetailPage'
+import CancellationRequestsPage from './pages/orders/CancellationRequestsPage'
+import ReturnRefundRequestsPage from './pages/orders/ReturnRefundRequestsPage'
 import VouchersPage from './pages/vouchers/VouchersPage'
 import VoucherFormPage from './pages/vouchers/VoucherFormPage'
 import CategoriesPage from './pages/categories/CategoriesPage'
@@ -70,6 +72,8 @@ function App() {
                   <Route path="/products" element={<ProductsPage />} />
                   <Route path="/products/edit/:productId" element={<ProductEditPage />} />
                   <Route path="/orders" element={<OrdersPage />} />
+                  <Route path="/orders/cancellation-requests" element={<CancellationRequestsPage />} />
+                  <Route path="/orders/return-refund-requests" element={<ReturnRefundRequestsPage />} />
                   <Route path="/orders/:orderId" element={<OrderDetailPage />} />
                   <Route path="/vouchers" element={<VouchersPage />} />
                   <Route path="/vouchers/create" element={<VoucherFormPage />} />

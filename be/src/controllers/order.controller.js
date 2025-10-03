@@ -132,3 +132,72 @@ export const getUserOrderStats = async (req, res, next) => {
     data: stats
   });
 };
+
+export const requestReturn = async (req, res) => {
+  const { orderId } = req.params;
+  const { reason } = req.body;
+  const userId = req.user._id;
+
+  const updatedOrder = await OrderService.requestReturn(userId, orderId, reason);
+
+  res.json({
+    success: true,
+    message: "Yêu cầu trả hàng của bạn đã được gửi.",
+    data: updatedOrder,
+  });
+};
+
+export const approveReturn = async (req, res) => {
+  const { orderId } = req.params;
+
+  const updatedOrder = await OrderService.approveReturn(orderId);
+
+  res.json({
+    success: true,
+    message: "Yêu cầu trả hàng đã được chấp thuận.",
+    data: updatedOrder,
+  });
+};
+
+export const getPendingReturns = async (req, res) => {
+  const { page = 1, limit = 10 } = req.query;
+
+  const result = await OrderService.getPendingReturns(
+    parseInt(page, 10),
+    parseInt(limit, 10)
+  );
+
+  res.json({
+    success: true,
+    message: "Lấy danh sách đơn hàng chờ trả hàng/hoàn tiền thành công.",
+    meta: result.meta,
+    data: result.data,
+  });
+};
+
+export const confirmOrderReceived = async (req, res) => {
+  const { orderId } = req.params;
+  const userId = req.user._id;
+
+  const updatedOrder = await OrderService.confirmOrderReceived(userId, orderId);
+
+  res.json({
+    success: true,
+    message: "Xác nhận đã nhận hàng thành công. Cảm ơn bạn đã mua sắm!",
+    data: updatedOrder,
+  });
+};
+
+export const cancelOrderByUser = async (req, res) => {
+  const { orderId } = req.params;
+  const { reason } = req.body;
+  const userId = req.user._id;
+
+  const updatedOrder = await OrderService.cancelOrderByUser(userId, orderId, reason);
+
+  res.json({
+    success: true,
+    message: "Yêu cầu hủy đơn hàng của bạn đã được xử lý.",
+    data: updatedOrder,
+  });
+};

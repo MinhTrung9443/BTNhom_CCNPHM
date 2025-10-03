@@ -22,13 +22,14 @@ const orderLineSchema = new mongoose.Schema(
 // Định nghĩa các trạng thái đơn hàng để quản lý vòng đời và phân loại trên UI
 const ORDER_STATUS = {
   PENDING: "pending", // Chờ xác nhận -> Tab: Chờ xác nhận
-  PROCESSING: "processing", // Đã xác nhận, đang chuẩn bị -> Tab: Vận chuyển
-  SHIPPING: "shipping", // Đang giao hàng, Đã giao,Yêu cầu hủy  -> Tab: Chờ giao hàng
+  PROCESSING: "processing", // Đã xác nhận, đang chuẩn bị, yêu cầu hủy -> Tab: Vận chuyển
+  SHIPPING: "shipping", // Đang giao hàng, Đã giao  -> Tab: Chờ giao hàng
   COMPLETED: "completed", // Hoàn thành (khi khách bấm nhận hàng) -> Tab: Đã giao hàng
   CANCELLED: "cancelled", // chưa thanh toán, Đã hủy (Trước khi giao hàng) -> Tab: Đã hủy
   RETURN_REFUND: "return_refund", // Giao hàng không thành công, Trả hàng/Hoàn tiền (Sau khi giao hàng) -> Tab: Trả hàng/Hoàn tiền
 };
 
+//  chỉ hủy được khi đơn hàng đăng ở trạng thái status là PENDING hoặc PROCESSING,  và nếu là PROCESSING thì kiểm tra thêm trạng thái chi tiết mới nhất (trong DETAILED_ORDER_STATUS, nếu là đang SHIPPING_IN_PROGRESS thì lúc này sẽ thành yêu cầu hủy cancellation_requested  để đợi admin xác nhận hoặc từ chối) nếu đã có trạng thái SHIPPING.COMPLETED thì lúc này chỉ được yêu cầu trả hàng, hoàn tiền,
 const DETAILED_ORDER_STATUS = {
   // PENDING
   NEW: "new", // Đơn hàng đã được đặt (tự động bởi hệ thống)
@@ -54,7 +55,6 @@ const DETAILED_ORDER_STATUS = {
   RETURN_REQUESTED: "return_requested", // Yêu cầu trả hàng/hoàn tiền (thủ công bởi user)
   REFUNDED: "refunded", // Đã hoàn tiền (thủ công bởi admin)
 };
-
 const STATUS_MAP = {
   [ORDER_STATUS.PENDING]: [DETAILED_ORDER_STATUS.NEW],
   [ORDER_STATUS.PROCESSING]: [
@@ -172,9 +172,11 @@ const orderSchema = new mongoose.Schema(
     cancelledReason: { type: String },
     cancellationRequestedAt: { type: Date },
     cancellationRequestReason: { type: String },
-    
-    // Cờ đánh dấu đơn hàng có thể hủy (trong vòng 30 phút)
-    canCancel: { type: Boolean, default: true },
+
+    // Thông tin trả hàng/hoàn tiền
+    returnRequestedAt: { type: Date },
+    returnRequestReason: { type: String },
+    refundedAt: { type: Date },
     
     // Timeline theo dõi lịch sử thay đổi trạng thái
     timeline: [timelineEntrySchema],
@@ -191,7 +193,6 @@ orderSchema.index({ status: 1 });
 orderSchema.index({ createdAt: -1 });
 orderSchema.index({ deliveryId: 1 });
 orderSchema.index({ phoneNumber: 1 });
-orderSchema.index({ canCancel: 1 });
 
 // Compound indexes
 orderSchema.index({ userId: 1, status: 1 });

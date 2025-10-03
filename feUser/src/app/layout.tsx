@@ -8,6 +8,7 @@ import { auth } from "@/auth";
 import Header from "@/components/header";
 import Footer from "@/components/footer";
 import ChatWidget from "@/components/chat-widget";
+import N8nChatbot from "@/components/n8n-chatbot";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -74,6 +75,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <main className="flex-grow">{children}</main>
             <Footer />
             <ChatWidget />
+            <N8nChatbot />
             <Toaster richColors position="top-right" />
           </CartProvider>
         </SessionProvider>

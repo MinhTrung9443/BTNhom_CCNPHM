@@ -36,7 +36,7 @@ class OrderService {
     if (params?.status) queryParams.append('status', params.status);
     if (params?.search) queryParams.append('search', params.search);
     
-    const response = await apiFetch(`/orders/my?${queryParams.toString()}`, accessToken);
+    const response: OrdersResponse = await apiFetch(`/orders/my?${queryParams.toString()}`, accessToken);
     // Backend đã trả về cấu trúc OrdersResponse, có thể dùng trực tiếp
     return response;
   }
@@ -46,9 +46,10 @@ class OrderService {
     return response;
   }
   
-  async cancelOrder(accessToken: string, orderId: string): Promise<ApiResponse<Order>> {
-     const response: ApiResponse<Order> = await apiFetch(`/orders/${orderId}/cancel`, accessToken, {
-       method: 'PATCH'
+  async cancelOrder(accessToken: string, orderId: string, reason: string): Promise<ApiResponse<Order>> {
+     const response: ApiResponse<Order> = await apiFetch(`/orders/my/${orderId}/cancel`, accessToken, {
+       method: 'PATCH',
+       body: JSON.stringify({ reason })
      });
      return response;
   }
@@ -57,6 +58,21 @@ class OrderService {
     const response: ApiResponse<OrderStats> = await apiFetch('/orders/my/stats', accessToken, {
       method: 'GET',
       next: { revalidate: 300 } // Cache 5 phút
+    });
+    return response;
+  }
+
+  async requestReturn(accessToken: string, orderId: string, reason: string): Promise<ApiResponse<Order>> {
+    const response: ApiResponse<Order> = await apiFetch(`/orders/${orderId}/request-return`, accessToken, {
+      method: 'POST',
+      body: JSON.stringify({ reason })
+    });
+    return response;
+  }
+
+  async confirmReceived(accessToken: string, orderId: string): Promise<ApiResponse<Order>> {
+    const response: ApiResponse<Order> = await apiFetch(`/orders/my/${orderId}/confirm-received`, accessToken, {
+      method: 'PATCH'
     });
     return response;
   }

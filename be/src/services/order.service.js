@@ -411,6 +411,55 @@ const _executePostOrderActions = async (order) => {
   }
 };
 
+const _revertOrderSideEffects = async (order) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  try {
+    // 1. Revert stock
+    for (const line of order.orderLines) {
+      await Product.findByIdAndUpdate(
+        line.productId,
+        { $inc: { stock: line.quantity } },
+        { session }
+      );
+    }
+    logger.info(`Reverted stock for order ${order._id}`);
+
+    // 2. Revert voucher
+    if (order.voucherCode) {
+      const voucher = await Voucher.findOne({ code: order.voucherCode }).lean();
+      if (voucher) {
+        await UserVoucher.updateOne(
+          { userId: order.userId, voucherId: voucher._id, isUsed: true, orderId: order._id },
+          { $set: { isUsed: false, orderId: null } },
+          { session }
+        );
+        logger.info(`Reverted voucher ${order.voucherCode} for user ${order.userId}`);
+      }
+    }
+
+    // 3. Revert loyalty points
+    if (order.pointsApplied > 0) {
+      await User.findByIdAndUpdate(
+        order.userId,
+        { $inc: { loyaltyPoints: order.pointsApplied } },
+        { session }
+      );
+      logger.info(`Reverted ${order.pointsApplied} points for user ${order.userId}`);
+    }
+
+    await session.commitTransaction();
+  } catch (error) {
+    await session.abortTransaction();
+    logger.error(`Failed to revert side effects for order ${order._id}:`, error);
+    // Even if reverting fails, we don't throw to the user, as the order is already cancelled.
+    // This should be monitored by developers.
+  } finally {
+    session.endSession();
+  }
+};
+
+
 // TODO: Cần bổ sung tặng điểm bằng 1% giá trị đơn hàng sau khi khách đã nhận hàng
 
 export const placeOrder = async (userId, { previewOrder: clientPreview }) => {
@@ -613,8 +662,8 @@ export const createTimelineEntry = (status, performer, metadata = {}) => {
     [DETAILED_ORDER_STATUS.PAYMENT_OVERDUE]: "Đơn hàng đã bị hủy do quá hạn thanh toán.",
     [DETAILED_ORDER_STATUS.CANCELLED]: "Đơn hàng đã được hủy.",
     [DETAILED_ORDER_STATUS.DELIVERY_FAILED]: "Giao hàng không thành công.",
-    [DETAILED_ORDER_STATUS.RETURN_REQUESTED]: "Yêu cầu trả hàng/hoàn tiền đã được ghi nhận.",
-    [DETAILED_ORDER_STATUS.REFUNDED]: "Đơn hàng đã được hoàn tiền.",
+    [DETAILED_ORDER_STATUS.RETURN_REQUESTED]: "Yêu cầu trả hàng/hoàn tiền đã được ghi nhận. Vui lòng chờ admin xử lý.",
+    [DETAILED_ORDER_STATUS.REFUNDED]: "Admin đã chấp nhận yêu cầu trả hàng/hoàn tiền. Đơn hàng đã được hoàn tiền.",
   };
 
   const entry = {
@@ -722,4 +771,227 @@ export const updateOrderStatusByAdmin = async (
   }).lean();
 
   return updatedOrder;
+};
+
+export const cancelOrderByUser = async (userId, orderId, reason) => {
+  const order = await Order.findOne({ _id: orderId, userId: userId });
+
+  if (!order) {
+    throw new AppError("Không tìm thấy đơn hàng hoặc bạn không có quyền truy cập.", 404);
+  }
+
+  const latestDetailedStatus = order.timeline[order.timeline.length - 1]?.status;
+
+  // Case 1: Order is PENDING (detailed status is NEW) -> Direct cancel
+  if (order.status === ORDER_STATUS.PENDING) {
+    order.status = ORDER_STATUS.CANCELLED;
+    order.cancelledAt = new Date();
+    order.cancelledBy = "user";
+    order.cancelledReason = reason || "Người dùng tự hủy đơn hàng.";
+    order.timeline.push(createTimelineEntry(DETAILED_ORDER_STATUS.CANCELLED, "user", { reason: order.cancelledReason }));
+    
+    await order.save();
+    await _revertOrderSideEffects(order);
+    return order;
+  }
+
+  // Case 2: Order is PROCESSING (detailed status can be CONFIRMED or PREPARING)
+  if (order.status === ORDER_STATUS.PROCESSING) {
+    // If seller is already preparing, user must request cancellation
+    if (latestDetailedStatus === DETAILED_ORDER_STATUS.PREPARING) {
+      order.cancellationRequestedAt = new Date();
+      order.cancellationRequestReason = reason || "Người dùng yêu cầu hủy khi người bán đang chuẩn bị hàng.";
+      order.timeline.push(createTimelineEntry(DETAILED_ORDER_STATUS.CANCELLATION_REQUESTED, "user", { reason: order.cancellationRequestReason }));
+      await order.save();
+      // TODO: Notify admin about the cancellation request
+      return order;
+    }
+    // If order is just confirmed, user can cancel directly
+    else {
+      order.status = ORDER_STATUS.CANCELLED;
+      order.cancelledAt = new Date();
+      order.cancelledBy = "user";
+      order.cancelledReason = reason || "Người dùng tự hủy đơn hàng.";
+      order.timeline.push(createTimelineEntry(DETAILED_ORDER_STATUS.CANCELLED, "user", { reason: order.cancelledReason }));
+
+      await order.save();
+      await _revertOrderSideEffects(order);
+      return order;
+    }
+  }
+
+  // Case 4: Any other status (COMPLETED, CANCELLED, etc.)
+  throw new AppError(`Đơn hàng không thể hủy ở trạng thái hiện tại, vui lòng thực hiện yêu cầu hoàn tiền hoặc trả hàng khi nhận hàng.`, 400);
+};
+
+export const getOrdersWithCancellationRequests = async (page = 1, limit = 10) => {
+  const filter = {
+    "timeline.status": DETAILED_ORDER_STATUS.CANCELLATION_REQUESTED,
+    // Optional: Ensure we only get orders that are not yet fully cancelled or completed
+    "status": { $in: [ORDER_STATUS.SHIPPING, ORDER_STATUS.PROCESSING] }
+  };
+
+  const skip = (page - 1) * limit;
+
+  const [orders, total] = await Promise.all([
+    Order.find(filter)
+      .populate("userId", "name email")
+      .sort({ cancellationRequestedAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean(),
+    Order.countDocuments(filter),
+  ]);
+
+  return {
+    data: orders,
+    meta: {
+      currentPage: page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+      totalItems: total,
+    },
+  };
+};
+
+export const approveCancellationRequest = async (orderId, adminId) => {
+  const order = await Order.findById(orderId);
+
+  if (!order) {
+    throw new AppError("Không tìm thấy đơn hàng.", 404);
+  }
+
+  const latestDetailedStatus = order.timeline[order.timeline.length - 1]?.status;
+  if (latestDetailedStatus !== DETAILED_ORDER_STATUS.CANCELLATION_REQUESTED) {
+    throw new AppError("Đơn hàng này không có yêu cầu hủy nào đang chờ xử lý.", 400);
+  }
+
+  // Update order status
+  order.status = ORDER_STATUS.CANCELLED;
+  order.cancelledAt = new Date();
+  order.cancelledBy = "admin";
+  order.cancelledReason = `Admin chấp nhận yêu cầu hủy từ người dùng. Lý do: ${order.cancellationRequestReason || 'Không có lý do'}`;
+  
+  // Add timeline entry
+  order.timeline.push(createTimelineEntry(DETAILED_ORDER_STATUS.CANCELLED, "admin", {
+    reason: `Chấp nhận yêu cầu hủy từ người dùng.`,
+    originalReason: order.cancellationRequestReason,
+    approvedBy: adminId
+  }));
+
+  await order.save();
+
+  // Revert stock, vouchers, points
+  await _revertOrderSideEffects(order);
+
+  // TODO: Notify user that their cancellation request was approved.
+
+  return order;
+};
+
+export const requestReturn = async (userId, orderId, reason) => {
+  const order = await Order.findOne({ _id: orderId, userId: userId });
+
+  if (!order) {
+    throw new AppError("Không tìm thấy đơn hàng hoặc bạn không có quyền truy cập.", 404);
+  }
+
+  const latestDetailedStatus = order.timeline[order.timeline.length - 1]?.status;
+
+  if (order.status !== ORDER_STATUS.SHIPPING || latestDetailedStatus !== DETAILED_ORDER_STATUS.DELIVERED) {
+    throw new AppError("Chỉ có thể yêu cầu trả hàng khi đơn hàng đã được giao thành công.", 400);
+  }
+
+  order.status = ORDER_STATUS.RETURN_REFUND;
+  order.returnRequestedAt = new Date();
+  order.returnRequestReason = reason;
+  order.timeline.push(createTimelineEntry(DETAILED_ORDER_STATUS.RETURN_REQUESTED, "user", { reason }));
+
+  await order.save();
+  // TODO: Notify admin about the return request
+
+  return order;
+};
+
+export const getPendingReturns = async (page = 1, limit = 10) => {
+  const filter = {
+    status: ORDER_STATUS.RETURN_REFUND,
+    refundedAt: { $exists: false },
+  };
+
+  const skip = (page - 1) * limit;
+
+  const [orders, total] = await Promise.all([
+    Order.find(filter)
+      .populate("userId", "name email")
+      .sort({ returnRequestedAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean(),
+    Order.countDocuments(filter),
+  ]);
+
+  return {
+    data: orders,
+    meta: {
+      currentPage: page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+      totalItems: total,
+    },
+  };
+};
+
+export const approveReturn = async (orderId) => {
+  const order = await Order.findById(orderId);
+
+  if (!order) {
+    throw new AppError("Không tìm thấy đơn hàng.", 404);
+  }
+
+  const latestDetailedStatus = order.timeline[order.timeline.length - 1]?.status;
+  if (order.status !== ORDER_STATUS.RETURN_REFUND || latestDetailedStatus !== DETAILED_ORDER_STATUS.RETURN_REQUESTED) {
+    throw new AppError("Đơn hàng này không có yêu cầu trả hàng nào đang chờ xử lý.", 400);
+  }
+
+  order.refundedAt = new Date();
+  order.timeline.push(createTimelineEntry(DETAILED_ORDER_STATUS.REFUNDED, "admin", {}));
+
+  await order.save();
+  await _revertOrderSideEffects(order);
+  // TODO: Notify user that their return request was approved and refunded.
+
+  return order;
+};
+
+export const confirmOrderReceived = async (userId, orderId) => {
+  const order = await Order.findOne({ _id: orderId, userId: userId });
+
+  if (!order) {
+    throw new AppError("Không tìm thấy đơn hàng hoặc bạn không có quyền truy cập.", 404);
+  }
+
+  const latestDetailedStatus = order.timeline[order.timeline.length - 1]?.status;
+
+  // Only allow confirmation if the order has been delivered
+  if (order.status !== ORDER_STATUS.SHIPPING || latestDetailedStatus !== DETAILED_ORDER_STATUS.DELIVERED) {
+    throw new AppError("Chỉ có thể xác nhận đã nhận hàng khi đơn hàng ở trạng thái 'Đã giao hàng'.", 400);
+  }
+
+  // Update order status to COMPLETED
+  order.status = ORDER_STATUS.COMPLETED;
+  order.timeline.push(createTimelineEntry(DETAILED_ORDER_STATUS.COMPLETED, "user", {}));
+
+  // Award loyalty points (1% of totalAmount)
+  const pointsToAward = Math.floor(order.totalAmount * 0.01);
+  if (pointsToAward > 0) {
+    await User.findByIdAndUpdate(userId, {
+      $inc: { loyaltyPoints: pointsToAward },
+    });
+    logger.info(`Awarded ${pointsToAward} loyalty points to user ${userId} for order ${orderId}`);
+  }
+
+  await order.save();
+
+  return order;
 };

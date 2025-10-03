@@ -32,6 +32,7 @@ export function FavoriteButton({
   const [isPending, startTransition] = useTransition();
   const [isFavorited, setIsFavorited] = useState(initialIsFavorited);
 
+
   const handleFavoriteToggle = async () => {
     if (status !== 'authenticated' || !session?.user?.accessToken) {
       toast.info('Vui lòng đăng nhập để sử dụng chức năng này.');

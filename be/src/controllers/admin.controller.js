@@ -458,4 +458,34 @@ export const adminController = {
       next(error);
     }
   },
+
+  getOrdersWithCancellationRequests: async (req, res, next) => {
+    try {
+      const { page = 1, limit = 10 } = req.query;
+      const result = await orderService.getOrdersWithCancellationRequests(parseInt(page), parseInt(limit));
+      res.json({
+        success: true,
+        message: "Lấy danh sách đơn hàng yêu cầu hủy thành công.",
+        data: result.data,
+        meta: result.meta,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  approveCancellationRequest: async (req, res, next) => {
+    try {
+      const { orderId } = req.params;
+      const adminId = req.user._id;
+      const updatedOrder = await orderService.approveCancellationRequest(orderId, adminId);
+      res.json({
+        success: true,
+        message: "Đã chấp nhận yêu cầu hủy đơn hàng thành công.",
+        data: updatedOrder,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
 };

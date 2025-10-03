@@ -15,7 +15,7 @@ const updateUserProfile = async (userId, updateData, file) => {
   });
 
   if (file) {
-    updates.avatar = `/${file.path.replace(/\\/g, "/")}`;
+    updates.avatar = `${file.path.replace(/\\/g, "/")}`;
   }
 
   if (Object.keys(updates).length === 0) {
@@ -77,4 +77,12 @@ const getRecentlyViewed = async (userId) => {
   return uniqueProducts;
 };
 
-export { updateUserProfile, toggleFavorite, getFavorites, getRecentlyViewed };
+const getLoyaltyPoints = async (userId) => {
+  const user = await User.findById(userId).select('loyaltyPoints').lean();
+  if (!user) {
+    throw new AppError("Không tìm thấy người dùng.", 404);
+  }
+  return user.loyaltyPoints;
+};
+
+export { updateUserProfile, toggleFavorite, getFavorites, getRecentlyViewed, getLoyaltyPoints };

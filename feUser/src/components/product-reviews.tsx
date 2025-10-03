@@ -161,7 +161,15 @@ export function ProductReviews({ productId }: ProductReviewsProps) {
             {/* Review Header */}
             <div className="flex items-start gap-3 mb-3">
               <Avatar className="w-10 h-10">
-                <AvatarImage src={review.userId.avatar} />
+                <AvatarImage 
+                  src={
+                    review.userId.avatar
+                      ? review.userId.avatar.startsWith('http')
+                        ? review.userId.avatar
+                        : `${process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api", "") || "http://localhost:5000"}${review.userId.avatar}`
+                      : ""
+                  }
+                />
                 <AvatarFallback className="bg-blue-500 text-white">{review.userId.name.charAt(0).toUpperCase()}</AvatarFallback>
               </Avatar>
 

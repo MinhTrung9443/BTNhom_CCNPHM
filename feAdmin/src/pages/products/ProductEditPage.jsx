@@ -1,24 +1,26 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
-import { Container, Row, Col, Card, Form, Button, Spinner, Alert } from 'react-bootstrap';
-import { fetchProducts, updateProduct } from '../../redux/slices/productsSlice';
+import { useSelector } from 'react-redux';
+import { Container, Row, Col, Card, Form, Button, Alert, Spinner } from 'react-bootstrap';
 import productService from '../../services/productService';
-import { API_URL } from '../../services/apiService';
+import React from 'react';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
+import { getImageSrc, handleImageError } from '../../utils/imageUtils';
+import { toast } from 'react-toastify';
 
 const ProductEditPage = () => {
   const { productId } = useParams();
   const navigate = useNavigate();
-  const dispatch = useDispatch();
 
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [saveLoading, setSaveLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [showSuccessAlert, setShowSuccessAlert] = useState(false);
   const { categories } = useSelector(state => state.categories);
   const [newImageFiles, setNewImageFiles] = useState([]);
-  
-  const { loading: updateLoading, error: updateError } = useSelector(state => state.products);
+
+
 
   useEffect(() => {
     const loadProduct = async () => {
@@ -61,21 +63,51 @@ const ProductEditPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      let uploadedImageUrls = [];
-      if (newImageFiles.length > 0) {
-        const uploadRes = await productService.uploadImages(newImageFiles);
-        uploadedImageUrls = uploadRes.data.filePaths;
+      setSaveLoading(true);
+      
+      // Create FormData for multipart/form-data request
+      const formData = new FormData();
+
+      // Add product fields
+      formData.append('name', product.name);
+      formData.append('description', product.description || '');
+      formData.append('price', product.price);
+      formData.append('discount', product.discount || 0);
+      formData.append('stock', product.stock);
+      formData.append('categoryId', product.categoryId?._id || product.categoryId);
+      formData.append('isActive', product.isActive ? 'true' : 'false');
+
+      // Add existing images as text fields
+      product.images.forEach(imageUrl => {
+        formData.append('images', imageUrl);
+      });
+
+      // Add new image files
+      newImageFiles.forEach(file => {
+        formData.append('images', file);
+      });
+
+      // Call productService directly with FormData
+      const response = await productService.updateProduct(productId, formData);
+
+      // Update the product state with the latest data from server
+      if (response.data && response.data.data) {
+        setProduct(response.data.data);
       }
 
-      const finalImages = [...product.images, ...uploadedImageUrls];
-      const { _id, ...productData } = { ...product, images: finalImages };
+      // Clear new image files since they're now part of the product
+      setNewImageFiles([]);
 
-      const resultAction = await dispatch(updateProduct({ productId, productData }));
-      if (updateProduct.fulfilled.match(resultAction)) {
-        navigate('/products');
-      }
+      // Show success message
+      toast.success('Cập nhật sản phẩm thành công');
+      
+      // Show temporary success alert
+      setShowSuccessAlert(true);
+      setTimeout(() => setShowSuccessAlert(false), 3000);
     } catch (err) {
-      setError(err.message || 'Lỗi khi tải lên hình ảnh');
+      setError(err.message || 'Lỗi khi cập nhật sản phẩm');
+    } finally {
+      setSaveLoading(false);
     }
   };
 
@@ -89,16 +121,36 @@ const ProductEditPage = () => {
         <Col>
           <Card className="border-0 shadow-sm">
             <Card.Header className="bg-white border-0">
-              <h4 className="fw-bold mb-0">Chỉnh sửa sản phẩm</h4>
+              <div className="d-flex justify-content-between align-items-center">
+                <div>
+                  <h4 className="fw-bold mb-0">Chỉnh sửa sản phẩm</h4>
+                  <small className="text-muted">Thay đổi sẽ được lưu ngay lập tức. Bạn có thể tiếp tục chỉnh sửa sau khi lưu.</small>
+                </div>
+              </div>
             </Card.Header>
-            <Card.Body>
-              {updateError && <Alert variant="danger">{updateError}</Alert>}
+            <Card.Body className="position-relative">
+
+              {showSuccessAlert && (
+                <Alert variant="success" className="mb-3" dismissible onClose={() => setShowSuccessAlert(false)}>
+                  <i className="bi bi-check-circle me-2"></i>
+                  Sản phẩm đã được cập nhật thành công! Bạn có thể tiếp tục chỉnh sửa.
+                </Alert>
+              )}
+              
               <Form onSubmit={handleSubmit}>
+                {saveLoading && (
+                  <div className="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-light bg-opacity-75" style={{ zIndex: 10 }}>
+                    <div className="text-center">
+                      <Spinner animation="border" variant="primary" />
+                      <div className="mt-2">Đang lưu sản phẩm...</div>
+                    </div>
+                  </div>
+                )}
                 <Row>
                   <Col md={6}>
                     <Form.Group className="mb-3">
                       <Form.Label>Tên sản phẩm</Form.Label>
-                      <Form.Control type="text" name="name" value={product.name} onChange={handleChange} required />
+                      <Form.Control type="text" name="name" value={product.name} onChange={handleChange} required disabled={saveLoading} />
                     </Form.Group>
                   </Col>
                   <Col md={6}>
@@ -142,7 +194,14 @@ const ProductEditPage = () => {
                   <div className="d-flex flex-wrap gap-2">
                     {product.images.map((img, index) => (
                       <div key={index} className="position-relative">
-                        <img src={img.startsWith('/uploads') ? `${API_URL}${img}` : img} alt={`product-${index}`} width="100" height="100" className="rounded object-fit-cover"/>
+                        <img
+                          src={getImageSrc(img, 100, 100)}
+                          alt={`product-${index}`}
+                          width="100"
+                          height="100"
+                          className="rounded object-fit-cover"
+                          onError={(e) => handleImageError(e, 100, 100)}
+                        />
                         <Button variant="danger" size="sm" className="position-absolute top-0 end-0" onClick={() => handleRemoveExistingImage(img)}>X</Button>
                       </div>
                     ))}
@@ -151,11 +210,11 @@ const ProductEditPage = () => {
 
                 <Form.Group className="mb-3">
                   <Form.Label>Tải lên hình ảnh mới</Form.Label>
-                  <Form.Control type="file" multiple onChange={handleImageChange} accept="image/*" />
+                  <Form.Control type="file" multiple onChange={handleImageChange} accept="image/*" disabled={saveLoading} />
                   <div className="d-flex flex-wrap gap-2 mt-2">
                     {newImageFiles.map((file, index) => (
                       <div key={index} className="position-relative">
-                        <img src={URL.createObjectURL(file)} alt={`preview-${index}`} width="100" height="100" className="rounded object-fit-cover"/>
+                        <img src={URL.createObjectURL(file)} alt={`preview-${index}`} width="100" height="100" className="rounded object-fit-cover" />
                         <Button variant="danger" size="sm" className="position-absolute top-0 end-0" onClick={() => handleRemoveNewImage(index)}>X</Button>
                       </div>
                     ))}
@@ -163,23 +222,36 @@ const ProductEditPage = () => {
                 </Form.Group>
 
                 <Form.Group className="mb-3">
-                    <Form.Check
-                        type="switch"
-                        id="is-active-switch"
-                        label="Đang hoạt động"
-                        name="isActive"
-                        checked={product.isActive}
-                        onChange={handleChange}
-                    />
+                  <Form.Check
+                    type="switch"
+                    id="is-active-switch"
+                    label="Đang hoạt động"
+                    name="isActive"
+                    checked={product.isActive}
+                    onChange={handleChange}
+                  />
                 </Form.Group>
 
-                <div className="d-flex justify-content-end">
-                  <Button variant="secondary" onClick={() => navigate('/products')} className="me-2">
-                    Hủy
+                <div className="d-flex justify-content-between">
+                  <Button variant="outline-secondary" onClick={() => navigate('/products')} disabled={saveLoading}>
+                    <i className="bi bi-arrow-left me-2"></i>
+                    Quay lại danh sách
                   </Button>
-                  <Button variant="primary" type="submit" disabled={updateLoading}>
-                    {updateLoading ? <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" /> : 'Lưu thay đổi'}
+                  <div>
+                    <Button variant="secondary" onClick={() => navigate('/products')} className="me-2" disabled={saveLoading}>
+                      Hủy
+                    </Button>
+                  <Button variant="primary" type="submit" disabled={saveLoading}>
+                    {saveLoading ? (
+                      <>
+                        <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" className="me-2" />
+                        Đang lưu...
+                      </>
+                    ) : (
+                      'Lưu thay đổi'
+                    )}
                   </Button>
+                  </div>
                 </div>
               </Form>
             </Card.Body>
