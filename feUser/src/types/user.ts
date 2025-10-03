@@ -46,3 +46,10 @@ export interface VerifyOtpRequest {
   email: string;
   otp: string;
 }
+
+/**
+ * Dữ liệu trả về từ API lấy điểm tích lũy.
+ */
+export interface UserLoyaltyPoints {
+  loyaltyPoints: number;
+}

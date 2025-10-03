@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { OrderStatusBadge } from '@/components/order-status-badge';
 import { CancelOrderDialog } from '@/components/cancel-order-dialog';
 import { ReturnOrderDialog } from '@/components/return-order-dialog';
+import { ConfirmReceivedDialog } from '@/components/confirm-received-dialog';
 import type { Order } from '@/types/order';
 import { Package, ChevronRight, Clock } from 'lucide-react';
 
@@ -78,6 +79,12 @@ export function OrderCard({ order, onOrderUpdate }: OrderCardProps) {
   const canCancelOrder = 
     order.status === 'pending' || 
     (order.status === 'processing' && ['confirmed', 'preparing'].includes(latestDetailedStatus || ''));
+
+  // Kiểm tra có thể xác nhận đã nhận hàng không:
+  // - Status chung phải là 'shipping'
+  // - Status chi tiết mới nhất phải là 'delivered'
+  const canConfirmReceived = 
+    order.status === 'shipping' && latestDetailedStatus === 'delivered';
 
   // Kiểm tra có thể yêu cầu trả hàng không:
   // - Status chung phải là 'shipping'
@@ -182,6 +189,15 @@ export function OrderCard({ order, onOrderUpdate }: OrderCardProps) {
               onSuccess={onOrderUpdate}
               variant="outline"
               className="h-9 px-3 text-sm"
+            />
+          )}
+
+          {canConfirmReceived && (
+            <ConfirmReceivedDialog 
+              orderId={order._id} 
+              onSuccess={onOrderUpdate}
+              variant="default"
+              className="h-9 px-3 text-sm bg-green-600 hover:bg-green-700"
             />
           )}
 

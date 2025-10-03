@@ -1,4 +1,3 @@
-import { Suspense } from 'react';
 import { SearchFilters, SearchResponse } from '@/types/product';
 import { SearchPageClient } from '@/app/search/search-page-client';
 import { productService } from '@/services/productService';
@@ -9,35 +8,6 @@ import { productService } from '@/services/productService';
  * giúp tải cực nhanh cho lần truy cập đầu tiên
  */
 export const revalidate = 3600;
-
-function SearchPageSkeleton() {
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-gradient-to-r from-green-600 to-green-700 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="text-center">
-            <h1 className="text-4xl font-bold mb-4">
-              Tìm kiếm sản phẩm
-            </h1>
-            <p className="text-xl text-green-100">
-              Đang tải...
-            </p>
-          </div>
-        </div>
-      </div>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="animate-pulse space-y-4">
-          <div className="h-64 bg-gray-200 rounded-xl"></div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="h-96 bg-gray-200 rounded-xl"></div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 /**
  * Server Component - Chỉ fetch dữ liệu mặc định (trang 1, không có filter)
@@ -85,11 +55,9 @@ export default async function SearchPage() {
 
   // 2. Truyền dữ liệu và filter ban đầu xuống cho Client Component
   return (
-    <Suspense fallback={<SearchPageSkeleton />}>
-      <SearchPageClient 
-        initialData={initialData} 
-        initialFilters={initialFilters}
-      />
-    </Suspense>
+    <SearchPageClient
+      initialData={initialData}
+      initialFilters={initialFilters}
+    />
   );
 }

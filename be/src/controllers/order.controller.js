@@ -175,6 +175,19 @@ export const getPendingReturns = async (req, res) => {
   });
 };
 
+export const confirmOrderReceived = async (req, res) => {
+  const { orderId } = req.params;
+  const userId = req.user._id;
+
+  const updatedOrder = await OrderService.confirmOrderReceived(userId, orderId);
+
+  res.json({
+    success: true,
+    message: "Xác nhận đã nhận hàng thành công. Cảm ơn bạn đã mua sắm!",
+    data: updatedOrder,
+  });
+};
+
 export const cancelOrderByUser = async (req, res) => {
   const { orderId } = req.params;
   const { reason } = req.body;

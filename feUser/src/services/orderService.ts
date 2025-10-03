@@ -69,6 +69,13 @@ class OrderService {
     });
     return response;
   }
+
+  async confirmReceived(accessToken: string, orderId: string): Promise<ApiResponse<Order>> {
+    const response: ApiResponse<Order> = await apiFetch(`/orders/my/${orderId}/confirm-received`, accessToken, {
+      method: 'PATCH'
+    });
+    return response;
+  }
 }
 
 export const orderService = new OrderService();
