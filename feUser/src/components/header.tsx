@@ -25,7 +25,7 @@ const navigation = [
   { name: "Trang Chủ", href: "/" },
   { name: "Giới Thiệu", href: "/about" },
   { name: "Sản Phẩm", href: "/search" },
-  { name: "Liên Hệ", href: "/contact" },
+  { name: "Liên Hệ", href: "/lien-he" },
 ];
 
 export default function Header() {
@@ -126,12 +126,6 @@ export default function Header() {
                       <span>Sản phẩm yêu thích</span>
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/settings">
-                      <Settings className="mr-2 h-4 w-4" />
-                      <span>Cài đặt</span>
-                    </Link>
-                  </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout}>
                     <LogOut className="mr-2 h-4 w-4" />
@@ -183,12 +177,6 @@ export default function Header() {
                           <Button variant="ghost" className="w-full justify-start" size="sm">
                             <Package className="mr-2 h-4 w-4" />
                             Đơn hàng của tôi
-                          </Button>
-                        </Link>
-                        <Link href="/settings" onClick={() => setIsOpen(false)}>
-                          <Button variant="ghost" className="w-full justify-start" size="sm">
-                            <Settings className="mr-2 h-4 w-4" />
-                            Cài đặt
                           </Button>
                         </Link>
                         <Link href="/yeu-thich" onClick={() => setIsOpen(false)}>
