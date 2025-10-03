@@ -39,6 +39,25 @@ export interface Review {
   updatedAt: string;
 }
 
+export interface UserReview {
+  _id: string;
+  userId: string;
+  productId: {
+    _id: string;
+    name: string;
+    images: string[];
+  };
+  orderId: string;
+  rating: number;
+  comment: string;
+  isApproved: boolean;
+  editCount: number;
+  voucherGenerated: boolean;
+  voucherCode?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface ReviewsResponse {
   success: boolean;
   message: string;
@@ -135,7 +154,7 @@ class ReviewService {
 
   async getUserReviews(accessToken: string): Promise<ReviewResponse> {
     try {
-      const result = await apiFetch(`${this.baseUrl}/user`, accessToken, {
+      const result = await apiFetch(`${this.baseUrl}/me`, accessToken, {
         method: "GET",
       });
 

@@ -7,7 +7,7 @@ import { useSession, signOut } from "next-auth/react";
 import { useCart } from "@/contexts/cart-context";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, ShoppingCart, Heart, Search, User, LogOut, Settings, Package, Eye } from "lucide-react";
+import { Menu, ShoppingCart, Heart, Search, User, LogOut, Settings, Package, Eye, MessageSquare } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
@@ -136,6 +136,12 @@ export default function Header() {
                       <span>Lịch sử xem</span>
                     </Link>
                   </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/danh-gia-cua-toi">
+                      <MessageSquare className="mr-2 h-4 w-4" />
+                      <span>Đánh giá của tôi</span>
+                    </Link>
+                  </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout}>
                     <LogOut className="mr-2 h-4 w-4" />
@@ -199,6 +205,12 @@ export default function Header() {
                           <Button variant="ghost" className="w-full justify-start" size="sm">
                             <Eye className="mr-2 h-4 w-4" />
                             Lịch sử xem
+                          </Button>
+                        </Link>
+                        <Link href="/danh-gia-cua-toi" onClick={() => setIsOpen(false)}>
+                          <Button variant="ghost" className="w-full justify-start" size="sm">
+                            <MessageSquare className="mr-2 h-4 w-4" />
+                            Đánh giá của tôi
                           </Button>
                         </Link>
                         <Button
