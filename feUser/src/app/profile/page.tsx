@@ -243,11 +243,17 @@ export default function ProfilePage() {
             <div className="relative">
               <Avatar className="w-24 h-24">
                 {(() => {
+                  // Xử lý avatar URL: nếu đã là HTTP thì giữ nguyên, nếu không thì concat với base URL
                   const avatarUrl = user.avatar
-                    ? `${process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api", "") || "http://localhost:5000"}${user.avatar}?t=${Date.now()}`
+                    ? user.avatar.startsWith('http')
+                      ? user.avatar
+                      : `${process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api", "") || "http://localhost:5000"}${user.avatar}`
                     : "";
-                  console.log("Avatar URL:", avatarUrl);
-                  return <AvatarImage src={avatarUrl} alt={user.name} className="object-cover" />;
+                  
+                  // Thêm timestamp để tránh cache
+                  const finalAvatarUrl = avatarUrl ? `${avatarUrl}?t=${Date.now()}` : "";
+                  console.log("Avatar URL:", finalAvatarUrl);
+                  return <AvatarImage src={finalAvatarUrl} alt={user.name} className="object-cover" />;
                 })()}
                 <AvatarFallback className="text-xl font-semibold bg-green-100 text-green-700">
                   {user.name?.charAt(0).toUpperCase() || "U"}

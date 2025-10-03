@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Container, Row, Col, Card, Table, Button, Form, Badge, InputGroup, Modal } from 'react-bootstrap'
 import { useNavigate } from 'react-router-dom'
-import { API_URL } from '../../services/apiService'
+
 import productService from '../../services/productService'
 import { useDispatch, useSelector } from 'react-redux'
 import { fetchProducts, createProduct, updateProduct, deleteProduct } from '../../redux/slices/productsSlice'
@@ -10,6 +10,7 @@ import Pagination from '../../components/common/Pagination'
 import ConfirmModal from '../../components/common/ConfirmModal'
 import { toast } from 'react-toastify'
 import moment from 'moment'
+import { getImageSrc, handleImageError } from '../../utils/imageUtils'
 
 const ProductsPage = () => {
   const dispatch = useDispatch()
@@ -91,10 +92,10 @@ const ProductsPage = () => {
 
   const handleSaveProduct = async () => {
     try {
-      let uploadedImageUrls = [];
+      let fileUrls = [];
       if (newImageFiles.length > 0) {
         const uploadRes = await productService.uploadImages(newImageFiles);
-        uploadedImageUrls = uploadRes.data.filePaths;
+        fileUrls = uploadRes.data.filePaths;
       }
       
       const productData = {
@@ -102,11 +103,11 @@ const ProductsPage = () => {
         price: parseFloat(productForm.price),
         discount: productForm.discount ? parseFloat(productForm.discount) : 0,
         stock: parseInt(productForm.stock),
-        images: uploadedImageUrls,
+        images: fileUrls,
       }
 
       if (isEditing) {
-        const finalImages = [...(selectedProduct.images || []), ...uploadedImageUrls];
+        const finalImages = [...(selectedProduct.images || []), ...fileUrls];
         const finalProductData = { ...productData, images: finalImages };
         await dispatch(updateProduct({
           productId: selectedProduct._id,
@@ -247,10 +248,11 @@ const ProductsPage = () => {
                       <td>
                         <div className="d-flex align-items-center">
                           <img
-                            src={product.images?.[0]?.startsWith('/uploads') ? `${API_URL}${product.images[0]}` : product.images?.[0] || '/placeholder.jpg'}
+                            src={getImageSrc(product.images?.[0], 50, 50)}
                             alt={product.name}
                             className="rounded me-3"
                             style={{ width: '50px', height: '50px', objectFit: 'cover' }}
+                            onError={(e) => handleImageError(e, 50, 50)}
                           />
                           <div>
                             <div className="fw-semibold">{product.name}</div>

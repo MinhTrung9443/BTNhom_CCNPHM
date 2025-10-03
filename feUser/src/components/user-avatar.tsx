@@ -41,8 +41,13 @@ function UserAvatarComponent({ size = "md", className = "", session: sessionProp
     lg: "h-12 w-12",
   }[size];
 
+  // Xử lý avatar URL: nếu đã là HTTP thì giữ nguyên, nếu không thì concat với base URL
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api", "") || "http://localhost:5000";
-  const avatarUrl = user.avatar ? `${baseUrl}${user.avatar}?t=${avatarTimestamp}` : "";
+  const avatarUrl = user.avatar
+    ? user.avatar.startsWith('http')
+      ? `${user.avatar}?t=${avatarTimestamp}`
+      : `${baseUrl}${user.avatar}?t=${avatarTimestamp}`
+    : "";
 
   // ✅ Nếu có avatar URL, preload ảnh
   useEffect(() => {

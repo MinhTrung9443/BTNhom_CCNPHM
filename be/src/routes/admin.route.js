@@ -10,6 +10,7 @@ import {
 } from "../controllers/notification.controller.js";
 import { categoryController } from "../controllers/category.controller.js";
 import { voucherController } from "../controllers/voucher.controller.js";
+import upload from "../middlewares/upload.js";
 import { protect, restrictTo } from "../middlewares/auth.js";
 import { validate } from "../middlewares/validate.js";
 import { getOrderById, updateOrderStatus } from "../schemas/order.schema.js";
@@ -38,10 +39,10 @@ router.patch("/users/:userId/role", adminController.updateUserRole);
 router.patch("/users/:userId/toggle-status", adminController.toggleUserStatus);
 
 // === PRODUCT MANAGEMENT ROUTES ===
-router.post("/products", productController.createProduct);
+router.post("/products", upload.array("images", 10), productController.createProduct);
 router.get("/products", adminController.getAllProductsForAdmin);
 router.delete("/products/:id", productController.deleteProduct);
-router.put("/products/:id", productController.updateProduct);
+router.put("/products/:id", upload.array("images", 10), productController.updateProduct);
 
 // // === COUPON MANAGEMENT ROUTES ===
 
@@ -98,6 +99,8 @@ router.delete("/notifications/:id", deleteNotificationHandler);
 
 // === ORDER MANAGEMENT ROUTES ===
 router.get("/orders", orderController.getAllOrdersByAdmin);
+router.get("/orders/cancellation-requests", adminController.getOrdersWithCancellationRequests);
+
 router.get("/users/:userId/orders", orderController.getUserOrdersByAdmin);
 router.get(
   "/orders/:orderId",
@@ -111,5 +114,6 @@ router.patch(
   validate(updateOrderStatus),
   orderController.updateOrderStatusByAdmin
 );
+router.patch("/orders/:orderId/approve-cancellation", adminController.approveCancellationRequest);
 
 export default router;

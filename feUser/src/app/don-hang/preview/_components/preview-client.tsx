@@ -351,6 +351,7 @@ export default function PreviewClient({ accessToken }: PreviewClientProps) {
                       src={item.productId.images[0]} 
                       alt={item.productId.name} 
                       fill
+                      unoptimized
                       sizes="80px"
                       style={{ objectFit: 'cover' }}
                     />

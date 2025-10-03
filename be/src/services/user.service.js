@@ -15,7 +15,7 @@ const updateUserProfile = async (userId, updateData, file) => {
   });
 
   if (file) {
-    updates.avatar = `/${file.path.replace(/\\/g, "/")}`;
+    updates.avatar = `${file.path.replace(/\\/g, "/")}`;
   }
 
   if (Object.keys(updates).length === 0) {

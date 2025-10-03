@@ -12,7 +12,11 @@ export type OrderStatus =
   | 'delivered'
   | 'completed'
   | 'cancelled'
+  | 'cancellation_requested'
   | 'refunded';
+
+// API filter status (cho API query params)
+export type ApiOrderStatus = 'pending' | 'processing' | 'shipping' | 'completed' | 'cancelled' | 'return_refund';
 
 export type PaymentMethod = 'COD' | 'VNPAY' | 'BANK';
 export type PaymentStatus = 'pending' | 'completed' | 'failed';
@@ -89,6 +93,11 @@ export interface Order {
   preparingAt?: string;
   shippingAt?: string;
   deliveredAt?: string;
+  cancelledAt?: string;
+  cancelledBy?: 'user' | 'admin' | 'system';
+  cancelledReason?: string;
+  cancellationRequestedAt?: string;
+  cancellationRequestReason?: string;
   __v: number;
 }
 
@@ -109,7 +118,7 @@ export interface OrdersResponse {
 export interface GetOrdersParams {
   page?: number;
   limit?: number;
-  status?: OrderStatus;
+  status?: ApiOrderStatus;
   search?: string;
 }
 

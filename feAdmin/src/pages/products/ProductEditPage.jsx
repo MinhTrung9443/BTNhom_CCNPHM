@@ -4,8 +4,9 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Container, Row, Col, Card, Form, Button, Spinner, Alert } from 'react-bootstrap';
 import { fetchProducts, updateProduct } from '../../redux/slices/productsSlice';
 import productService from '../../services/productService';
-import { API_URL } from '../../services/apiService';
+
 import LoadingSpinner from '../../components/common/LoadingSpinner';
+import { getImageSrc, handleImageError } from '../../utils/imageUtils';
 
 const ProductEditPage = () => {
   const { productId } = useParams();
@@ -61,13 +62,13 @@ const ProductEditPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      let uploadedImageUrls = [];
+      let fileUrls = [];
       if (newImageFiles.length > 0) {
         const uploadRes = await productService.uploadImages(newImageFiles);
-        uploadedImageUrls = uploadRes.data.filePaths;
+        fileUrls = uploadRes.data.filePaths;
       }
 
-      const finalImages = [...product.images, ...uploadedImageUrls];
+      const finalImages = [...product.images, ...fileUrls];
       const { _id, ...productData } = { ...product, images: finalImages };
 
       const resultAction = await dispatch(updateProduct({ productId, productData }));
@@ -142,7 +143,14 @@ const ProductEditPage = () => {
                   <div className="d-flex flex-wrap gap-2">
                     {product.images.map((img, index) => (
                       <div key={index} className="position-relative">
-                        <img src={img.startsWith('/uploads') ? `${API_URL}${img}` : img} alt={`product-${index}`} width="100" height="100" className="rounded object-fit-cover"/>
+                        <img 
+                          src={getImageSrc(img, 100, 100)} 
+                          alt={`product-${index}`} 
+                          width="100" 
+                          height="100" 
+                          className="rounded object-fit-cover"
+                          onError={(e) => handleImageError(e, 100, 100)}
+                        />
                         <Button variant="danger" size="sm" className="position-absolute top-0 end-0" onClick={() => handleRemoveExistingImage(img)}>X</Button>
                       </div>
                     ))}

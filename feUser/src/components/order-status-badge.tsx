@@ -53,6 +53,11 @@ const statusConfig: Record<OrderStatus, { label: string; variant: string; classN
     variant: 'destructive',
     className: 'bg-red-100 text-red-800 hover:bg-red-200',
   },
+  cancellation_requested: {
+    label: 'Chờ xác nhận hủy',
+    variant: 'secondary',
+    className: 'bg-amber-100 text-amber-800 hover:bg-amber-200',
+  },
   refunded: {
     label: 'Đã hoàn tiền',
     variant: 'secondary',

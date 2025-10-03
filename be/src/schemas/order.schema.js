@@ -93,3 +93,20 @@ export const updateOrderStatus = {
     reason: Joi.string().optional(),
   }),
 };
+
+export const cancelOrder = {
+  body: Joi.object({
+    reason: Joi.string().trim().max(500).optional().messages({
+      'string.base': 'Lý do hủy phải là một chuỗi.',
+      'string.max': 'Lý do hủy không được vượt quá 500 ký tự.',
+    }),
+  }),
+  params: Joi.object({
+    orderId: Joi.string().hex().length(24).required().messages({
+      'string.base': 'ID đơn hàng phải là một chuỗi.',
+      'string.hex': 'ID đơn hàng phải là một chuỗi hex.',
+      'string.length': 'ID đơn hàng phải có độ dài 24 ký tự.',
+      'any.required': 'ID đơn hàng là bắt buộc.',
+    }),
+  }),
+};

@@ -221,7 +221,15 @@ export default function ChatWidget() {
                       </div>
                       {msg.senderRole === "user" && (
                         <Avatar className="h-7 w-7 flex-shrink-0 order-1">
-                          <AvatarImage src={session?.user?.avatar || ""} />
+                          <AvatarImage 
+                            src={
+                              session?.user?.avatar
+                                ? session.user.avatar.startsWith('http')
+                                  ? session.user.avatar
+                                  : `${process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api", "") || "http://localhost:5000"}${session.user.avatar}`
+                                : ""
+                            } 
+                          />
                           <AvatarFallback className="bg-green-600 text-white text-xs font-medium">
                             {session?.user?.name?.charAt(0).toUpperCase() || "B"}
                           </AvatarFallback>

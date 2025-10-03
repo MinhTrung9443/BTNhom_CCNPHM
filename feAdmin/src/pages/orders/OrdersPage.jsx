@@ -96,6 +96,13 @@ const OrdersPage = () => {
     <Container fluid>
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h2 className="fw-bold">Quản lý đơn hàng</h2>
+        <Link 
+          to="/orders/cancellation-requests" 
+          className="btn btn-warning"
+        >
+          <i className="bi bi-exclamation-triangle me-2"></i>
+          Yêu cầu hủy đơn hàng
+        </Link>
       </div>
 
       {/* Filters */}

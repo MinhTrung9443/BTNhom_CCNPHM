@@ -3,7 +3,7 @@
  * Trang chi tiết đơn hàng được render phía máy chủ
  */
 import { Suspense } from "react";
-import { notFound, redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { auth } from "@/auth";
@@ -12,7 +12,7 @@ import { OrderStatusBadge } from "@/components/order-status-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, MapPin, CreditCard, Package, CheckCircle2, Clock, AlertTriangle, Star } from "lucide-react";
+import { ArrowLeft, MapPin, CreditCard, Package, CheckCircle2, Clock, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { OrderDetailClient } from "./_components/order-detail-client";
 import { ReviewButton } from "@/components/review-button";
@@ -81,7 +81,12 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
           <h1 className="text-3xl font-bold mb-2">Đơn hàng #{order._id.slice(-8).toUpperCase()}</h1>
           <p className="text-muted-foreground">Đặt hàng lúc {formatDate(order.createdAt)}</p>
         </div>
-        <OrderStatusBadge status={order.status} />
+        <div className="flex items-center gap-3">
+          <OrderStatusBadge status={order.status} />
+          <Suspense fallback={null}>
+            <OrderDetailClient orderId={order._id} canCancel={order.canCancel} orderStatus={order.status} />
+          </Suspense>
+        </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
@@ -133,7 +138,7 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
                   <div key={index}>
                     <div className="flex gap-4">
                       <div className="relative w-24 h-24 flex-shrink-0 rounded-md overflow-hidden bg-gray-100">
-                        <Image src={item.productImage} alt={item.productName} fill className="object-cover" />
+                        <Image src={item.productImage} alt={item.productName} fill unoptimized className="object-cover" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <h4 className="font-medium mb-1">{item.productName}</h4>
@@ -256,9 +261,6 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
               </div>
             </CardContent>
           </Card>
-
-          {/* Actions - Client Component */}
-          <OrderDetailClient order={order} accessToken={session.user.accessToken} />
         </div>
       </div>
     </div>

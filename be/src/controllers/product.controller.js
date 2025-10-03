@@ -76,7 +76,11 @@ export const productController = {
 
   async createProduct(req, res, next) {
     try {
-      const data = await productService.createProduct(req.body);
+      const productData = { ...req.body };
+      if (req.files) {
+        productData.images = req.files.map(file => file.path);
+      }
+      const data = await productService.createProduct(productData);
       res.status(201).json({ success: true, message: "Tạo sản phẩm thành công", data });
     } catch (error) {
       next(error);
@@ -86,7 +90,22 @@ export const productController = {
   async updateProduct(req, res, next) {
     try {
       const { id } = req.params;
-      const data = await productService.updateProduct(id, req.body);
+      const productData = { ...req.body };
+
+      // Ensure `images` from the body is an array
+      let finalImages = [];
+      if (productData.images) {
+        finalImages = Array.isArray(productData.images) ? productData.images : [productData.images];
+      }
+
+      // Add newly uploaded image URLs
+      if (req.files && req.files.length > 0) {
+        const newImageUrls = req.files.map(file => file.path);
+        finalImages.push(...newImageUrls);
+      }
+
+      productData.images = finalImages;
+      const data = await productService.updateProduct(id, productData);
       res.status(200).json({ success: true, message: "Cập nhật sản phẩm thành công", data });
     } catch (error) {
       next(error);

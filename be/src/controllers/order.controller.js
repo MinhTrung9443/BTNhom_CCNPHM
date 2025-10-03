@@ -132,3 +132,17 @@ export const getUserOrderStats = async (req, res, next) => {
     data: stats
   });
 };
+
+export const cancelOrderByUser = async (req, res) => {
+  const { orderId } = req.params;
+  const { reason } = req.body;
+  const userId = req.user._id;
+
+  const updatedOrder = await OrderService.cancelOrderByUser(userId, orderId, reason);
+
+  res.json({
+    success: true,
+    message: "Yêu cầu hủy đơn hàng của bạn đã được xử lý.",
+    data: updatedOrder,
+  });
+};
