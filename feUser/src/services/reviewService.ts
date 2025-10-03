@@ -46,16 +46,37 @@ export interface UserReview {
     _id: string;
     name: string;
     images: string[];
+    slug?: string;
   };
-  orderId: string;
+  orderId: {
+    _id: string;
+    orderNumber?: string;
+  };
   rating: number;
   comment: string;
   isApproved: boolean;
   editCount: number;
   voucherGenerated: boolean;
   voucherCode?: string;
+  isActive: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface UserReviewsResponse {
+  success: boolean;
+  message: string;
+  data: {
+    reviews: UserReview[];
+    pagination: {
+      currentPage: number;
+      totalPages: number;
+      totalReviews: number;
+      hasNext: boolean;
+      hasPrev: boolean;
+      limit: number;
+    };
+  };
 }
 
 export interface ReviewsResponse {
@@ -152,22 +173,33 @@ class ReviewService {
     }
   }
 
-  async getUserReviews(accessToken: string): Promise<ReviewResponse> {
+  async getUserReviews(page: number = 1, limit: number = 10, accessToken: string): Promise<UserReviewsResponse> {
     try {
-      const result = await apiFetch(`${this.baseUrl}/me`, accessToken, {
+      const result = (await apiFetch(`${this.baseUrl}/me?page=${page}&limit=${limit}`, accessToken, {
         method: "GET",
-      });
+      })) as { success: boolean; message: string; data: any };
 
       return {
         success: true,
-        message: "Lấy đánh giá của user thành công",
-        data: result,
+        message: "Lấy danh sách đánh giá thành công",
+        data: result.data,
       };
     } catch (error: any) {
       console.error("Get user reviews error:", error);
       return {
         success: false,
-        message: error?.response?.data?.message || "Không thể kết nối đến máy chủ",
+        message: error?.response?.data?.message || "Không thể lấy danh sách đánh giá",
+        data: {
+          reviews: [],
+          pagination: {
+            currentPage: 1,
+            totalPages: 0,
+            totalReviews: 0,
+            hasNext: false,
+            hasPrev: false,
+            limit: 10,
+          },
+        },
       };
     }
   }

@@ -16,6 +16,14 @@ export default function MyReviewsPage() {
   const router = useRouter();
   const [reviews, setReviews] = useState<UserReview[]>([]);
   const [loading, setLoading] = useState(true);
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 0,
+    totalReviews: 0,
+    hasNext: false,
+    hasPrev: false,
+    limit: 10,
+  });
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -25,17 +33,16 @@ export default function MyReviewsPage() {
     }
   }, [session, router]);
 
-  const fetchUserReviews = async () => {
+  const fetchUserReviews = async (page: number = 1) => {
     if (!session?.user?.accessToken) return;
 
     setLoading(true);
     try {
-      const response = await reviewService.getUserReviews(session.user.accessToken);
+      const response = await reviewService.getUserReviews(page, pagination.limit, session.user.accessToken);
 
       if (response.success && response.data) {
-        // Backend trả về { success: true, reviews: [...] }
-        // Service return data chứa toàn bộ response
         setReviews(response.data.reviews || []);
+        setPagination(response.data.pagination);
       } else {
         toast.error(response.message || "Không thể tải danh sách đánh giá");
       }
@@ -47,9 +54,15 @@ export default function MyReviewsPage() {
     }
   };
 
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= pagination.totalPages) {
+      fetchUserReviews(newPage);
+    }
+  };
+
   useEffect(() => {
     if (session?.user?.accessToken) {
-      fetchUserReviews();
+      fetchUserReviews(1);
     }
   }, [session?.user?.accessToken]);
 
@@ -107,7 +120,7 @@ export default function MyReviewsPage() {
           <MessageSquare className="w-8 h-8 text-green-600" />
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Đánh giá của tôi</h1>
-            <p className="text-gray-600">{reviews.length} đánh giá đã đăng</p>
+            <p className="text-gray-600">{pagination.totalReviews} đánh giá đã đăng</p>
           </div>
         </div>
 
@@ -138,7 +151,7 @@ export default function MyReviewsPage() {
                     <div className="flex-1">
                       {/* Product Name */}
                       <h3 className="font-semibold text-gray-900 mb-2 hover:text-green-600">
-                        <Link href={`/chi-tiet-san-pham/${review.productId._id}`}>{review.productId.name}</Link>
+                        <Link href={`/chi-tiet-san-pham/${review.productId.slug || review.productId._id}`}>{review.productId.name}</Link>
                       </h3>
 
                       {/* Rating */}
@@ -186,6 +199,51 @@ export default function MyReviewsPage() {
                 </CardContent>
               </Card>
             ))}
+
+            {/* Pagination */}
+            {pagination.totalPages > 1 && (
+              <div className="flex justify-center items-center gap-2 mt-8">
+                <Button onClick={() => handlePageChange(pagination.currentPage - 1)} disabled={!pagination.hasPrev} variant="outline" size="sm">
+                  Trước
+                </Button>
+
+                <div className="flex items-center gap-2">
+                  {[...Array(Math.min(5, pagination.totalPages))].map((_, i) => {
+                    const startPage = Math.max(1, pagination.currentPage - 2);
+                    const page = startPage + i;
+
+                    if (page > pagination.totalPages) return null;
+
+                    const isActive = page === pagination.currentPage;
+
+                    return (
+                      <Button
+                        key={page}
+                        onClick={() => handlePageChange(page)}
+                        variant={isActive ? "default" : "outline"}
+                        size="sm"
+                        className={isActive ? "bg-green-600 hover:bg-green-700" : ""}
+                      >
+                        {page}
+                      </Button>
+                    );
+                  })}
+
+                  {pagination.totalPages > 5 && pagination.currentPage < pagination.totalPages - 2 && (
+                    <>
+                      <span className="px-2">...</span>
+                      <Button onClick={() => handlePageChange(pagination.totalPages)} variant="outline" size="sm">
+                        {pagination.totalPages}
+                      </Button>
+                    </>
+                  )}
+                </div>
+
+                <Button onClick={() => handlePageChange(pagination.currentPage + 1)} disabled={!pagination.hasNext} variant="outline" size="sm">
+                  Sau
+                </Button>
+              </div>
+            )}
           </div>
         )}
       </div>

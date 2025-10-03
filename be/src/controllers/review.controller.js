@@ -31,8 +31,16 @@ const getProductReviews = async (req, res, next) => {
 
 const getUserReviews = async (req, res, next) => {
   const userId = req.user._id;
-  const reviews = await reviewService.getUserReviews(userId);
-  res.status(200).json({ success: true, reviews });
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+
+  const result = await reviewService.getUserReviews(userId, page, limit);
+
+  res.status(200).json({
+    success: true,
+    message: "Lấy danh sách đánh giá thành công",
+    data: result,
+  });
 };
 
 const updateReview = async (req, res, next) => {

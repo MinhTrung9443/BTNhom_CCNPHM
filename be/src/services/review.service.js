@@ -119,8 +119,36 @@ const getProductReviews = async (productId, page = 1, limit = 10) => {
   };
 };
 
-const getUserReviews = async (userId) => {
-  return Review.find({ userId }).populate("productId", "name images").sort({ createdAt: -1 });
+const getUserReviews = async (userId, page = 1, limit = 10) => {
+  const skip = (page - 1) * limit;
+
+  // Get reviews with pagination
+  const reviews = await Review.find({ userId, isActive: true })
+    .populate("productId", "name images slug")
+    .populate("orderId", "orderNumber")
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limit);
+
+  // Get total count
+  const totalReviews = await Review.countDocuments({ userId, isActive: true });
+
+  // Pagination info
+  const totalPages = Math.ceil(totalReviews / limit);
+  const hasNext = page < totalPages;
+  const hasPrev = page > 1;
+
+  return {
+    reviews,
+    pagination: {
+      currentPage: page,
+      totalPages,
+      totalReviews,
+      hasNext,
+      hasPrev,
+      limit,
+    },
+  };
 };
 
 const updateReview = async (reviewId, userId, rating, comment) => {
