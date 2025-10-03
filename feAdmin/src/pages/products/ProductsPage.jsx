@@ -1,17 +1,16 @@
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Container, Row, Col, Card, Table, Button, Form, Badge, InputGroup, Modal } from 'react-bootstrap'
 import { useNavigate } from 'react-router-dom'
-
 import productService from '../../services/productService'
 import { useDispatch, useSelector } from 'react-redux'
-import { fetchProducts, createProduct, updateProduct, deleteProduct } from '../../redux/slices/productsSlice'
+import { fetchProducts, deleteProduct } from '../../redux/slices/productsSlice'
 import LoadingSpinner from '../../components/common/LoadingSpinner'
 import Pagination from '../../components/common/Pagination'
 import ConfirmModal from '../../components/common/ConfirmModal'
 import { toast } from 'react-toastify'
 import moment from 'moment'
 import { getImageSrc, handleImageError } from '../../utils/imageUtils'
-
+import React from 'react'
 const ProductsPage = () => {
   const dispatch = useDispatch()
   const { products, pagination, loading } = useSelector((state) => state.products)
@@ -41,6 +40,7 @@ const ProductsPage = () => {
     stock: '',
     categoryId: '',
     images: [],
+    isActive: true, // Default to active
   })
 
   useEffect(() => {
@@ -68,6 +68,7 @@ const ProductsPage = () => {
       stock: '',
       categoryId: '',
       images: [],
+      isActive: true, // Default to active
     })
     setNewImageFiles([]);
     setIsEditing(false)
@@ -92,36 +93,49 @@ const ProductsPage = () => {
 
   const handleSaveProduct = async () => {
     try {
-      let fileUrls = [];
-      if (newImageFiles.length > 0) {
-        const uploadRes = await productService.uploadImages(newImageFiles);
-        fileUrls = uploadRes.data.filePaths;
-      }
-      
-      const productData = {
-        ...productForm,
-        price: parseFloat(productForm.price),
-        discount: productForm.discount ? parseFloat(productForm.discount) : 0,
-        stock: parseInt(productForm.stock),
-        images: fileUrls,
-      }
+      // Create FormData for multipart/form-data request
+      const formData = new FormData();
+
+      // Add product fields
+      formData.append('name', productForm.name);
+      formData.append('description', productForm.description || '');
+      formData.append('price', parseFloat(productForm.price));
+      formData.append('discount', productForm.discount ? parseFloat(productForm.discount) : 0);
+      formData.append('stock', parseInt(productForm.stock));
+      formData.append('categoryId', productForm.categoryId);
+      formData.append('isActive', productForm.isActive ? 'true' : 'false');
 
       if (isEditing) {
-        const finalImages = [...(selectedProduct.images || []), ...fileUrls];
-        const finalProductData = { ...productData, images: finalImages };
-        await dispatch(updateProduct({
-          productId: selectedProduct._id,
-          productData: finalProductData
-        })).unwrap()
+        // Add existing images as text fields
+        (selectedProduct.images || []).forEach(imageUrl => {
+          formData.append('images', imageUrl);
+        });
+
+        // Add new image files
+        newImageFiles.forEach(file => {
+          formData.append('images', file);
+        });
+
+        // Call productService directly with FormData
+        await productService.updateProduct(selectedProduct._id, formData);
         toast.success('Cập nhật sản phẩm thành công')
       } else {
-        await dispatch(createProduct(productData)).unwrap()
+        // Add new image files for creation
+        newImageFiles.forEach(file => {
+          formData.append('images', file);
+        });
+
+        // Call productService directly with FormData
+        await productService.createProduct(formData);
         toast.success('Tạo sản phẩm thành công')
       }
 
       setShowProductModal(false)
       setSelectedProduct(null)
       setNewImageFiles([])
+
+      // Refresh the products list
+      dispatch(fetchProducts(filters))
     } catch (error) {
       toast.error(error.message || 'Có lỗi xảy ra')
     }
@@ -439,14 +453,24 @@ const ProductsPage = () => {
               <div className="d-flex flex-wrap gap-2 mt-2">
                 {newImageFiles.map((file, index) => (
                   <div key={index} className="position-relative">
-                    <img src={URL.createObjectURL(file)} alt={`preview-${index}`} width="80" height="80" className="rounded object-fit-cover"/>
-                    <Button variant="danger" size="sm" className="position-absolute top-0 end-0" style={{lineHeight: 0.5, padding: '0.2rem 0.4rem'}} onClick={() => setNewImageFiles(prev => prev.filter((_, i) => i !== index))}>&times;</Button>
+                    <img src={URL.createObjectURL(file)} alt={`preview-${index}`} width="80" height="80" className="rounded object-fit-cover" />
+                    <Button variant="danger" size="sm" className="position-absolute top-0 end-0" style={{ lineHeight: 0.5, padding: '0.2rem 0.4rem' }} onClick={() => setNewImageFiles(prev => prev.filter((_, i) => i !== index))}>&times;</Button>
                   </div>
                 ))}
               </div>
               <Form.Text className="text-muted">
                 Chọn nhiều hình ảnh cho sản phẩm (JPG, PNG)
               </Form.Text>
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Check
+                type="switch"
+                id="is-active-switch"
+                label="Đang hoạt động"
+                checked={productForm.isActive}
+                onChange={(e) => handleProductFormChange('isActive', e.target.checked)}
+              />
             </Form.Group>
           </Form>
         </Modal.Body>

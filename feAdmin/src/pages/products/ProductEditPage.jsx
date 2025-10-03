@@ -1,25 +1,24 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
-import { Container, Row, Col, Card, Form, Button, Spinner, Alert } from 'react-bootstrap';
-import { fetchProducts, updateProduct } from '../../redux/slices/productsSlice';
+import { useSelector } from 'react-redux';
+import { Container, Row, Col, Card, Form, Button, Alert } from 'react-bootstrap';
 import productService from '../../services/productService';
-
+import React from 'react';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { getImageSrc, handleImageError } from '../../utils/imageUtils';
+import { toast } from 'react-toastify';
 
 const ProductEditPage = () => {
   const { productId } = useParams();
   const navigate = useNavigate();
-  const dispatch = useDispatch();
 
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { categories } = useSelector(state => state.categories);
   const [newImageFiles, setNewImageFiles] = useState([]);
-  
-  const { loading: updateLoading, error: updateError } = useSelector(state => state.products);
+
+
 
   useEffect(() => {
     const loadProduct = async () => {
@@ -62,21 +61,38 @@ const ProductEditPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      let fileUrls = [];
-      if (newImageFiles.length > 0) {
-        const uploadRes = await productService.uploadImages(newImageFiles);
-        fileUrls = uploadRes.data.filePaths;
-      }
+      // Create FormData for multipart/form-data request
+      const formData = new FormData();
 
-      const finalImages = [...product.images, ...fileUrls];
-      const { _id, ...productData } = { ...product, images: finalImages };
+      // Add product fields
+      formData.append('name', product.name);
+      formData.append('description', product.description || '');
+      formData.append('price', product.price);
+      formData.append('discount', product.discount || 0);
+      formData.append('stock', product.stock);
+      formData.append('categoryId', product.categoryId?._id || product.categoryId);
+      formData.append('isActive', product.isActive ? 'true' : 'false');
 
-      const resultAction = await dispatch(updateProduct({ productId, productData }));
-      if (updateProduct.fulfilled.match(resultAction)) {
-        navigate('/products');
-      }
+      // Add existing images as text fields
+      product.images.forEach(imageUrl => {
+        formData.append('images', imageUrl);
+      });
+
+      // Add new image files
+      newImageFiles.forEach(file => {
+        formData.append('images', file);
+      });
+
+      // Call productService directly with FormData
+      await productService.updateProduct(productId, formData);
+
+      // Show success message
+      toast.success('Cập nhật sản phẩm thành công');
+
+      // Navigate back to products page
+      navigate('/products');
     } catch (err) {
-      setError(err.message || 'Lỗi khi tải lên hình ảnh');
+      setError(err.message || 'Lỗi khi cập nhật sản phẩm');
     }
   };
 
@@ -93,7 +109,7 @@ const ProductEditPage = () => {
               <h4 className="fw-bold mb-0">Chỉnh sửa sản phẩm</h4>
             </Card.Header>
             <Card.Body>
-              {updateError && <Alert variant="danger">{updateError}</Alert>}
+
               <Form onSubmit={handleSubmit}>
                 <Row>
                   <Col md={6}>
@@ -143,11 +159,11 @@ const ProductEditPage = () => {
                   <div className="d-flex flex-wrap gap-2">
                     {product.images.map((img, index) => (
                       <div key={index} className="position-relative">
-                        <img 
-                          src={getImageSrc(img, 100, 100)} 
-                          alt={`product-${index}`} 
-                          width="100" 
-                          height="100" 
+                        <img
+                          src={getImageSrc(img, 100, 100)}
+                          alt={`product-${index}`}
+                          width="100"
+                          height="100"
                           className="rounded object-fit-cover"
                           onError={(e) => handleImageError(e, 100, 100)}
                         />
@@ -163,7 +179,7 @@ const ProductEditPage = () => {
                   <div className="d-flex flex-wrap gap-2 mt-2">
                     {newImageFiles.map((file, index) => (
                       <div key={index} className="position-relative">
-                        <img src={URL.createObjectURL(file)} alt={`preview-${index}`} width="100" height="100" className="rounded object-fit-cover"/>
+                        <img src={URL.createObjectURL(file)} alt={`preview-${index}`} width="100" height="100" className="rounded object-fit-cover" />
                         <Button variant="danger" size="sm" className="position-absolute top-0 end-0" onClick={() => handleRemoveNewImage(index)}>X</Button>
                       </div>
                     ))}
@@ -171,22 +187,22 @@ const ProductEditPage = () => {
                 </Form.Group>
 
                 <Form.Group className="mb-3">
-                    <Form.Check
-                        type="switch"
-                        id="is-active-switch"
-                        label="Đang hoạt động"
-                        name="isActive"
-                        checked={product.isActive}
-                        onChange={handleChange}
-                    />
+                  <Form.Check
+                    type="switch"
+                    id="is-active-switch"
+                    label="Đang hoạt động"
+                    name="isActive"
+                    checked={product.isActive}
+                    onChange={handleChange}
+                  />
                 </Form.Group>
 
                 <div className="d-flex justify-content-end">
                   <Button variant="secondary" onClick={() => navigate('/products')} className="me-2">
                     Hủy
                   </Button>
-                  <Button variant="primary" type="submit" disabled={updateLoading}>
-                    {updateLoading ? <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" /> : 'Lưu thay đổi'}
+                  <Button variant="primary" type="submit">
+                    Lưu thay đổi
                   </Button>
                 </div>
               </Form>

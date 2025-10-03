@@ -66,202 +66,212 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
   const order = response.data;
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      {/* Back Button */}
-      <Button variant="ghost" asChild className="mb-4">
-        <Link href="/don-hang">
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Quay lại
-        </Link>
-      </Button>
-
-      {/* Header */}
-      <div className="flex justify-between items-start mb-6">
-        <div>
-          <h1 className="text-3xl font-bold mb-2">Đơn hàng #{order._id.slice(-8).toUpperCase()}</h1>
-          <p className="text-muted-foreground">Đặt hàng lúc {formatDate(order.createdAt)}</p>
+    <div className="bg-muted/40">
+      <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+        {/* Back Button */}
+        <div className="mb-4">
+          <Button variant="ghost" asChild>
+            <Link href="/don-hang">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Quay lại danh sách
+            </Link>
+          </Button>
         </div>
-        <div className="flex items-center gap-3">
-          <OrderStatusBadge status={order.status} />
-          <Suspense fallback={null}>
-            <OrderDetailClient orderId={order._id} canCancel={order.canCancel} orderStatus={order.status} />
-          </Suspense>
-        </div>
-      </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Main Content */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Timeline */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Clock className="h-5 w-5" />
-                Lịch sử đơn hàng
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {order.timeline.map((event, index) => {
-                  const isLast = index === order.timeline.length - 1;
-                  return (
-                    <div key={event._id} className="flex gap-4">
-                      <div className="flex flex-col items-center">
-                        <div className={cn("rounded-full p-1.5", isLast ? "bg-primary" : "bg-muted")}>
-                          <CheckCircle2 className={cn("h-4 w-4", isLast ? "text-primary-foreground" : "text-muted-foreground")} />
-                        </div>
-                        {!isLast && <div className="w-0.5 h-full bg-muted mt-2" />}
-                      </div>
-                      <div className="flex-1 pb-4">
-                        <p className="font-medium">{event.description}</p>
-                        <p className="text-sm text-muted-foreground">{formatDate(event.timestamp)}</p>
-                        <p className="text-xs text-muted-foreground mt-1 capitalize">Thực hiện bởi: {event.performedBy}</p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
+        {/* Main Content Wrapper */}
+        <main className="bg-background rounded-xl shadow-sm border p-6 md:p-8 space-y-6">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row justify-between sm:items-start gap-4">
+            <div>
+              <h1 className="text-2xl lg:text-3xl font-bold">Chi tiết Đơn hàng</h1>
+              <p className="text-muted-foreground">
+                Mã đơn: <span className="font-medium text-foreground">#{order._id.slice(-8).toUpperCase()}</span>
+              </p>
+              <p className="text-sm text-muted-foreground">Đặt hàng lúc: {formatDate(order.createdAt)}</p>
+            </div>
+            <div className="flex items-center gap-3 self-start sm:self-end">
+              <OrderStatusBadge status={order.status} />
+              <Suspense fallback={null}>
+                <OrderDetailClient orderId={order._id} canCancel={order.canCancel || order.status === "new"} orderStatus={order.status} />
+              </Suspense>
+            </div>
+          </div>
 
-          {/* Order Items */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Package className="h-5 w-5" />
-                Sản phẩm ({order.orderLines.length})
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {order.orderLines.map((item, index) => (
-                  <div key={index}>
-                    <div className="flex gap-4">
-                      <div className="relative w-24 h-24 flex-shrink-0 rounded-md overflow-hidden bg-gray-100">
-                        <Image src={item.productImage} alt={item.productName} fill unoptimized className="object-cover" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-medium mb-1">{item.productName}</h4>
-                        <p className="text-sm text-muted-foreground mb-2">Mã SP: {item.productCode}</p>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            {item.discount > 0 && (
-                              <>
-                                <span className="text-sm line-through text-muted-foreground">{formatPrice(item.productPrice)}</span>
-                                <span className="text-xs bg-red-100 text-red-800 px-2 py-0.5 rounded">-{item.discount}%</span>
-                              </>
-                            )}
+          <Separator />
+
+          {/* Grid Layout */}
+          <div className="grid gap-8 lg:grid-cols-3">
+            {/* Left Column */}
+            <div className="lg:col-span-2 space-y-8">
+              {/* Order Items */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Package className="h-5 w-5" />
+                    Sản phẩm trong đơn ({order.orderLines.length})
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {order.orderLines.map((item, index) => (
+                      <div key={index}>
+                        <div className="flex flex-col sm:flex-row gap-4">
+                          <div className="relative w-24 h-24 flex-shrink-0 rounded-md overflow-hidden bg-gray-100 self-center sm:self-start">
+                            <Image src={item.productImage} alt={item.productName} fill unoptimized className="object-cover" />
                           </div>
-                          <p className="text-muted-foreground">x{item.quantity}</p>
-                        </div>
-                        <div className="flex items-center justify-between mt-2">
-                          <p className="font-semibold">{formatPrice(item.productActualPrice)}</p>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-semibold mb-1">{item.productName}</h4>
+                            <p className="text-sm text-muted-foreground mb-2">Mã SP: {item.productCode}</p>
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                {item.discount > 0 && (
+                                  <>
+                                    <span className="text-sm line-through text-muted-foreground">{formatPrice(item.productPrice)}</span>
+                                    <span className="text-xs bg-red-100 text-red-800 px-2 py-0.5 rounded">-{item.discount}%</span>
+                                  </>
+                                )}
+                              </div>
+                              <p className="text-muted-foreground text-sm">Số lượng: {item.quantity}</p>
+                            </div>
+                            <div className="flex items-center justify-between mt-2">
+                              <p className="font-semibold">{formatPrice(item.productActualPrice)}</p>
+                              <p className="font-bold text-lg">{formatPrice(item.lineTotal)}</p>
+                            </div>
+                          </div>
                           {order.status === "completed" && (
-                            <ReviewButton
-                              product={{
-                                id: item.productId,
-                                name: item.productName,
-                                image: item.productImage,
-                              }}
-                              orderId={order._id}
-                            />
+                            <div className="self-center sm:self-end">
+                              <ReviewButton
+                                product={{
+                                  id: item.productId,
+                                  name: item.productName,
+                                  image: item.productImage,
+                                }}
+                                orderId={order._id}
+                              />
+                            </div>
                           )}
                         </div>
+                        {index < order.orderLines.length - 1 && <Separator className="mt-4" />}
                       </div>
-                      <div className="text-right flex flex-col items-end gap-2">
-                        <p className="font-bold">{formatPrice(item.lineTotal)}</p>
-                      </div>
-                    </div>
-                    {index < order.orderLines.length - 1 && <Separator className="mt-4" />}
+                    ))}
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+                </CardContent>
+              </Card>
 
-        {/* Sidebar */}
-        <div className="space-y-6">
-          {/* Shipping Address */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MapPin className="h-5 w-5" />
-                Địa chỉ nhận hàng
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <p className="font-semibold">{order.shippingAddress.recipientName}</p>
-              <p className="text-sm">{order.shippingAddress.phoneNumber}</p>
-              <p className="text-sm text-muted-foreground">
-                {order.shippingAddress.street}, {order.shippingAddress.ward}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {order.shippingAddress.district}, {order.shippingAddress.province}
-              </p>
-            </CardContent>
-          </Card>
+              {/* Timeline */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Clock className="h-5 w-5" />
+                    Lịch sử đơn hàng
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {order.timeline.map((event, index) => {
+                      const isLast = index === order.timeline.length - 1;
+                      return (
+                        <div key={event._id} className="flex gap-4">
+                          <div className="flex flex-col items-center">
+                            <div className={cn("rounded-full p-1.5", isLast ? "bg-primary" : "bg-muted")}>
+                              <CheckCircle2 className={cn("h-4 w-4", isLast ? "text-primary-foreground" : "text-muted-foreground")} />
+                            </div>
+                            {!isLast && <div className="w-0.5 h-full bg-muted mt-2" />}
+                          </div>
+                          <div className="flex-1 pb-4 border-b border-dashed last:border-none last:pb-0">
+                            <p className="font-medium">{event.description}</p>
+                            <p className="text-sm text-muted-foreground">{formatDate(event.timestamp)}</p>
+                            <p className="text-xs text-muted-foreground mt-1 capitalize">Thực hiện bởi: {event.performedBy}</p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
 
-          {/* Payment Info */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CreditCard className="h-5 w-5" />
-                Thanh toán
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Phương thức:</span>
-                <span className="font-medium">{order.payment.paymentMethod}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Trạng thái:</span>
-                <span className="font-medium capitalize">{order.payment.status}</span>
-              </div>
-            </CardContent>
-          </Card>
+            {/* Right Column (Sidebar) */}
+            <div className="space-y-8">
+              {/* Order Summary */}
+              <Card className="sticky top-24">
+                <CardHeader>
+                  <CardTitle>Tóm tắt đơn hàng</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Tạm tính</span>
+                    <span>{formatPrice(order.subtotal)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Phí vận chuyển</span>
+                    <span>{formatPrice(order.shippingFee)}</span>
+                  </div>
+                  {order.discount > 0 && (
+                    <div className="flex justify-between text-red-600">
+                      <span>Giảm giá</span>
+                      <span>-{formatPrice(order.discount)}</span>
+                    </div>
+                  )}
+                  {order.pointsApplied > 0 && (
+                    <div className="flex justify-between text-blue-600">
+                      <span>Điểm tích lũy</span>
+                      <span>-{formatPrice(order.pointsApplied)}</span>
+                    </div>
+                  )}
+                  {order.voucherCode && (
+                    <div className="flex justify-between items-center text-green-600">
+                      <span>Mã giảm giá</span>
+                      <span className="font-mono text-sm bg-green-100 px-2 py-0.5 rounded">{order.voucherCode}</span>
+                    </div>
+                  )}
+                  <Separator />
+                  <div className="flex justify-between font-bold text-lg">
+                    <span>Tổng cộng</span>
+                    <span className="text-primary">{formatPrice(order.totalAmount)}</span>
+                  </div>
+                </CardContent>
+              </Card>
 
-          {/* Order Summary */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Tóm tắt đơn hàng</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Tạm tính:</span>
-                <span>{formatPrice(order.subtotal)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Phí vận chuyển:</span>
-                <span>{formatPrice(order.shippingFee)}</span>
-              </div>
-              {order.discount > 0 && (
-                <div className="flex justify-between text-red-600">
-                  <span>Giảm giá:</span>
-                  <span>-{formatPrice(order.discount)}</span>
-                </div>
-              )}
-              {order.pointsApplied > 0 && (
-                <div className="flex justify-between text-blue-600">
-                  <span>Điểm tích lũy:</span>
-                  <span>-{formatPrice(order.pointsApplied)}</span>
-                </div>
-              )}
-              {order.voucherCode && (
-                <div className="flex justify-between text-green-600">
-                  <span>Mã giảm giá:</span>
-                  <span className="font-mono text-sm">{order.voucherCode}</span>
-                </div>
-              )}
-              <Separator />
-              <div className="flex justify-between font-bold text-lg">
-                <span>Tổng cộng:</span>
-                <span className="text-primary">{formatPrice(order.totalAmount)}</span>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+              {/* Shipping Address */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <MapPin className="h-5 w-5" />
+                    Địa chỉ nhận hàng
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 text-sm">
+                  <p className="font-semibold text-base">{order.shippingAddress.recipientName}</p>
+                  <p>{order.shippingAddress.phoneNumber}</p>
+                  <p className="text-muted-foreground">
+                    {order.shippingAddress.street}, {order.shippingAddress.ward}, {order.shippingAddress.district}, {order.shippingAddress.province}
+                  </p>
+                </CardContent>
+              </Card>
+
+              {/* Payment Info */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <CreditCard className="h-5 w-5" />
+                    Thông tin thanh toán
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Phương thức</span>
+                    <span className="font-medium">{order.payment.paymentMethod}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Trạng thái</span>
+                    <span className="font-medium capitalize">{order.payment.status}</span>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </main>
       </div>
     </div>
   );
