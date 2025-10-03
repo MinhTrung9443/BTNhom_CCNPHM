@@ -31,6 +31,22 @@ const orderService = {
   getOrderStats: () => {
     return api.get('/admin/orders/stats')
   },
+
+  getCancellationRequests: (params = {}) => {
+    return api.get('/admin/orders/cancellation-requests', { params })
+  },
+
+  approveCancellation: (orderId) => {
+    return api.patch(`/admin/orders/${orderId}/approve-cancellation`)
+  },
+
+  getPendingReturns: (params = {}) => {
+    return api.get('/admin/orders/pending-returns', { params })
+  },
+
+  approveReturn: (orderId) => {
+    return api.patch(`/admin/orders/${orderId}/approve-return`)
+  },
 }
 
 export default orderService

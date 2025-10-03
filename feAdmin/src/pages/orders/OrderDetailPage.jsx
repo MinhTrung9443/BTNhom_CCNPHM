@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Container, Row, Col, Card, Table, Button, Form, Badge, Modal } from 'react-bootstrap'
 import { useDispatch, useSelector } from 'react-redux'
 import { useParams, Link } from 'react-router-dom'
@@ -6,11 +6,14 @@ import {
   fetchOrderById,
   updateOrderStatus,
   addOrderNote,
+  approveCancellation,
   clearOrder,
 } from "../../redux/slices/ordersSlice";
 import LoadingSpinner from '../../components/common/LoadingSpinner'
 import { toast } from 'react-toastify'
 import moment from 'moment'
+import React from 'react';
+import { getImageSrc, handleImageError } from '../../utils/imageUtils'
 
 const OrderDetailPage = () => {
   const { orderId } = useParams()
@@ -19,6 +22,7 @@ const OrderDetailPage = () => {
 
   const [showStatusModal, setShowStatusModal] = useState(false)
   const [showNoteModal, setShowNoteModal] = useState(false)
+  const [showCancellationModal, setShowCancellationModal] = useState(false)
   const [statusForm, setStatusForm] = useState({
     status: '',
     reason: "",
@@ -126,6 +130,16 @@ const OrderDetailPage = () => {
     }
   }
 
+  const handleApproveCancellation = async () => {
+    try {
+      await dispatch(approveCancellation(order._id)).unwrap()
+      toast.success('Đã chấp nhận yêu cầu hủy đơn hàng thành công')
+      setShowCancellationModal(false)
+    } catch (error) {
+      toast.error(error || 'Có lỗi xảy ra khi chấp nhận yêu cầu hủy')
+    }
+  }
+
 
   const getUserTypeText = (performedBy) => {
     if (performedBy === 'system') {
@@ -135,6 +149,15 @@ const OrderDetailPage = () => {
       return 'Quản trị viên'
     }
     return 'Khách hàng'
+  }
+
+  const isCancellationRequested = () => {
+    return order?.timeline?.some(item => item.status === 'cancellation_requested')
+  }
+
+  const isCancellationApproved = () => {
+    // Kiểm tra xem có yêu cầu hủy và đã được chấp nhận (status = cancelled)
+    return isCancellationRequested() && order?.status === 'cancelled'
   }
 
   if (loading) {
@@ -165,6 +188,16 @@ const OrderDetailPage = () => {
           <h2 className="fw-bold d-inline">Chi tiết đơn hàng #{order._id.slice(-8)}</h2>
         </div>
         <div className="d-flex gap-2">
+          {isCancellationRequested() && (
+            <Button
+              variant={isCancellationApproved() ? "secondary" : "success"}
+              onClick={() => setShowCancellationModal(true)}
+              disabled={isCancellationApproved()}
+            >
+              <i className={`bi ${isCancellationApproved() ? 'bi-check-circle-fill' : 'bi-check-lg'} me-2`}></i>
+              {isCancellationApproved() ? 'Đã chấp nhận yêu cầu hủy' : 'Chấp nhận yêu cầu hủy'}
+            </Button>
+          )}
           {getStatusOptions(order.status).length > 0 && (
             <Button
               variant="primary"
@@ -219,6 +252,20 @@ const OrderDetailPage = () => {
                       <strong>Ghi chú:</strong> {order.notes}
                     </div>
                   )}
+                  {order.cancellationRequestReason && (
+                    <div className="mb-3">
+                      <strong>Lý do yêu cầu hủy:</strong> 
+                      <span className="text-danger ms-2">{order.cancellationRequestReason}</span>
+                      {isCancellationApproved() && (
+                        <div className="mt-1">
+                          <small className="text-success">
+                            <i className="bi bi-check-circle-fill me-1"></i>
+                            Đã chấp nhận lúc {moment(order.cancelledAt).format('DD/MM/YYYY HH:mm')}
+                          </small>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </Col>
               </Row>
             </Card.Body>
@@ -245,10 +292,11 @@ const OrderDetailPage = () => {
                       <td>
                         <div className="d-flex align-items-center">
                           <img
-                            src={item.productImage || '/placeholder.jpg'}
+                            src={getImageSrc(item.productImage, 50, 50)}
                             alt={item.productName}
                             className="rounded me-3"
                             style={{ width: '50px', height: '50px', objectFit: 'cover' }}
+                            onError={(e) => handleImageError(e, 50, 50)}
                           />
                           <div>
                             <div className="fw-semibold">{item.productName}</div>
@@ -306,6 +354,12 @@ const OrderDetailPage = () => {
                             </small>
                           </div>
                           <p className="mb-0 small">{item.description}</p>
+                          {item.metadata?.reason && (
+                            <p className="mb-0 small text-muted fst-italic">
+                              <i className="bi bi-chat-quote me-1"></i>
+                              "{item.metadata.reason}"
+                            </p>
+                          )}
                         </div>
                       </div>
                       {index < order.timeline.length - 1 && (
@@ -366,6 +420,46 @@ const OrderDetailPage = () => {
           </Button>
           <Button variant="primary" onClick={handleUpdateStatus}>
             Cập nhật
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Cancellation Approval Modal */}
+      <Modal show={showCancellationModal} onHide={() => setShowCancellationModal(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title>Xác nhận chấp nhận yêu cầu hủy</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <div>
+            <p>Bạn có chắc chắn muốn chấp nhận yêu cầu hủy đơn hàng này không?</p>
+            <div className="bg-light p-3 rounded">
+              <div className="mb-2">
+                <strong>Mã đơn hàng:</strong> #{order._id.slice(-8)}
+              </div>
+              <div className="mb-2">
+                <strong>Tổng tiền:</strong> {formatCurrency(order.totalAmount)}
+              </div>
+              {order.cancellationRequestReason && (
+                <div className="mb-2">
+                  <strong>Lý do hủy từ khách hàng:</strong> 
+                  <span className="text-danger ms-2">{order.cancellationRequestReason}</span>
+                </div>
+              )}
+            </div>
+            <div className="mt-3">
+              <small className="text-muted">
+                Sau khi chấp nhận, đơn hàng sẽ được chuyển sang trạng thái "Đã hủy" và không thể hoàn tác.
+              </small>
+            </div>
+          </div>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowCancellationModal(false)}>
+            Hủy bỏ
+          </Button>
+          <Button variant="success" onClick={handleApproveCancellation}>
+            <i className="bi bi-check-lg me-2"></i>
+            Chấp nhận yêu cầu hủy
           </Button>
         </Modal.Footer>
       </Modal>

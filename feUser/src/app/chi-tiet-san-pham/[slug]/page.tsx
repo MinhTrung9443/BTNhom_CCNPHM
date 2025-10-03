@@ -84,6 +84,7 @@ async function ProductDetail({ slug }: { slug: string }) {
   }
 
   const product = response.data;
+  console.log(product);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -130,6 +131,7 @@ async function ProductDetail({ slug }: { slug: string }) {
 
         <div className="mt-4">
           <FavoriteButton
+            key={`${product._id}-${product.isSaved}`}
             productId={product._id}
             initialIsFavorited={product.isSaved}
             showText={true}
@@ -179,4 +181,4 @@ export default async function ProductPage(props: ProductPageProps) {
   );
 }
 
-export const revalidate = 60;
+export const revalidate = 1;

@@ -1,88 +1,29 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { useSession } from 'next-auth/react';
+import { useState } from 'react';
 import { Loader2, AlertCircle, ShoppingCart, Star } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { productService } from '@/services/productService';
-import { SearchFilters, SearchProduct, SearchMeta, SearchResponse } from '@/types/product';
+import { SearchProduct, SearchResponse } from '@/types/product';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { cartService } from '@/services/cartService';
 import { toast } from 'sonner';
+import { useSession } from 'next-auth/react';
 
 interface SearchResultsProps {
-  filters: SearchFilters;
-  onFiltersChange: (filters: SearchFilters) => void;
-  initialData?: SearchResponse;
+  data: SearchResponse | null;
+  isLoading: boolean;
+  onPageChange: (page: number) => void;
 }
 
-export function SearchResults({ filters, onFiltersChange, initialData }: SearchResultsProps) {
-  const { data: session } = useSession();
-  const [products, setProducts] = useState<SearchProduct[]>(initialData?.data || []);
-  const [meta, setMeta] = useState<SearchMeta | null>(initialData?.meta || null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(initialData?.success === false ? initialData.message : null);
-  const hasLoadedInitialData = useRef(!!initialData);
+export function SearchResults({ data, isLoading, onPageChange }: SearchResultsProps) {
+  const products = data?.data || [];
+  const meta = data?.meta || null;
+  const error = data?.success === false ? data.message : null;
 
-  const searchProducts = async (searchFilters: SearchFilters) => {
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const response = await productService.searchProducts(
-        searchFilters,
-        session?.user?.accessToken
-      );
-      console.log('CSR search response:', response);
-      
-      if (response.success) {
-        // API trả về structure: {success, message, meta, data}
-        setProducts(response.data || []);
-        setMeta(response.meta || null);
-      } else {
-        setError(response.message || 'Có lỗi xảy ra khi tìm kiếm sản phẩm');
-      }
-    } catch (err) {
-      setError('Không thể kết nối đến server. Vui lòng thử lại sau.');
-      console.error('Search error:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Reset flag when initialData changes (new navigation)
-  useEffect(() => {
-    if (initialData) {
-      hasLoadedInitialData.current = true;
-      setProducts(initialData.data || []);
-      setMeta(initialData.meta || null);
-      setError(initialData.success === false ? initialData.message : null);
-    }
-  }, [initialData]);
-
-  useEffect(() => {
-    // Skip first render if we have initial data from SSR
-    if (hasLoadedInitialData.current) {
-      hasLoadedInitialData.current = false;
-      console.log('Using SSR cached data, skip CSR fetch');
-      return;
-    }
-    
-    // Subsequent renders: fetch with CSR
-    console.log('Fetching with CSR for filter changes');
-    searchProducts(filters);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters, session?.user?.accessToken]);
-
-  const handlePageChange = (page: number) => {
-    const newFilters = { ...filters, page };
-    onFiltersChange(newFilters);
-  };
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12">
         <div className="flex flex-col items-center justify-center text-center">
@@ -168,7 +109,7 @@ export function SearchResults({ filters, onFiltersChange, initialData }: SearchR
           <div className="flex items-center justify-center space-x-2">
             <Button
               variant="outline"
-              onClick={() => handlePageChange(meta.currentPage - 1)}
+              onClick={() => onPageChange(meta.currentPage - 1)}
               disabled={!meta.hasPrev}
               className="border-gray-300"
             >
@@ -185,7 +126,7 @@ export function SearchResults({ filters, onFiltersChange, initialData }: SearchR
                     key={page}
                     variant={isCurrentPage ? "default" : "outline"}
                     size="sm"
-                    onClick={() => handlePageChange(page)}
+                    onClick={() => onPageChange(page)}
                     className={`w-10 ${isCurrentPage ? 'bg-green-600 hover:bg-green-700' : 'border-gray-300'}`}
                   >
                     {page}
@@ -199,7 +140,7 @@ export function SearchResults({ filters, onFiltersChange, initialData }: SearchR
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handlePageChange(meta.totalPages)}
+                    onClick={() => onPageChange(meta.totalPages)}
                     className="w-10 border-gray-300"
                   >
                     {meta.totalPages}
@@ -210,7 +151,7 @@ export function SearchResults({ filters, onFiltersChange, initialData }: SearchR
 
             <Button
               variant="outline"
-              onClick={() => handlePageChange(meta.currentPage + 1)}
+              onClick={() => onPageChange(meta.currentPage + 1)}
               disabled={!meta.hasNext}
               className="border-gray-300"
             >

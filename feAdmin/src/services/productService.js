@@ -10,11 +10,25 @@ const productService = {
   },
 
   createProduct: (productData) => {
-    return api.post('/admin/products', productData)
+    // Check if productData is FormData (for multipart uploads)
+    const isFormData = productData instanceof FormData;
+    
+    return api.post('/admin/products', productData, {
+      headers: isFormData ? {
+        'Content-Type': 'multipart/form-data',
+      } : undefined,
+    });
   },
 
   updateProduct: (productId, productData) => {
-    return api.put(`/admin/products/${productId}`, productData)
+    // Check if productData is FormData (for multipart uploads)
+    const isFormData = productData instanceof FormData;
+    
+    return api.put(`/admin/products/${productId}`, productData, {
+      headers: isFormData ? {
+        'Content-Type': 'multipart/form-data',
+      } : undefined,
+    });
   },
 
   deleteProduct: (productId) => {
