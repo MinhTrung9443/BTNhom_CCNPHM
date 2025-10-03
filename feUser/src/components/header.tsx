@@ -7,7 +7,7 @@ import { useSession, signOut } from "next-auth/react";
 import { useCart } from "@/contexts/cart-context";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, ShoppingCart, Heart, Search, User, LogOut, Settings, Package, Eye, MessageSquare } from "lucide-react";
+import { Menu, ShoppingCart, Heart, Search, User, LogOut, Settings, Package, Eye, MessageSquare, Gift } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
@@ -25,6 +25,7 @@ const navigation = [
   { name: "Trang Chủ", href: "/" },
   { name: "Giới Thiệu", href: "/about" },
   { name: "Sản Phẩm", href: "/search" },
+  { name: "Voucher", href: "/voucher" },
   { name: "Liên Hệ", href: "/lien-he" },
 ];
 
@@ -142,6 +143,12 @@ export default function Header() {
                       <span>Đánh giá của tôi</span>
                     </Link>
                   </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/voucher-cua-toi">
+                      <Gift className="mr-2 h-4 w-4" />
+                      <span>Voucher của tôi</span>
+                    </Link>
+                  </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout}>
                     <LogOut className="mr-2 h-4 w-4" />
@@ -211,6 +218,12 @@ export default function Header() {
                           <Button variant="ghost" className="w-full justify-start" size="sm">
                             <MessageSquare className="mr-2 h-4 w-4" />
                             Đánh giá của tôi
+                          </Button>
+                        </Link>
+                        <Link href="/voucher-cua-toi" onClick={() => setIsOpen(false)}>
+                          <Button variant="ghost" className="w-full justify-start" size="sm">
+                            <Gift className="mr-2 h-4 w-4" />
+                            Voucher của tôi
                           </Button>
                         </Link>
                         <Button

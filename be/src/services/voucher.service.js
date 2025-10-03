@@ -20,10 +20,7 @@ const computeUsageStatsForVoucher = (voucher, stats) => {
   if (voucher.type === "public") {
     const totalUsed = voucher.currentUsage ?? 0;
     const totalAssigned = voucher.globalUsageLimit ?? null;
-    const remainingUses =
-      voucher.globalUsageLimit == null
-        ? null
-        : Math.max(voucher.globalUsageLimit - totalUsed, 0);
+    const remainingUses = voucher.globalUsageLimit == null ? null : Math.max(voucher.globalUsageLimit - totalUsed, 0);
 
     return {
       totalUsed,
@@ -50,8 +47,7 @@ const voucherService = {
       isUsed: false,
     }).populate({
       path: "voucherId",
-      select:
-        "-applicableProducts -excludedProducts -applicableCategories -excludedCategories -__v",
+      select: "-applicableProducts -excludedProducts -applicableCategories -excludedCategories -__v",
     });
 
     // Filter out vouchers that are null (dangling reference) or invalid
@@ -59,12 +55,7 @@ const voucherService = {
       .filter((uv) => {
         const voucher = uv.voucherId;
         // Ensure voucher exists and is valid
-        return (
-          voucher &&
-          voucher.isActive &&
-          voucher.startDate <= currentDate &&
-          voucher.endDate >= currentDate
-        );
+        return voucher && voucher.isActive && voucher.startDate <= currentDate && voucher.endDate >= currentDate;
       })
       .map((uv) => uv.voucherId); // Extract the populated voucher document
 
@@ -133,14 +124,11 @@ const voucherService = {
         continue;
       }
 
-      const appliesToAllProducts =
-        !voucher.applicableProducts || voucher.applicableProducts.length === 0;
+      const appliesToAllProducts = !voucher.applicableProducts || voucher.applicableProducts.length === 0;
       if (!appliesToAllProducts) {
         const cartProductIdsSet = new Set(productIdsInCart);
         const voucherProductIds = voucher.applicableProducts.map((id) => id.toString());
-        const isProductApplicable = voucherProductIds.some((voucherProductId) =>
-          cartProductIdsSet.has(voucherProductId)
-        );
+        const isProductApplicable = voucherProductIds.some((voucherProductId) => cartProductIdsSet.has(voucherProductId));
 
         if (!isProductApplicable) {
           result.reason = "Voucher does not apply to items in the cart.";
@@ -261,7 +249,7 @@ const voucherService = {
       maxDiscountAmount,
       startDate,
       endDate,
-      source = 'admin',
+      source = "admin",
       isActive = true,
       applicableProducts,
       excludedProducts,
@@ -273,11 +261,11 @@ const voucherService = {
       throw new AppError("Voucher code is required", 400);
     }
 
-    if (!discountType || !['percentage', 'fixed'].includes(discountType)) {
+    if (!discountType || !["percentage", "fixed"].includes(discountType)) {
       throw new AppError("Invalid discount type", 400);
     }
 
-    if (!type || !['public', 'personal'].includes(type)) {
+    if (!type || !["public", "personal"].includes(type)) {
       throw new AppError("Invalid voucher type", 400);
     }
 
@@ -301,11 +289,9 @@ const voucherService = {
       isActive,
     };
 
-    if (type === 'public') {
+    if (type === "public") {
       voucherData.globalUsageLimit =
-        globalUsageLimit === '' || globalUsageLimit === null || globalUsageLimit === undefined
-          ? null
-          : Number(globalUsageLimit);
+        globalUsageLimit === "" || globalUsageLimit === null || globalUsageLimit === undefined ? null : Number(globalUsageLimit);
       voucherData.currentUsage = 0;
     } else {
       const usage = Number(userUsageLimit);
@@ -363,7 +349,7 @@ const voucherService = {
 
     if (discountValue !== undefined) update.discountValue = Number(discountValue);
     if (discountType !== undefined) {
-      if (!['percentage', 'fixed'].includes(discountType)) {
+      if (!["percentage", "fixed"].includes(discountType)) {
         throw new AppError("Invalid discount type", 400);
       }
       update.discountType = discountType;
@@ -384,24 +370,21 @@ const voucherService = {
     if (source !== undefined) update.source = source;
 
     if (isActive !== undefined) {
-      if (voucher.type === 'personal' && isActive === false) {
+      if (voucher.type === "personal" && isActive === false) {
         throw new AppError("Personal vouchers cannot be deactivated", 400);
       }
       update.isActive = Boolean(isActive);
     }
 
-    if (voucher.type === 'public' && globalUsageLimit !== undefined) {
-      const limitValue =
-        globalUsageLimit === '' || globalUsageLimit === null || globalUsageLimit === undefined
-          ? null
-          : Number(globalUsageLimit);
+    if (voucher.type === "public" && globalUsageLimit !== undefined) {
+      const limitValue = globalUsageLimit === "" || globalUsageLimit === null || globalUsageLimit === undefined ? null : Number(globalUsageLimit);
       if (limitValue !== null && limitValue < (voucher.currentUsage ?? 0)) {
         throw new AppError("globalUsageLimit cannot be less than current usage", 400);
       }
       update.globalUsageLimit = limitValue;
     }
 
-    if (voucher.type === 'personal' && userUsageLimit !== undefined) {
+    if (voucher.type === "personal" && userUsageLimit !== undefined) {
       const perUser = Number(userUsageLimit);
       if (!perUser || perUser < 1) {
         throw new AppError("userUsageLimit must be at least 1", 400);
@@ -414,11 +397,7 @@ const voucherService = {
     if (applicableCategories !== undefined) update.applicableCategories = applicableCategories;
     if (excludedCategories !== undefined) update.excludedCategories = excludedCategories;
 
-    const updated = await Voucher.findByIdAndUpdate(
-      voucherId,
-      { $set: update },
-      { new: true, runValidators: true }
-    ).lean();
+    const updated = await Voucher.findByIdAndUpdate(voucherId, { $set: update }, { new: true, runValidators: true }).lean();
 
     return updated;
   },
@@ -443,13 +422,7 @@ const voucherService = {
         ? {
             totalUsed: voucher.currentUsage ?? totalUsed,
             totalAssigned: voucher.globalUsageLimit ?? null,
-            remainingUses:
-              voucher.globalUsageLimit == null
-                ? null
-                : Math.max(
-                    voucher.globalUsageLimit - (voucher.currentUsage ?? totalUsed),
-                    0
-                  ),
+            remainingUses: voucher.globalUsageLimit == null ? null : Math.max(voucher.globalUsageLimit - (voucher.currentUsage ?? totalUsed), 0),
           }
         : {
             totalUsed,
@@ -472,10 +445,7 @@ const voucherService = {
     }
 
     if (voucher.type === "personal") {
-      throw new AppError(
-        "Cannot delete voucher: Personal vouchers cannot be deleted or deactivated",
-        400
-      );
+      throw new AppError("Cannot delete voucher: Personal vouchers cannot be deleted or deactivated", 400);
     }
 
     const hasUsedVoucher = await UserVoucher.exists({
@@ -484,24 +454,202 @@ const voucherService = {
     });
 
     if (hasUsedVoucher || (voucher.currentUsage ?? 0) > 0) {
-      throw new AppError(
-        "Cannot delete voucher: Voucher has been used by users",
-        400
-      );
+      throw new AppError("Cannot delete voucher: Voucher has been used by users", 400);
     }
 
     voucher.isActive = false;
     await voucher.save();
 
     const reclaimedUses =
-      voucher.type === "public"
-        ? voucher.globalUsageLimit == null
-          ? null
-          : Math.max(voucher.globalUsageLimit - (voucher.currentUsage ?? 0), 0)
-        : 0;
+      voucher.type === "public" ? (voucher.globalUsageLimit == null ? null : Math.max(voucher.globalUsageLimit - (voucher.currentUsage ?? 0), 0)) : 0;
 
     return {
       reclaimedUses,
+    };
+  },
+
+  // Lấy danh sách voucher công khai (public vouchers) có thể claim
+  getPublicVouchers: async (userId, page = 1, limit = 10) => {
+    const currentDate = new Date();
+    const skip = (page - 1) * limit;
+
+    // Lấy danh sách voucher public đang hoạt động
+    const vouchers = await Voucher.find({
+      type: "public",
+      isActive: true,
+      startDate: { $lte: currentDate },
+      endDate: { $gte: currentDate },
+      // Voucher chưa hết lượt sử dụng (nếu có giới hạn)
+      $or: [
+        { globalUsageLimit: null }, // Không giới hạn
+        { $expr: { $lt: ["$currentUsage", "$globalUsageLimit"] } }, // Còn lượt
+      ],
+    })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean();
+
+    // Kiểm tra user đã claim voucher nào chưa
+    const voucherIds = vouchers.map((v) => v._id);
+    const userClaims = await UserVoucher.find({
+      userId: new mongoose.Types.ObjectId(userId),
+      voucherId: { $in: voucherIds },
+    }).lean();
+
+    const claimedVoucherIds = new Set(userClaims.map((uv) => uv.voucherId.toString()));
+
+    // Thêm thông tin đã claim
+    const vouchersWithClaimStatus = vouchers.map((voucher) => ({
+      ...voucher,
+      isClaimed: claimedVoucherIds.has(voucher._id.toString()),
+      availableSlots: voucher.globalUsageLimit ? Math.max(voucher.globalUsageLimit - (voucher.currentUsage || 0), 0) : null,
+    }));
+
+    // Đếm tổng số voucher
+    const totalVouchers = await Voucher.countDocuments({
+      type: "public",
+      isActive: true,
+      startDate: { $lte: currentDate },
+      endDate: { $gte: currentDate },
+      $or: [{ globalUsageLimit: null }, { $expr: { $lt: ["$currentUsage", "$globalUsageLimit"] } }],
+    });
+
+    return {
+      vouchers: vouchersWithClaimStatus,
+      pagination: buildPaginationMeta(page, limit, totalVouchers),
+    };
+  },
+
+  // Lấy danh sách voucher sắp mở (upcoming vouchers)
+  getUpcomingVouchers: async (page = 1, limit = 10) => {
+    const currentDate = new Date();
+    const skip = (page - 1) * limit;
+
+    const vouchers = await Voucher.find({
+      type: "public",
+      isActive: true,
+      startDate: { $gt: currentDate }, // Chưa bắt đầu
+    })
+      .sort({ startDate: 1 }) // Sắp xếp theo thời gian bắt đầu
+      .skip(skip)
+      .limit(limit)
+      .lean();
+
+    const totalVouchers = await Voucher.countDocuments({
+      type: "public",
+      isActive: true,
+      startDate: { $gt: currentDate },
+    });
+
+    return {
+      vouchers,
+      pagination: buildPaginationMeta(page, limit, totalVouchers),
+    };
+  },
+
+  // User claim một voucher public
+  claimVoucher: async (userId, voucherId) => {
+    const currentDate = new Date();
+
+    // Kiểm tra voucher tồn tại và hợp lệ
+    const voucher = await Voucher.findById(voucherId);
+
+    if (!voucher) {
+      throw new AppError("Voucher không tồn tại.", 404);
+    }
+
+    if (!voucher.isActive) {
+      throw new AppError("Voucher không khả dụng.", 400);
+    }
+
+    if (voucher.type !== "public") {
+      throw new AppError("Chỉ có thể claim voucher công khai.", 400);
+    }
+
+    if (voucher.startDate > currentDate) {
+      throw new AppError("Voucher chưa bắt đầu.", 400);
+    }
+
+    if (voucher.endDate < currentDate) {
+      throw new AppError("Voucher đã hết hạn.", 400);
+    }
+
+    // Kiểm tra đã claim chưa
+    const existingClaim = await UserVoucher.findOne({
+      userId: new mongoose.Types.ObjectId(userId),
+      voucherId: new mongoose.Types.ObjectId(voucherId),
+    });
+
+    if (existingClaim) {
+      throw new AppError("Bạn đã lưu voucher này rồi.", 400);
+    }
+
+    // Kiểm tra limit global usage
+    if (voucher.globalUsageLimit && voucher.currentUsage >= voucher.globalUsageLimit) {
+      throw new AppError("Voucher đã hết lượt sử dụng.", 400);
+    }
+
+    // Tạo UserVoucher mới
+    const userVoucher = new UserVoucher({
+      userId: new mongoose.Types.ObjectId(userId),
+      voucherId: new mongoose.Types.ObjectId(voucherId),
+      isUsed: false,
+    });
+
+    await userVoucher.save();
+
+    return {
+      success: true,
+      message: "Lưu voucher thành công!",
+      voucher: voucher,
+    };
+  },
+
+  // Lấy danh sách voucher của user với phân trang
+  getUserVouchers: async (userId, page = 1, limit = 10) => {
+    const currentDate = new Date();
+    const skip = (page - 1) * limit;
+
+    const userVouchers = await UserVoucher.find({
+      userId: new mongoose.Types.ObjectId(userId),
+    })
+      .populate({
+        path: "voucherId",
+        select: "-applicableProducts -excludedProducts -applicableCategories -excludedCategories -__v",
+      })
+      .populate({
+        path: "orderId",
+        select: "orderNumber",
+      })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean();
+
+    // Lọc và phân loại voucher
+    const validVouchers = userVouchers
+      .filter((uv) => uv.voucherId)
+      .map((uv) => {
+        const voucher = uv.voucherId;
+        const isExpired = voucher.endDate < currentDate;
+        const isNotStarted = voucher.startDate > currentDate;
+        const isInactive = !voucher.isActive;
+
+        return {
+          ...uv,
+          voucher,
+          status: uv.isUsed ? "used" : isInactive ? "inactive" : isExpired ? "expired" : isNotStarted ? "upcoming" : "available",
+        };
+      });
+
+    const totalUserVouchers = await UserVoucher.countDocuments({
+      userId: new mongoose.Types.ObjectId(userId),
+    });
+
+    return {
+      vouchers: validVouchers,
+      pagination: buildPaginationMeta(page, limit, totalUserVouchers),
     };
   },
 };

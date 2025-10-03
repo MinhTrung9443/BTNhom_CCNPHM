@@ -20,10 +20,7 @@ export const voucherController = {
     try {
       const userId = req.user.id;
       const { orderLines } = req.body;
-      const vouchers = await voucherService.getApplicableVouchers(
-        userId,
-        orderLines
-      );
+      const vouchers = await voucherService.getApplicableVouchers(userId, orderLines);
       res.json({
         success: true,
         message: "Fetched applicable vouchers successfully.",
@@ -107,6 +104,73 @@ export const voucherController = {
       res.json({
         success: true,
         message: "Voucher deactivated successfully",
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  getPublicVouchers: async (req, res, next) => {
+    try {
+      const userId = req.user.id;
+      const { page = 1, limit = 10 } = req.query;
+
+      const result = await voucherService.getPublicVouchers(userId, parseInt(page), parseInt(limit));
+
+      res.json({
+        success: true,
+        message: "Lấy danh sách voucher thành công",
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  getUpcomingVouchers: async (req, res, next) => {
+    try {
+      const { page = 1, limit = 10 } = req.query;
+
+      const result = await voucherService.getUpcomingVouchers(parseInt(page), parseInt(limit));
+
+      res.json({
+        success: true,
+        message: "Lấy danh sách voucher sắp mở thành công",
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  claimVoucher: async (req, res, next) => {
+    try {
+      const userId = req.user.id;
+      const { voucherId } = req.params;
+
+      const result = await voucherService.claimVoucher(userId, voucherId);
+
+      res.json({
+        success: true,
+        message: result.message,
+        data: result.voucher,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  getUserVouchers: async (req, res, next) => {
+    try {
+      const userId = req.user.id;
+      const { page = 1, limit = 10 } = req.query;
+
+      const result = await voucherService.getUserVouchers(userId, parseInt(page), parseInt(limit));
+
+      res.json({
+        success: true,
+        message: "Lấy danh sách voucher của bạn thành công",
         data: result,
       });
     } catch (error) {
