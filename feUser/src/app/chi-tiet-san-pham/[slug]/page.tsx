@@ -10,6 +10,7 @@ import { auth } from "@/auth";
 import { Product } from "@/types/product";
 import { ApiResponse } from "@/types/api";
 import { ReviewsSection } from "@/components/reviews-section";
+import { ViewHistoryTracker } from "@/components/view-history-tracker";
 
 interface ProductPageProps {
   params: Promise<{ slug: string }>;
@@ -38,7 +39,6 @@ export async function generateMetadata(props: ProductPageProps) {
   };
 }
 
-
 async function ProductDetail({ slug }: { slug: string }) {
   const session = await auth();
   const accessToken = session?.user?.accessToken;
@@ -59,84 +59,89 @@ async function ProductDetail({ slug }: { slug: string }) {
   console.log(product);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-      <div>
-        <ImageGallery images={product.images} productName={product.name} />
-      </div>
+    <>
+      {/* Component ẩn để track view history */}
+      <ViewHistoryTracker productId={product._id} />
 
-      <div className="space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">{product.name}</h1>
+          <ImageGallery images={product.images} productName={product.name} />
+        </div>
 
-          <div className="flex items-center gap-4 mb-4">
-            <div className="flex items-center">
-              {[...Array(5)].map((_, i) => (
-                <Star key={i} className={`w-5 h-5 ${i < Math.floor(product.averageRating) ? "text-yellow-400 fill-current" : "text-gray-300"}`} />
-              ))}
+        <div className="space-y-6">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-4">{product.name}</h1>
+
+            <div className="flex items-center gap-4 mb-4">
+              <div className="flex items-center">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className={`w-5 h-5 ${i < Math.floor(product.averageRating) ? "text-yellow-400 fill-current" : "text-gray-300"}`} />
+                ))}
+              </div>
+              <span className="text-gray-600">
+                {product.averageRating.toFixed(1)} ({product.totalReviews} reviews)
+              </span>
             </div>
-            <span className="text-gray-600">
-              {product.averageRating.toFixed(1)} ({product.totalReviews} reviews)
-            </span>
-          </div>
 
-          <div className="flex items-center gap-4 mb-6">
-            <span className="text-3xl font-bold text-green-600">
-              {new Intl.NumberFormat("vi-VN", {
-                style: "currency",
-                currency: "VND",
-              }).format(product.price * (1 - product.discount / 100))}
-            </span>
-            {product.discount > 0 && (
-              <span className="text-xl text-gray-500 line-through">
+            <div className="flex items-center gap-4 mb-6">
+              <span className="text-3xl font-bold text-green-600">
                 {new Intl.NumberFormat("vi-VN", {
                   style: "currency",
                   currency: "VND",
-                }).format(product.price)}
+                }).format(product.price * (1 - product.discount / 100))}
               </span>
-            )}
+              {product.discount > 0 && (
+                <span className="text-xl text-gray-500 line-through">
+                  {new Intl.NumberFormat("vi-VN", {
+                    style: "currency",
+                    currency: "VND",
+                  }).format(product.price)}
+                </span>
+              )}
+            </div>
+
+            <p className="text-gray-700 mb-6 leading-relaxed">{product.description}</p>
           </div>
 
-          <p className="text-gray-700 mb-6 leading-relaxed">{product.description}</p>
-        </div>
+          <AddToCartButton productId={product._id} showQuantityControls={true} size="lg" className="w-full" />
 
-        <AddToCartButton productId={product._id} showQuantityControls={true} size="lg" className="w-full" />
+          <div className="mt-4">
+            <FavoriteButton
+              key={`${product._id}-${product.isSaved}`}
+              productId={product._id}
+              initialIsFavorited={product.isSaved}
+              showText={true}
+              variant="outline"
+              size="lg"
+              className="w-full border-green-600 text-green-600 hover:bg-green-50"
+            />
+          </div>
 
-        <div className="mt-4">
-          <FavoriteButton
-            key={`${product._id}-${product.isSaved}`}
-            productId={product._id}
-            initialIsFavorited={product.isSaved}
-            showText={true}
-            variant="outline"
-            size="lg"
-            className="w-full border-green-600 text-green-600 hover:bg-green-50"
-          />
-        </div>
-
-        <div className="border-t pt-6">
-          <h3 className="font-semibold mb-4">Thông tin sản phẩm</h3>
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-gray-600">Danh mục:</span>
-              <span className="font-medium">{product.categoryId.name}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Trong kho:</span>
-              <span className="font-medium">{product.stock}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Đã bán:</span>
-              <span className="font-medium">{product.buyerCount}</span>
+          <div className="border-t pt-6">
+            <h3 className="font-semibold mb-4">Thông tin sản phẩm</h3>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-600">Danh mục:</span>
+                <span className="font-medium">{product.categoryId.name}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Trong kho:</span>
+                <span className="font-medium">{product.stock}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Đã bán:</span>
+                <span className="font-medium">{product.buyerCount}</span>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Section đánh giá sản phẩm */}
-      <div className="col-span-1 lg:col-span-2 mt-12">
-        <ReviewsSection productId={product._id} />
+        {/* Section đánh giá sản phẩm */}
+        <div className="col-span-1 lg:col-span-2 mt-12">
+          <ReviewsSection productId={product._id} />
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 

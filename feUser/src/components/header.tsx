@@ -7,7 +7,7 @@ import { useSession, signOut } from "next-auth/react";
 import { useCart } from "@/contexts/cart-context";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, ShoppingCart, Heart, Search, User, LogOut, Settings, Package } from "lucide-react";
+import { Menu, ShoppingCart, Heart, Search, User, LogOut, Settings, Package, Eye } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
@@ -88,7 +88,11 @@ export default function Header() {
                   <span className="absolute -top-1 -right-1 text-xs bg-green-600 text-white rounded-full px-1.5 py-0.5 min-w-[18px] text-center leading-none">
                     {cartLoading ? (
                       <span className="inline-block w-2 h-2 bg-white rounded-full animate-pulse"></span>
-                    ) : cartCount > 99 ? "99+" : cartCount}
+                    ) : cartCount > 99 ? (
+                      "99+"
+                    ) : (
+                      cartCount
+                    )}
                   </span>
                 )}
               </Button>
@@ -124,6 +128,12 @@ export default function Header() {
                     <Link href="/yeu-thich">
                       <Heart className="mr-2 h-4 w-4" />
                       <span>Sản phẩm yêu thích</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/lich-su-xem">
+                      <Eye className="mr-2 h-4 w-4" />
+                      <span>Lịch sử xem</span>
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
@@ -183,6 +193,12 @@ export default function Header() {
                           <Button variant="ghost" className="w-full justify-start" size="sm">
                             <Heart className="mr-2 h-4 w-4" />
                             Yêu thích
+                          </Button>
+                        </Link>
+                        <Link href="/lich-su-xem" onClick={() => setIsOpen(false)}>
+                          <Button variant="ghost" className="w-full justify-start" size="sm">
+                            <Eye className="mr-2 h-4 w-4" />
+                            Lịch sử xem
                           </Button>
                         </Link>
                         <Button

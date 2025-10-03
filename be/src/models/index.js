@@ -12,6 +12,7 @@ import Review from "./Review.js";
 import Favorite from "./Favorite.js";
 import LoyaltyPoints from "./LoyaltyPoints.js";
 import Notification from "./Notification.js";
+import ViewHistory from "./ViewHistory.js";
 export {
   User,
   OTP,
@@ -26,5 +27,6 @@ export {
   Delivery,
   LoyaltyPoints,
   Favorite,
-  Notification
+  Notification,
+  ViewHistory,
 };
