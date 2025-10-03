@@ -160,6 +160,12 @@ const OrderDetailPage = () => {
     return isCancellationRequested() && order?.status === 'cancelled'
   }
 
+  const isPendingStatus = () => {
+    // Kiểm tra xem trạng thái hiện tại có phải là pending không
+    const lastStatus = order?.timeline?.[order.timeline.length - 1]?.status;
+    return lastStatus === 'new' || order?.status === 'pending'
+  }
+
   if (loading) {
     return <LoadingSpinner />
   }
@@ -198,7 +204,7 @@ const OrderDetailPage = () => {
               {isCancellationApproved() ? 'Đã chấp nhận yêu cầu hủy' : 'Chấp nhận yêu cầu hủy'}
             </Button>
           )}
-          {getStatusOptions(order.status).length > 0 && (
+          {!isPendingStatus() && getStatusOptions(order.status).length > 0 && (
             <Button
               variant="primary"
               onClick={() => setShowStatusModal(true)}
@@ -210,6 +216,19 @@ const OrderDetailPage = () => {
           )}
         </div>
       </div>
+
+      {isPendingStatus() && (
+        <div className="alert alert-info d-flex align-items-center mb-4" role="alert">
+          <i className="bi bi-info-circle-fill me-2" style={{ fontSize: '1.5rem' }}></i>
+          <div>
+            <strong>Đơn hàng đang chờ xác nhận</strong>
+            <p className="mb-0 small">
+              Đơn hàng này sẽ tự động được chuyển sang trạng thái "Đã xác nhận" sau 30 phút.
+              Admin không cần cập nhật thủ công.
+            </p>
+          </div>
+        </div>
+      )}
 
       <Row>
         {/* Order Info */}
@@ -231,7 +250,7 @@ const OrderDetailPage = () => {
                     <strong>Ngày tạo:</strong> {moment(order.createdAt).format('DD/MM/YYYY HH:mm')}
                   </div>
                   <div className="mb-3">
-                    <strong>Tổng tiền:</strong> 
+                    <strong>Tổng tiền:</strong>
                     <span className="fw-bold text-primary ms-2">
                       {formatCurrency(order.totalAmount)}
                     </span>
@@ -254,7 +273,7 @@ const OrderDetailPage = () => {
                   )}
                   {order.cancellationRequestReason && (
                     <div className="mb-3">
-                      <strong>Lý do yêu cầu hủy:</strong> 
+                      <strong>Lý do yêu cầu hủy:</strong>
                       <span className="text-danger ms-2">{order.cancellationRequestReason}</span>
                       {isCancellationApproved() && (
                         <div className="mt-1">
@@ -346,8 +365,8 @@ const OrderDetailPage = () => {
                             <div>
                               {getStatusBadge(item.status)}
                               <small className="text-muted ms-2">
-                                  {getUserTypeText(item.performedBy)}
-                                </small>
+                                {getUserTypeText(item.performedBy)}
+                              </small>
                             </div>
                             <small className="text-muted">
                               {moment(item.timestamp).format('DD/MM HH:mm')}
@@ -441,7 +460,7 @@ const OrderDetailPage = () => {
               </div>
               {order.cancellationRequestReason && (
                 <div className="mb-2">
-                  <strong>Lý do hủy từ khách hàng:</strong> 
+                  <strong>Lý do hủy từ khách hàng:</strong>
                   <span className="text-danger ms-2">{order.cancellationRequestReason}</span>
                 </div>
               )}
