@@ -1,6 +1,7 @@
 import { apiFetch } from "@/lib/api";
 import { ApiResponse } from "@/types/api";
 import { FavoriteProduct, FavoritesResponse, ToggleFavoriteResponse } from "@/types/favorite";
+import { UserLoyaltyPoints } from "@/types/user";
 
 class UserService {
   /**
@@ -110,6 +111,25 @@ class UserService {
     // Không set Content-Type để browser tự động set multipart/form-data với boundary
     // API upload trả về trực tiếp { message, filePaths }, không có cấu trúc ApiResponse
     return await apiFetch<{ message: string; filePaths: string[] }>("/upload", accessToken, options);
+  }
+
+  /**
+   * Lấy điểm tích lũy hiện có của người dùng.
+   * @param accessToken - Bắt buộc, vì đây là endpoint cần xác thực.
+   */
+  async getLoyaltyPoints(accessToken: string): Promise<ApiResponse<UserLoyaltyPoints>> {
+    if (!accessToken) {
+      return {
+        success: false,
+        message: "Yêu cầu xác thực.",
+        data: { loyaltyPoints: 0 },
+      };
+    }
+    // API trả về cấu trúc ApiResponse<T> chuẩn
+    return await apiFetch<ApiResponse<UserLoyaltyPoints>>("/users/me/loyalty-points", accessToken, {
+      method: "GET",
+      cache: "no-store", // Không cache điểm để luôn cập nhật
+    });
   }
 }
 

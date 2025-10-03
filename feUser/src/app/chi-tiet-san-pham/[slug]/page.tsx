@@ -5,7 +5,7 @@ import AddToCartButton from "@/components/add-to-cart-button";
 import { FavoriteButton } from "@/components/favorite-button";
 import { productService } from "@/services/productService";
 import { Star } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
+import { ProductDetailSkeleton } from "@/components/product-detail-skeleton";
 import { auth } from "@/auth";
 import { Product } from "@/types/product";
 import { ApiResponse } from "@/types/api";
@@ -38,34 +38,6 @@ export async function generateMetadata(props: ProductPageProps) {
   };
 }
 
-function ProductDetailSkeleton() {
-  return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-      <div className="space-y-4">
-        <Skeleton className="aspect-square w-full rounded-lg" />
-        <div className="grid grid-cols-4 gap-2">
-          {[...Array(4)].map((_, i) => (
-            <Skeleton key={i} className="aspect-square w-full rounded-lg" />
-          ))}
-        </div>
-      </div>
-
-      <div className="space-y-6">
-        <Skeleton className="h-8 w-3/4" />
-        <div className="flex items-center gap-2">
-          <Skeleton className="h-5 w-24" />
-          <Skeleton className="h-5 w-16" />
-        </div>
-        <Skeleton className="h-20 w-full" />
-        <div className="flex items-center gap-4">
-          <Skeleton className="h-8 w-32" />
-          <Skeleton className="h-8 w-24" />
-        </div>
-        <Skeleton className="h-12 w-full" />
-      </div>
-    </div>
-  );
-}
 
 async function ProductDetail({ slug }: { slug: string }) {
   const session = await auth();

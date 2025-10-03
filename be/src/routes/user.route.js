@@ -9,6 +9,7 @@ router.use(protect);
 
 router.get('/me', userController.getMe);
 router.put('/me', upload.single('avatar'), userController.updateMe);
+router.get('/me/loyalty-points', userController.getCurrentLoyaltyPoints);
 router.get('/favorites', userController.getFavorites);
 router.post('/favorites/:productId', userController.toggleFavorite);
 router.get('/recently-viewed', userController.getRecentlyViewed);

@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { CancelOrderDialog } from "@/components/cancel-order-dialog";
 import { ReturnOrderDialog } from "@/components/return-order-dialog";
+import { ConfirmReceivedDialog } from "@/components/confirm-received-dialog";
 import { Button } from "@/components/ui/button";
 import { Clock } from "lucide-react";
 import type { OrderStatus, DetailedOrderStatus } from "@/types/order";
@@ -11,6 +12,7 @@ interface OrderDetailClientProps {
   orderId: string;
   canCancel: boolean;
   canReturn: boolean;
+  canConfirmReceived: boolean;
   orderStatus: OrderStatus;
   latestDetailedStatus?: DetailedOrderStatus;
 }
@@ -19,6 +21,7 @@ export function OrderDetailClient({
   orderId, 
   canCancel, 
   canReturn,
+  canConfirmReceived,
   latestDetailedStatus 
 }: OrderDetailClientProps) {
   const router = useRouter();
@@ -52,6 +55,9 @@ export function OrderDetailClient({
     <div className="flex gap-2">
       {canCancel && (
         <CancelOrderDialog orderId={orderId} onSuccess={handleSuccess} />
+      )}
+      {canConfirmReceived && (
+        <ConfirmReceivedDialog orderId={orderId} onSuccess={handleSuccess} />
       )}
       {canReturn && (
         <ReturnOrderDialog orderId={orderId} onSuccess={handleSuccess} />

@@ -124,9 +124,22 @@ export default function MyOrdersPage() {
 
   if (sessionStatus === 'loading' || sessionStatus === 'unauthenticated') {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <Skeleton className="h-12 w-64 mb-6" />
-        <Skeleton className="h-96 w-full" />
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-7xl">
+        <div className="mb-8 space-y-2">
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-16 w-16 rounded-lg" />
+            <div>
+              <Skeleton className="h-9 w-64" />
+              <Skeleton className="h-5 w-80 mt-2" />
+            </div>
+          </div>
+        </div>
+        <Skeleton className="h-48 w-full mb-8" />
+        <div className="space-y-5">
+          {[1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-72 w-full rounded-xl" />
+          ))}
+        </div>
       </div>
     );
   }

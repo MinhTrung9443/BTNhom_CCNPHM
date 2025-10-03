@@ -78,6 +78,10 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
     order.status === 'pending' || 
     (order.status === 'processing' && ['confirmed', 'preparing'].includes(latestDetailedStatus || ''));
 
+  // Kiểm tra có thể xác nhận đã nhận hàng: status=shipping và detailed status=delivered
+  const canConfirmReceived = 
+    order.status === 'shipping' && latestDetailedStatus === 'delivered';
+
   // Kiểm tra có thể yêu cầu trả hàng: status=shipping và detailed status=delivered
   const canRequestReturn = 
     order.status === 'shipping' && latestDetailedStatus === 'delivered';
@@ -112,6 +116,7 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
                 <OrderDetailClient
                   orderId={order._id}
                   canCancel={canCancelOrder}
+                  canConfirmReceived={canConfirmReceived}
                   canReturn={canRequestReturn}
                   orderStatus={order.status}
                   latestDetailedStatus={latestDetailedStatus}

@@ -963,3 +963,35 @@ export const approveReturn = async (orderId) => {
 
   return order;
 };
+
+export const confirmOrderReceived = async (userId, orderId) => {
+  const order = await Order.findOne({ _id: orderId, userId: userId });
+
+  if (!order) {
+    throw new AppError("Không tìm thấy đơn hàng hoặc bạn không có quyền truy cập.", 404);
+  }
+
+  const latestDetailedStatus = order.timeline[order.timeline.length - 1]?.status;
+
+  // Only allow confirmation if the order has been delivered
+  if (order.status !== ORDER_STATUS.SHIPPING || latestDetailedStatus !== DETAILED_ORDER_STATUS.DELIVERED) {
+    throw new AppError("Chỉ có thể xác nhận đã nhận hàng khi đơn hàng ở trạng thái 'Đã giao hàng'.", 400);
+  }
+
+  // Update order status to COMPLETED
+  order.status = ORDER_STATUS.COMPLETED;
+  order.timeline.push(createTimelineEntry(DETAILED_ORDER_STATUS.COMPLETED, "user", {}));
+
+  // Award loyalty points (1% of totalAmount)
+  const pointsToAward = Math.floor(order.totalAmount * 0.01);
+  if (pointsToAward > 0) {
+    await User.findByIdAndUpdate(userId, {
+      $inc: { loyaltyPoints: pointsToAward },
+    });
+    logger.info(`Awarded ${pointsToAward} loyalty points to user ${userId} for order ${orderId}`);
+  }
+
+  await order.save();
+
+  return order;
+};
