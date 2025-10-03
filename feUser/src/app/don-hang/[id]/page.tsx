@@ -92,7 +92,11 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
             <div className="flex items-center gap-3 self-start sm:self-end">
               <OrderStatusBadge status={order.status} />
               <Suspense fallback={null}>
-                <OrderDetailClient orderId={order._id} canCancel={order.canCancel || order.status === "new"} orderStatus={order.status} />
+                <OrderDetailClient
+                  orderId={order._id}
+                  canCancel={order.status === 'pending' || order.status === 'processing'}
+                  orderStatus={order.status}
+                />
               </Suspense>
             </div>
           </div>

@@ -13,35 +13,20 @@ interface OrderStatusBadgeProps {
 }
 
 const statusConfig: Record<OrderStatus, { label: string; variant: string; className: string }> = {
-  new: {
-    label: 'Mới tạo',
+  pending: {
+    label: 'Chờ xác nhận',
     variant: 'secondary',
-    className: 'bg-gray-100 text-gray-800 hover:bg-gray-200',
-  },
-  confirmed: {
-    label: 'Đã xác nhận',
-    variant: 'default',
-    className: 'bg-blue-100 text-blue-800 hover:bg-blue-200',
-  },
-  preparing: {
-    label: 'Đang chuẩn bị',
-    variant: 'default',
-    className: 'bg-purple-100 text-purple-800 hover:bg-purple-200',
+    className: 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200',
   },
   processing: {
     label: 'Đang xử lý',
     variant: 'default',
-    className: 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200',
+    className: 'bg-blue-100 text-blue-800 hover:bg-blue-200',
   },
-  shipping_in_progress: {
+  shipping: {
     label: 'Đang giao hàng',
     variant: 'default',
     className: 'bg-indigo-100 text-indigo-800 hover:bg-indigo-200',
-  },
-  delivered: {
-    label: 'Đã giao hàng',
-    variant: 'default',
-    className: 'bg-teal-100 text-teal-800 hover:bg-teal-200',
   },
   completed: {
     label: 'Hoàn thành',
@@ -53,20 +38,15 @@ const statusConfig: Record<OrderStatus, { label: string; variant: string; classN
     variant: 'destructive',
     className: 'bg-red-100 text-red-800 hover:bg-red-200',
   },
-  cancellation_requested: {
-    label: 'Chờ xác nhận hủy',
-    variant: 'secondary',
-    className: 'bg-amber-100 text-amber-800 hover:bg-amber-200',
-  },
-  refunded: {
-    label: 'Đã hoàn tiền',
+  return_refund: {
+    label: 'Trả hàng/Hoàn tiền',
     variant: 'secondary',
     className: 'bg-orange-100 text-orange-800 hover:bg-orange-200',
   },
 };
 
 export function OrderStatusBadge({ status, className }: OrderStatusBadgeProps) {
-  const config = statusConfig[status] || statusConfig.new;
+  const config = statusConfig[status] || statusConfig.pending;
 
   return (
     <Badge className={cn(config.className, className)}>

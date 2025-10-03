@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Container, Row, Col, Card, Table, Button, Form, Badge, InputGroup, Modal } from 'react-bootstrap'
+import { Container, Row, Col, Card, Table, Button, Form, Badge, InputGroup, Modal, Spinner } from 'react-bootstrap'
 import { useNavigate } from 'react-router-dom'
 import productService from '../../services/productService'
 import { useDispatch, useSelector } from 'react-redux'
@@ -29,6 +29,7 @@ const ProductsPage = () => {
   const [showProductModal, setShowProductModal] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
+  const [saveLoading, setSaveLoading] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [newImageFiles, setNewImageFiles] = useState([]);
 
@@ -93,6 +94,8 @@ const ProductsPage = () => {
 
   const handleSaveProduct = async () => {
     try {
+      setSaveLoading(true);
+      
       // Create FormData for multipart/form-data request
       const formData = new FormData();
 
@@ -138,6 +141,8 @@ const ProductsPage = () => {
       dispatch(fetchProducts(filters))
     } catch (error) {
       toast.error(error.message || 'Có lỗi xảy ra')
+    } finally {
+      setSaveLoading(false);
     }
   }
 
@@ -362,7 +367,15 @@ const ProductsPage = () => {
             {isEditing ? 'Chỉnh sửa sản phẩm' : 'Thêm sản phẩm mới'}
           </Modal.Title>
         </Modal.Header>
-        <Modal.Body>
+        <Modal.Body className="position-relative">
+          {saveLoading && (
+            <div className="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-light bg-opacity-75" style={{ zIndex: 10 }}>
+              <div className="text-center">
+                <Spinner animation="border" variant="primary" />
+                <div className="mt-2">{isEditing ? 'Đang cập nhật sản phẩm...' : 'Đang tạo sản phẩm...'}</div>
+              </div>
+            </div>
+          )}
           <Form>
             <Row>
               <Col md={6}>
@@ -475,11 +488,18 @@ const ProductsPage = () => {
           </Form>
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowProductModal(false)}>
+          <Button variant="secondary" onClick={() => setShowProductModal(false)} disabled={saveLoading}>
             Hủy
           </Button>
-          <Button variant="primary" onClick={handleSaveProduct}>
-            {isEditing ? 'Cập nhật' : 'Tạo mới'}
+          <Button variant="primary" onClick={handleSaveProduct} disabled={saveLoading}>
+            {saveLoading ? (
+              <>
+                <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" className="me-2" />
+                {isEditing ? 'Đang cập nhật...' : 'Đang tạo...'}
+              </>
+            ) : (
+              isEditing ? 'Cập nhật' : 'Tạo mới'
+            )}
           </Button>
         </Modal.Footer>
       </Modal>

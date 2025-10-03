@@ -3,20 +3,26 @@
  * Định nghĩa types cho đơn hàng
  */
 
-export type OrderStatus =
+// Main order status - used for filtering/tabs
+export type OrderStatus = 'pending' | 'processing' | 'shipping' | 'completed' | 'cancelled' | 'return_refund';
+
+// Alias for API compatibility
+export type ApiOrderStatus = OrderStatus;
+
+// Detailed status - used in timeline
+export type DetailedOrderStatus =
   | 'new'
   | 'confirmed'
   | 'preparing'
-  | 'processing'
   | 'shipping_in_progress'
   | 'delivered'
   | 'completed'
   | 'cancelled'
   | 'cancellation_requested'
+  | 'payment_overdue'
+  | 'delivery_failed'
+  | 'return_requested'
   | 'refunded';
-
-// API filter status (cho API query params)
-export type ApiOrderStatus = 'pending' | 'processing' | 'shipping' | 'completed' | 'cancelled' | 'return_refund';
 
 export type PaymentMethod = 'COD' | 'VNPAY' | 'BANK';
 export type PaymentStatus = 'pending' | 'completed' | 'failed';
@@ -66,7 +72,7 @@ export interface OrderUser {
 
 export interface Timeline {
   _id: string;
-  status: OrderStatus;
+  status: DetailedOrderStatus;
   description: string;
   timestamp: string;
   performedBy: PerformerRole;

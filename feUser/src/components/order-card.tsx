@@ -63,8 +63,21 @@ export function OrderCard({ order, onOrderUpdate }: OrderCardProps) {
   const displayProducts = order.orderLines.slice(0, 2);
   const remainingCount = order.orderLines.length - 2;
 
-  // Kiểm tra có thể hủy đơn không (canCancel=true VÀ status không phải cancelled)
-  const canCancelOrder = order.canCancel && order.status !== 'cancelled';
+  // Kiểm tra có thể hủy đơn không theo logic backend:
+  // - PENDING (detailed: new) → Có thể hủy trực tiếp
+  // - PROCESSING (detailed: confirmed) → Có thể hủy trực tiếp
+  // - PROCESSING (detailed: preparing) → Có thể yêu cầu hủy (chờ admin)
+  // - SHIPPING trở đi → Không thể hủy
+  const getLatestDetailedStatus = () => {
+    if (!order.timeline || order.timeline.length === 0) return null;
+    return order.timeline[order.timeline.length - 1]?.status;
+  };
+
+  const latestDetailedStatus = getLatestDetailedStatus();
+  
+  const canCancelOrder = 
+    order.status === 'pending' || 
+    (order.status === 'processing' && ['confirmed', 'preparing'].includes(latestDetailedStatus || ''));
 
   return (
     <Card className="hover:shadow-lg transition-shadow">
