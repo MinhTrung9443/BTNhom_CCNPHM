@@ -189,7 +189,8 @@ export function ReviewForm({ isOpen, onClose, product, orderId, existingReview, 
           {/* Rating Section */}
           <div className="text-center space-y-3">
             <Label className="text-base font-medium">
-              Đánh giá của bạn: <span className="text-yellow-600 font-semibold">{getRatingText(hoverRating || rating)}</span>
+              Đánh giá của bạn <span className="text-red-500">*</span>:{" "}
+              <span className="text-yellow-600 font-semibold">{getRatingText(hoverRating || rating)}</span>
             </Label>
             <div className="flex justify-center gap-1 p-4 bg-gray-50 rounded-lg">{renderStars()}</div>
             {rating > 0 && (
@@ -207,7 +208,7 @@ export function ReviewForm({ isOpen, onClose, product, orderId, existingReview, 
           {/* Comment Section */}
           <div className="space-y-2">
             <Label htmlFor="comment" className="text-base font-medium">
-              Bình luận của bạn
+              Bình luận của bạn <span className="text-red-500">*</span>
             </Label>
             <Textarea
               id="comment"
