@@ -5,10 +5,11 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Trash2, Plus, Minus, ArrowRight } from 'lucide-react';
+import { Trash2, Plus, Minus, ArrowRight, AlertTriangle, XCircle } from 'lucide-react';
 import { cartService } from '@/services/cartService';
 import { Cart, CartItem } from '@/types/cart';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -27,10 +28,40 @@ export default function CartClient({ cart: initialCart }: CartClientProps) {
   const [cart, setCart] = useState<Cart>(initialCart);
   const [selectedItems, setSelectedItems] = useState<CartItem[]>([]);
   const [isAllSelected, setIsAllSelected] = useState(false);
+  const [editingQuantity, setEditingQuantity] = useState<{ [key: string]: string }>({});
+
+  // Kiểm tra sản phẩm có vấn đề về tồn kho
+  const hasStockIssue = (item: CartItem) => {
+    return item.quantity > item.productId.stock;
+  };
+
+  const getStockWarningMessage = (item: CartItem) => {
+    if (!item.productId.isActive) {
+      return "Sản phẩm không còn hoạt động";
+    }
+    if (item.productId.stock === 0) {
+      return "Sản phẩm đã hết hàng";
+    }
+    if (item.quantity > item.productId.stock) {
+      return `Chỉ còn ${item.productId.stock} sản phẩm. Vui lòng cập nhật lại số lượng`;
+    }
+    return null;
+  };
+
+  // Phân loại sản phẩm
+  const activeItems = cart.items.filter(item => 
+    item.productId.isActive && item.productId.stock > 0
+  );
+  
+  const inactiveItems = cart.items.filter(item => 
+    !item.productId.isActive || item.productId.stock === 0
+  );
 
   useEffect(() => {
-    // Update isAllSelected state when selectedItems or cart.items change
-    if (cart.items.length > 0 && selectedItems.length === cart.items.length) {
+    // Update isAllSelected state when selectedItems or activeItems change
+    // Chỉ tính các sản phẩm active và không có vấn đề tồn kho
+    const validActiveItems = activeItems.filter(item => !hasStockIssue(item));
+    if (validActiveItems.length > 0 && selectedItems.length === validActiveItems.length) {
       setIsAllSelected(true);
     } else {
       setIsAllSelected(false);
@@ -52,7 +83,9 @@ export default function CartClient({ cart: initialCart }: CartClientProps) {
     if (isAllSelected) {
       setSelectedItems([]);
     } else {
-      setSelectedItems(cart.items);
+      // Chỉ chọn các sản phẩm active và không có vấn đề tồn kho
+      const validActiveItems = activeItems.filter(item => !hasStockIssue(item));
+      setSelectedItems(validActiveItems);
     }
     setIsAllSelected(!isAllSelected);
   };
@@ -64,24 +97,27 @@ export default function CartClient({ cart: initialCart }: CartClientProps) {
     if (!session?.user?.accessToken) return;
     try {
       const response = await cartService.removeItem(session.user.accessToken, productId);
+      
+      if (response.success) {
+        // Cập nhật state local ngay lập tức
+        setCart(prevCart => ({
+          ...prevCart,
+          items: prevCart.items.filter(item => item.productId._id !== productId)
+        }));
 
-      // Cập nhật state local ngay lập tức
-      setCart(prevCart => ({
-        ...prevCart,
-        items: prevCart.items.filter(item => item.productId._id !== productId)
-      }));
+        // Cập nhật selectedItems để loại bỏ item đã xóa
+        setSelectedItems(prev => prev.filter(item => item.productId._id !== productId));
 
-      // Cập nhật selectedItems để loại bỏ item đã xóa
-      setSelectedItems(prev => prev.filter(item => item.productId._id !== productId));
+        // Cập nhật cart count trên header
+        await refreshCartCount();
 
-      // Cập nhật cart count trên header
-      await refreshCartCount();
-
-      toast.success("Sản phẩm đã được xóa khỏi giỏ hàng");
-
+        toast.success(response.message);
+      }
     } catch (error) {
-      console.log(error, error instanceof HttpError)
-      toast.error(error instanceof HttpError ? error.response.data.message : "Lỗi khi xóa sản phẩm");
+      console.error(error);
+      if (error instanceof HttpError) {
+        toast.error(error.response.data.message);
+      }
     }
   };
 
@@ -93,29 +129,35 @@ export default function CartClient({ cart: initialCart }: CartClientProps) {
       const productIdsToRemove = selectedItems.map(item => item.productId._id);
 
       // Xóa tất cả item song song
-      await Promise.all(
+      const responses = await Promise.all(
         productIdsToRemove.map(productId => 
           cartService.removeItem(session.user.accessToken!, productId)
         )
       );
 
-      // Cập nhật state local ngay lập tức
-      setCart(prevCart => ({
-        ...prevCart,
-        items: prevCart.items.filter(item => !productIdsToRemove.includes(item.productId._id))
-      }));
+      // Kiểm tra tất cả response đều success
+      const allSuccess = responses.every(response => response.success);
+      
+      if (allSuccess) {
+        // Cập nhật state local ngay lập tức
+        setCart(prevCart => ({
+          ...prevCart,
+          items: prevCart.items.filter(item => !productIdsToRemove.includes(item.productId._id))
+        }));
 
-      // Clear selectedItems
-      setSelectedItems([]);
+        // Clear selectedItems
+        setSelectedItems([]);
 
-      // Cập nhật cart count trên header
-      await refreshCartCount();
+        // Cập nhật cart count trên header
+        await refreshCartCount();
 
-      toast.success(`Đã xóa ${selectedItems.length} sản phẩm khỏi giỏ hàng`);
-
+        toast.success(`Đã xóa ${selectedItems.length} sản phẩm khỏi giỏ hàng`);
+      }
     } catch (error) {
-      console.log(error, error instanceof HttpError)
-      toast.error(error instanceof HttpError ? error.response.data.message : "Lỗi khi xóa sản phẩm");
+      console.error(error);
+      if (error instanceof HttpError) {
+        toast.error(error.response.data.message);
+      }
     }
   };
 
@@ -124,6 +166,7 @@ export default function CartClient({ cart: initialCart }: CartClientProps) {
 
     try {
       const response = await cartService.updateItem(session.user.accessToken, { productId, quantity: newQuantity });
+      
       if (response.success) {
         // Cập nhật state local ngay lập tức
         setCart(prevCart => ({
@@ -145,12 +188,70 @@ export default function CartClient({ cart: initialCart }: CartClientProps) {
         // Cập nhật cart count trên header
         await refreshCartCount();
 
-        toast.success("Số lượng sản phẩm đã được cập nhật");
-      } else {
-        toast.error(response.message);
+        toast.success(response.message);
       }
     } catch (error) {
-      toast.error("Không thể cập nhật số lượng");
+      console.error(error);
+      if (error instanceof HttpError) {
+        toast.error(error.response.data.message);
+      }
+    }
+  };
+
+  const handleQuantityInputChange = (productId: string, value: string) => {
+    // Chỉ cho phép nhập số
+    if (value === '' || /^\d+$/.test(value)) {
+      setEditingQuantity(prev => ({ ...prev, [productId]: value }));
+    }
+  };
+
+  const handleQuantityInputBlur = async (productId: string, currentQuantity: number) => {
+    const inputValue = editingQuantity[productId];
+    
+    if (inputValue === undefined || inputValue === '') {
+      // Nếu input rỗng, reset về giá trị hiện tại
+      setEditingQuantity(prev => {
+        const newState = { ...prev };
+        delete newState[productId];
+        return newState;
+      });
+      return;
+    }
+
+    const newQuantity = parseInt(inputValue, 10);
+    
+    if (isNaN(newQuantity) || newQuantity < 1) {
+      toast.error("Số lượng phải lớn hơn 0");
+      setEditingQuantity(prev => {
+        const newState = { ...prev };
+        delete newState[productId];
+        return newState;
+      });
+      return;
+    }
+
+    if (newQuantity !== currentQuantity) {
+      await handleUpdateQuantity(productId, newQuantity);
+    }
+
+    // Clear editing state
+    setEditingQuantity(prev => {
+      const newState = { ...prev };
+      delete newState[productId];
+      return newState;
+    });
+  };
+
+  const handleQuantityInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, productId: string, currentQuantity: number) => {
+    if (e.key === 'Enter') {
+      e.currentTarget.blur();
+    } else if (e.key === 'Escape') {
+      setEditingQuantity(prev => {
+        const newState = { ...prev };
+        delete newState[productId];
+        return newState;
+      });
+      e.currentTarget.blur();
     }
   };
 
@@ -161,6 +262,95 @@ export default function CartClient({ cart: initialCart }: CartClientProps) {
     }
     localStorage.setItem('selectedCartItems', JSON.stringify(selectedItems));
     router.push('/don-hang/preview');
+  };
+
+  // Render cart item với logic hiển thị cảnh báo
+  const renderCartItem = (item: CartItem, isInactive: boolean = false) => {
+    const warningMessage = getStockWarningMessage(item);
+    const hasWarning = !!warningMessage;
+    const canSelect = !isInactive && !hasWarning;
+
+    return (
+      <Card key={item.productId._id} className={isInactive ? "opacity-60" : ""}>
+        <CardContent className="p-6">
+          <div className="flex items-start gap-4">
+            <Checkbox
+              id={`select-${item.productId._id}`}
+              checked={selectedItems.some(selected => selected.productId._id === item.productId._id)}
+              onCheckedChange={() => canSelect && handleSelectItem(item)}
+              className="w-5 h-5 mt-1"
+              disabled={!canSelect}
+            />
+            <Link href={`/chi-tiet-san-pham/${item.productId.slug}`} className="w-24 h-24 bg-gray-200 rounded-lg flex items-center justify-center relative overflow-hidden hover:opacity-80 transition-opacity cursor-pointer flex-shrink-0">
+              <Image
+                src={item.productId.images[0]}
+                alt={item.productId.name}
+                fill
+                unoptimized
+                sizes="96px"
+                style={{ objectFit: 'cover' }}
+              />
+            </Link>
+
+            <div className="flex-1 min-w-0">
+              <Link href={`/chi-tiet-san-pham/${item.productId.slug}`} className="hover:text-green-600 transition-colors cursor-pointer">
+                <h3 className="font-semibold mb-2">{item.productId.name}</h3>
+              </Link>
+              <p className="text-green-600 font-bold mb-2">
+                {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.productId.price)}
+              </p>
+
+              {/* Cảnh báo */}
+              {hasWarning && (
+                <div className="flex items-start gap-2 mb-3 p-2 bg-amber-50 border border-amber-200 rounded-md">
+                  <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-amber-800">{warningMessage}</p>
+                </div>
+              )}
+
+              {!isInactive && (
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleUpdateQuantity(item.productId._id, item.quantity - 1)}
+                    disabled={item.quantity <= 1}
+                  >
+                    <Minus className="w-4 h-4" />
+                  </Button>
+                  <Input
+                    type="text"
+                    inputMode="numeric"
+                    value={editingQuantity[item.productId._id] !== undefined ? editingQuantity[item.productId._id] : item.quantity}
+                    onChange={(e) => handleQuantityInputChange(item.productId._id, e.target.value)}
+                    onBlur={() => handleQuantityInputBlur(item.productId._id, item.quantity)}
+                    onKeyDown={(e) => handleQuantityInputKeyDown(e, item.productId._id, item.quantity)}
+                    className="w-16 text-center px-2 py-1"
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleUpdateQuantity(item.productId._id, item.quantity + 1)}
+                    disabled={hasStockIssue(item) || item.quantity >= item.productId.stock}
+                  >
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleRemoveItem(item.productId._id)}
+              className="text-red-600 hover:text-red-700 hover:bg-red-50 flex-shrink-0"
+            >
+              <Trash2 className="w-5 h-5" />
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
   };
 
   return (
@@ -184,88 +374,50 @@ export default function CartClient({ cart: initialCart }: CartClientProps) {
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-4">
-          <Card>
-            <CardContent className="p-4 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Checkbox id="select-all" checked={isAllSelected} onCheckedChange={handleSelectAll} />
-                <label htmlFor="select-all" className="font-medium cursor-pointer">
-                  Chọn tất cả ({cart.items.length} sản phẩm)
-                </label>
-              </div>
-              <Button 
-                variant="ghost" 
-                className="text-red-600 hover:text-red-700" 
-                onClick={handleRemoveSelectedItems}
-                disabled={selectedItems.length === 0}
-              >
-                <Trash2 className="w-4 h-4 mr-2" />
-                Xóa mục đã chọn
-              </Button>
-            </CardContent>
-          </Card>
-
-          {cart.items.map((item: CartItem) => (
-            <Card key={item.productId._id}>
-              <CardContent className="p-6">
-                <div className="flex items-center gap-4">
-                  <Checkbox
-                    id={`select-${item.productId._id}`}
-                    checked={selectedItems.some(selected => selected.productId._id === item.productId._id)}
-                    onCheckedChange={() => handleSelectItem(item)}
-                    className="w-5 h-5"
-                  />
-                  <Link href={`/chi-tiet-san-pham/${item.productId.slug}`} className="w-24 h-24 bg-gray-200 rounded-lg flex items-center justify-center relative overflow-hidden hover:opacity-80 transition-opacity cursor-pointer">
-                    <Image
-                      src={item.productId.images[0]}
-                      alt={item.productId.name}
-                      fill
-                      unoptimized
-                      sizes="96px"
-                      style={{ objectFit: 'cover' }}
-                    />
-                  </Link>
-
-                  <div className="flex-1">
-                    <Link href={`/chi-tiet-san-pham/${item.productId.slug}`} className="hover:text-green-600 transition-colors cursor-pointer">
-                      <h3 className="font-semibold mb-2">{item.productId.name}</h3>
-                    </Link>
-                    <p className="text-green-600 font-bold mb-2">
-                      {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.productId.price)}
-                    </p>
-
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleUpdateQuantity(item.productId._id, item.quantity - 1)}
-                        disabled={item.quantity <= 1}
-                      >
-                        <Minus className="w-4 h-4" />
-                      </Button>
-                      <span className="px-4 py-1 border rounded">{item.quantity}</span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleUpdateQuantity(item.productId._id, item.quantity + 1)}
-                      >
-                        <Plus className="w-4 h-4" />
-                      </Button>
-                    </div>
+        <div className="lg:col-span-2 space-y-6">
+          {/* Sản phẩm hoạt động */}
+          {activeItems.length > 0 && (
+            <div className="space-y-4">
+              <Card>
+                <CardContent className="p-4 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Checkbox id="select-all" checked={isAllSelected} onCheckedChange={handleSelectAll} />
+                    <label htmlFor="select-all" className="font-medium cursor-pointer">
+                      Chọn tất cả ({activeItems.filter(item => !hasStockIssue(item)).length} sản phẩm)
+                    </label>
                   </div>
-
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleRemoveItem(item.productId._id)}
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                  <Button 
+                    variant="ghost" 
+                    className="text-red-600 hover:text-red-700" 
+                    onClick={handleRemoveSelectedItems}
+                    disabled={selectedItems.length === 0}
                   >
-                    <Trash2 className="w-5 h-5" />
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Xóa mục đã chọn
                   </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+
+              {activeItems.map((item: CartItem) => renderCartItem(item, false))}
+            </div>
+          )}
+
+          {/* Sản phẩm không hoạt động */}
+          {inactiveItems.length > 0 && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 text-gray-600">
+                <XCircle className="w-5 h-5" />
+                <h2 className="text-lg font-semibold">
+                  Sản phẩm không hoạt động ({inactiveItems.length})
+                </h2>
+              </div>
+              <p className="text-sm text-gray-500 -mt-2">
+                Các sản phẩm này không thể thanh toán
+              </p>
+
+              {inactiveItems.map((item: CartItem) => renderCartItem(item, true))}
+            </div>
+          )}
         </div>
 
         <div>
