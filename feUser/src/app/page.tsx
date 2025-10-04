@@ -33,6 +33,7 @@ async function FeaturedSection() {
     <ProductSection
       title="Sản Phẩm Nổi Bật"
       products={products}
+      showFavoriteButton={false}
     />
   );
 }
@@ -44,6 +45,7 @@ async function BestsellersSection() {
         <ProductSection
             title="Sản Phẩm Bán Chạy"
             products={products}
+            showFavoriteButton={false}
         />
     )
 }

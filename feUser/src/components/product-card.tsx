@@ -19,10 +19,11 @@ type ProductCardProduct = Pick<Product, '_id' | 'name' | 'price' | 'images' | 's
 
 interface ProductCardProps {
   product: ProductCardProduct;
-  isFavorited: boolean;
+  isFavorited?: boolean;
+  showFavoriteButton?: boolean;
 }
 
-export default function ProductCard({ product, isFavorited }: ProductCardProps) {
+export default function ProductCard({ product, isFavorited = false, showFavoriteButton = true }: ProductCardProps) {
   const [isLoading, setIsLoading] = useState(false);
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -85,11 +86,13 @@ export default function ProductCard({ product, isFavorited }: ProductCardProps) 
             )}
           </Link>
 
-          <FavoriteButton
-            productId={product._id}
-            initialIsFavorited={isFavorited}
-            className="absolute top-2 right-2 z-10 bg-white/80 hover:bg-white"
-          />
+          {showFavoriteButton && (
+            <FavoriteButton
+              productId={product._id}
+              initialIsFavorited={isFavorited}
+              className="absolute top-2 right-2 z-10 bg-white/80 hover:bg-white"
+            />
+          )}
 
           {/* Quick actions */}
           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center pointer-events-none">
