@@ -17,6 +17,7 @@ interface FavoriteButtonProps {
   showText?: boolean;
   variant?: 'default' | 'ghost' | 'outline';
   size?: 'default' | 'sm' | 'lg' | 'icon';
+  disabled?: boolean;
 }
 
 export function FavoriteButton({
@@ -26,6 +27,7 @@ export function FavoriteButton({
   showText = false,
   variant = 'ghost',
   size = 'icon',
+  disabled = false,
 }: FavoriteButtonProps) {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -78,10 +80,11 @@ export function FavoriteButton({
       size={size}
       className={cn(
         showText ? '' : 'rounded-full',
+        disabled && 'opacity-50 cursor-not-allowed',
         className
       )}
       onClick={handleFavoriteToggle}
-      disabled={isPending}
+      disabled={isPending || disabled}
       aria-label={isFavorited ? 'Bỏ thích' : 'Thêm vào yêu thích'}
     >
       <Heart
@@ -92,7 +95,7 @@ export function FavoriteButton({
           'h-5 w-5 mr-2': showText,
         })}
       />
-      {showText && (isFavorited ? 'Đã yêu thích' : 'Thêm vào yêu thích')}
+      {showText && (disabled ? 'Không khả dụng' : isFavorited ? 'Đã yêu thích' : 'Thêm vào yêu thích')}
     </Button>
   );
 }

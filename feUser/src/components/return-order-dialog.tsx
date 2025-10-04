@@ -18,6 +18,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { orderService } from "@/services/orderService";
 import { RotateCcw } from "lucide-react";
+import { HttpError } from "@/lib/api";
 
 interface ReturnOrderDialogProps {
   orderId: string;
@@ -73,7 +74,7 @@ export function ReturnOrderDialog({ orderId, onSuccess, variant = "outline", cla
       if (response.success) {
         toast({
           title: "Thành công",
-          description: response.message || "Yêu cầu trả hàng của bạn đã được gửi.",
+          description: response.message,
         });
         setOpen(false);
         setReason("");
@@ -85,19 +86,16 @@ export function ReturnOrderDialog({ orderId, onSuccess, variant = "outline", cla
           // Refresh trang hiện tại
           router.refresh();
         }
-      } else {
+      }
+    } catch (error) {
+      console.error(error);
+      if (error instanceof HttpError) {
         toast({
           title: "Có lỗi xảy ra",
-          description: response.message,
+          description: error.response.data.message,
           variant: "destructive",
         });
       }
-    } catch {
-      toast({
-        title: "Có lỗi xảy ra",
-        description: "Không thể gửi yêu cầu trả hàng. Vui lòng thử lại sau.",
-        variant: "destructive",
-      });
     } finally {
       setIsLoading(false);
     }

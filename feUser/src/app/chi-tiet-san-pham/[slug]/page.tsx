@@ -4,13 +4,15 @@ import ImageGallery from "@/components/image-gallery";
 import AddToCartButton from "@/components/add-to-cart-button";
 import { FavoriteButton } from "@/components/favorite-button";
 import { productService } from "@/services/productService";
-import { Star } from "lucide-react";
+import { Star, AlertTriangle, XCircle } from "lucide-react";
 import { ProductDetailSkeleton } from "@/components/product-detail-skeleton";
 import { auth } from "@/auth";
 import { Product } from "@/types/product";
 import { ApiResponse } from "@/types/api";
 import { ReviewsSection } from "@/components/reviews-section";
 import { ViewHistoryTracker } from "@/components/view-history-tracker";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 
 interface ProductPageProps {
   params: Promise<{ slug: string }>;
@@ -56,7 +58,11 @@ async function ProductDetail({ slug }: { slug: string }) {
   }
 
   const product = response.data;
-  console.log(product);
+  
+  // Kiểm tra trạng thái sản phẩm
+  const isInactive = !product.isActive;
+  const isOutOfStock = product.stock === 0;
+  const isUnavailable = isInactive || isOutOfStock;
 
   return (
     <>
@@ -64,13 +70,48 @@ async function ProductDetail({ slug }: { slug: string }) {
       <ViewHistoryTracker productId={product._id} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div>
+        <div className="relative">
           <ImageGallery images={product.images} productName={product.name} />
+          
+          {/* Overlay cho sản phẩm không khả dụng */}
+          {isUnavailable && (
+            <div className="absolute inset-0 bg-black/40 rounded-lg flex items-center justify-center">
+              <Badge variant="destructive" className="text-lg px-6 py-2">
+                {isInactive ? "Ngừng kinh doanh" : "Hết hàng"}
+              </Badge>
+            </div>
+          )}
         </div>
 
         <div className="space-y-6">
+          {/* Cảnh báo trạng thái */}
+          {isInactive && (
+            <Alert variant="destructive">
+              <XCircle className="h-4 w-4" />
+              <AlertDescription>
+                Sản phẩm này hiện không còn kinh doanh. Vui lòng chọn sản phẩm khác.
+              </AlertDescription>
+            </Alert>
+          )}
+          
+          {!isInactive && isOutOfStock && (
+            <Alert className="border-amber-500 bg-amber-50">
+              <AlertTriangle className="h-4 w-4 text-amber-600" />
+              <AlertDescription className="text-amber-800">
+                Sản phẩm hiện đã hết hàng. Vui lòng quay lại sau hoặc chọn sản phẩm khác.
+              </AlertDescription>
+            </Alert>
+          )}
+
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-4">{product.name}</h1>
+            <div className="flex items-start justify-between gap-4 mb-4">
+              <h1 className="text-3xl font-bold text-gray-900">{product.name}</h1>
+              {isUnavailable && (
+                <Badge variant="destructive" className="flex-shrink-0">
+                  {isInactive ? "Ngừng kinh doanh" : "Hết hàng"}
+                </Badge>
+              )}
+            </div>
 
             <div className="flex items-center gap-4 mb-4">
               <div className="flex items-center">
@@ -84,7 +125,7 @@ async function ProductDetail({ slug }: { slug: string }) {
             </div>
 
             <div className="flex items-center gap-4 mb-6">
-              <span className="text-3xl font-bold text-green-600">
+              <span className={`text-3xl font-bold ${isUnavailable ? "text-gray-400" : "text-green-600"}`}>
                 {new Intl.NumberFormat("vi-VN", {
                   style: "currency",
                   currency: "VND",
@@ -103,8 +144,16 @@ async function ProductDetail({ slug }: { slug: string }) {
             <p className="text-gray-700 mb-6 leading-relaxed">{product.description}</p>
           </div>
 
-          <AddToCartButton productId={product._id} showQuantityControls={true} size="lg" className="w-full" />
+          {/* Nút thêm vào giỏ hàng - vô hiệu hóa nếu không khả dụng */}
+          <AddToCartButton 
+            productId={product._id} 
+            showQuantityControls={true} 
+            size="lg" 
+            className="w-full" 
+            disabled={isUnavailable}
+          />
 
+          {/* Nút yêu thích - vẫn cho phép nếu chỉ hết hàng */}
           <div className="mt-4">
             <FavoriteButton
               key={`${product._id}-${product.isSaved}`}
@@ -114,6 +163,7 @@ async function ProductDetail({ slug }: { slug: string }) {
               variant="outline"
               size="lg"
               className="w-full border-green-600 text-green-600 hover:bg-green-50"
+              disabled={isInactive}
             />
           </div>
 
@@ -125,8 +175,16 @@ async function ProductDetail({ slug }: { slug: string }) {
                 <span className="font-medium">{product.categoryId.name}</span>
               </div>
               <div className="flex justify-between">
+                <span className="text-gray-600">Trạng thái:</span>
+                <span className={`font-medium ${isInactive ? "text-red-600" : isOutOfStock ? "text-amber-600" : "text-green-600"}`}>
+                  {isInactive ? "Ngừng kinh doanh" : isOutOfStock ? "Hết hàng" : "Còn hàng"}
+                </span>
+              </div>
+              <div className="flex justify-between">
                 <span className="text-gray-600">Trong kho:</span>
-                <span className="font-medium">{product.stock}</span>
+                <span className={`font-medium ${product.stock === 0 ? "text-red-600" : product.stock < 10 ? "text-amber-600" : ""}`}>
+                  {product.stock} {product.stock < 10 && product.stock > 0 && "(Sắp hết)"}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Đã bán:</span>

@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { cartService } from '@/services/cartService';
 import { toast } from 'sonner';
 import { useSession } from 'next-auth/react';
+import { HttpError } from '@/lib/api';
 
 interface SearchResultsProps {
   data: SearchResponse | null;
@@ -115,12 +116,12 @@ export function SearchResults({ data, isLoading, onPageChange }: SearchResultsPr
             >
               ← Trang trước
             </Button>
-            
+
             <div className="flex items-center space-x-1">
               {Array.from({ length: Math.min(5, meta.totalPages) }, (_, i) => {
                 const page = i + 1;
                 const isCurrentPage = page === meta.currentPage;
-                
+
                 return (
                   <Button
                     key={page}
@@ -133,7 +134,7 @@ export function SearchResults({ data, isLoading, onPageChange }: SearchResultsPr
                   </Button>
                 );
               })}
-              
+
               {meta.totalPages > 5 && (
                 <>
                   <span className="px-2 text-gray-400">...</span>
@@ -190,21 +191,21 @@ function SearchProductCard({ product }: SearchProductCardProps) {
       });
 
       if (response.success) {
-        toast.success(`Đã thêm "${product.name}" vào giỏ hàng.`);
-      } else {
-        toast.error(response.message || 'Không thể thêm sản phẩm.');
+        toast.success(response.message);
       }
     } catch (error) {
-      console.error('Failed to add to cart:', error);
-      toast.error('Không thể thêm sản phẩm. Vui lòng thử lại.');
+      console.error(error);
+      if (error instanceof HttpError) {
+        toast.error(error.response.data.message);
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
-  const imageUrl = product.mainImage?.startsWith('http') 
-    ? product.mainImage 
-    : product.mainImage 
+  const imageUrl = product.mainImage?.startsWith('http')
+    ? product.mainImage
+    : product.mainImage
       ? `${process.env.NEXT_PUBLIC_API_BASE_URL}${product.mainImage}`
       : null;
 
@@ -226,7 +227,7 @@ function SearchProductCard({ product }: SearchProductCardProps) {
               <span className="text-sm">Không có ảnh</span>
             </div>
           )}
-          
+
           {/* Discount Badge */}
           {product.discount > 0 && (
             <Badge className="absolute top-2 left-2 bg-red-500 hover:bg-red-600 text-white font-semibold text-xs">
@@ -263,11 +264,10 @@ function SearchProductCard({ product }: SearchProductCardProps) {
                 {[...Array(5)].map((_, i) => (
                   <Star
                     key={i}
-                    className={`w-3 h-3 ${
-                      i < Math.floor(product.averageRating)
-                        ? 'text-yellow-400 fill-current'
-                        : 'text-gray-300'
-                    }`}
+                    className={`w-3 h-3 ${i < Math.floor(product.averageRating)
+                      ? 'text-yellow-400 fill-current'
+                      : 'text-gray-300'
+                      }`}
                   />
                 ))}
               </div>

@@ -18,6 +18,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { orderService } from "@/services/orderService";
 import { X } from "lucide-react";
+import { HttpError } from "@/lib/api";
 
 interface CancelOrderDialogProps {
   orderId: string;
@@ -76,19 +77,16 @@ export function CancelOrderDialog({ orderId, onSuccess, variant = "destructive",
           // Refresh trang hiện tại
           router.refresh();
         }
-      } else {
+      }
+    } catch (error) {
+      console.error(error);
+      if (error instanceof HttpError) {
         toast({
           title: "Có lỗi xảy ra",
-          description: response.message,
+          description: error.response.data.message,
           variant: "destructive",
         });
       }
-    } catch {
-      toast({
-        title: "Có lỗi xảy ra",
-        description: "Không thể hủy đơn hàng. Vui lòng thử lại sau.",
-        variant: "destructive",
-      });
     } finally {
       setIsLoading(false);
     }

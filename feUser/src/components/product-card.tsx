@@ -12,6 +12,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Product } from '@/types/product';
 import { cartService } from '@/services/cartService';
 import { FavoriteButton } from './favorite-button';
+import { HttpError } from '@/lib/api';
 
 // Kiểu dữ liệu linh hoạt cho ProductCard, chỉ yêu cầu các trường cần thiết
 type ProductCardProduct = Pick<Product, '_id' | 'name' | 'price' | 'images' | 'slug'> & Partial<Product>;
@@ -44,13 +45,13 @@ export default function ProductCard({ product, isFavorited }: ProductCardProps) 
       });
 
       if (response.success) {
-        toast.success(`Đã thêm "${product.name || 'sản phẩm'}" vào giỏ hàng.`);
-      } else {
-        toast.error(response.message || 'Không thể thêm sản phẩm.');
+        toast.success(response.message);
       }
     } catch (error) {
-      console.error('Failed to add to cart:', error);
-      toast.error('Không thể thêm sản phẩm. Vui lòng thử lại.');
+      console.error(error);
+      if (error instanceof HttpError) {
+        toast.error(error.response.data.message);
+      }
     } finally {
       setIsLoading(false);
     }

@@ -13,6 +13,7 @@ interface AddToCartButtonProps {
   size?: 'sm' | 'default' | 'lg';
   showQuantityControls?: boolean;
   initialQuantity?: number;
+  disabled?: boolean;
 }
 
 export default function AddToCartButton({
@@ -22,6 +23,7 @@ export default function AddToCartButton({
   size = 'default',
   showQuantityControls = false,
   initialQuantity = 1,
+  disabled = false,
 }: AddToCartButtonProps) {
   const [quantity, setQuantity] = useState(initialQuantity);
   const [isLoading, setIsLoading] = useState(false);
@@ -49,7 +51,7 @@ export default function AddToCartButton({
             variant="ghost"
             size="sm"
             onClick={decrementQuantity}
-            disabled={quantity <= 1}
+            disabled={quantity <= 1 || disabled}
             className="h-8 w-8 p-0"
           >
             <Minus className="h-3 w-3" />
@@ -61,6 +63,7 @@ export default function AddToCartButton({
             variant="ghost"
             size="sm"
             onClick={incrementQuantity}
+            disabled={disabled}
             className="h-8 w-8 p-0"
           >
             <Plus className="h-3 w-3" />
@@ -70,13 +73,14 @@ export default function AddToCartButton({
           variant={variant}
           size={size}
           onClick={handleAddToCart}
-          disabled={isLoading}
+          disabled={isLoading || disabled}
           className={cn('flex-1 bg-green-600 hover:bg-green-700 text-white',
-            variant === 'outline' && 'bg-transparent border-green-600 text-green-600 hover:bg-green-600 hover:text-white'
+            variant === 'outline' && 'bg-transparent border-green-600 text-green-600 hover:bg-green-600 hover:text-white',
+            disabled && 'opacity-50 cursor-not-allowed'
           )}
         >
           <ShoppingCart className="w-4 h-4 mr-2" />
-          {isLoading ? 'Đang thêm...' : 'Thêm vào giỏ'}
+          {disabled ? 'Không khả dụng' : isLoading ? 'Đang thêm...' : 'Thêm vào giỏ'}
         </Button>
       </div>
     );
@@ -87,11 +91,11 @@ export default function AddToCartButton({
       variant={variant}
       size={size}
       onClick={handleAddToCart}
-      disabled={isLoading}
-      className={cn('bg-green-600 hover:bg-green-700 text-white', className)}
+      disabled={isLoading || disabled}
+      className={cn('bg-green-600 hover:bg-green-700 text-white', className, disabled && 'opacity-50 cursor-not-allowed')}
     >
       <ShoppingCart className="w-4 h-4 mr-2" />
-      {isLoading ? 'Đang thêm...' : 'Thêm vào giỏ'}
+      {disabled ? 'Không khả dụng' : isLoading ? 'Đang thêm...' : 'Thêm vào giỏ'}
     </Button>
   );
 }
