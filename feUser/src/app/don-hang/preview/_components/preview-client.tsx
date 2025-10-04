@@ -15,9 +15,11 @@ import { RecipientInfoForm } from './recipient-info-form';
 import { DeliveryMethodSelector } from './delivery-method-selector';
 import { PaymentMethodSelector } from './payment-method-selector';
 import { VoucherSelector } from './voucher-selector';
+import { PointsSelector } from './points-selector';
 import { orderService } from '@/services/orderService';
 import { deliveryService } from '@/services/deliveryService';
 import { voucherService } from '@/services/voucherService';
+import { userService } from '@/services/userService';
 
 interface PreviewClientProps {
   accessToken: string;
@@ -31,6 +33,8 @@ interface PreviewState {
   selectedPaymentMethod: PaymentMethod | null;
   vouchers: Voucher[];
   selectedVoucher: string | null;
+  availablePoints: number;
+  pointsApplied: number;
   recipientName: string;
   phoneNumber: string;
   address: string;
@@ -57,6 +61,8 @@ type PreviewAction =
   | { type: 'SET_PAYMENT_METHOD'; payload: PaymentMethod }
   | { type: 'SET_VOUCHERS'; payload: Voucher[] }
   | { type: 'SET_VOUCHER'; payload: string | null }
+  | { type: 'SET_AVAILABLE_POINTS'; payload: number }
+  | { type: 'SET_POINTS_APPLIED'; payload: number }
   | { type: 'SET_RECIPIENT_FIELD'; payload: { field: keyof PreviewState, value: string } }
   | { type: 'RESET_FIELDS'; payload: (keyof PreviewState)[] }
   | { type: 'SET_ERROR'; payload: string | null };
@@ -69,8 +75,11 @@ const initialState: PreviewState = {
   selectedPaymentMethod: 'COD',
   vouchers: [],
   selectedVoucher: null,
+  availablePoints: 0,
+  pointsApplied: 0,
   recipientName: '',
   phoneNumber: '',
+  address: '',
   street: '',
   province: '',
   district: '',
@@ -106,6 +115,10 @@ function previewReducer(state: PreviewState, action: PreviewAction): PreviewStat
       return { ...state, vouchers: action.payload };
     case 'SET_VOUCHER':
       return { ...state, selectedVoucher: action.payload };
+    case 'SET_AVAILABLE_POINTS':
+      return { ...state, availablePoints: action.payload };
+    case 'SET_POINTS_APPLIED':
+      return { ...state, pointsApplied: action.payload };
     case 'SET_RECIPIENT_FIELD':
       return { ...state, [action.payload.field]: action.payload.value };
     case 'RESET_FIELDS':
@@ -127,28 +140,36 @@ export default function PreviewClient({ accessToken }: PreviewClientProps) {
   const router = useRouter();
   const [state, dispatch] = useReducer(previewReducer, initialState);
 
-  // Fetch delivery methods
+  // Fetch delivery methods và user points
   useEffect(() => {
-    const fetchDeliveryMethods = async () => {
+    const fetchInitialData = async () => {
       dispatch({ type: 'SET_IS_LOADING_DELIVERY', payload: true });
       try {
-        const response = await deliveryService.getDeliveryMethods(accessToken);
-        if (response.success && response.data) {
-          dispatch({ type: 'SET_DELIVERY_METHODS', payload: response.data });
-          // Tự động chọn phương thức đầu tiên
-          if (response.data.length > 0) {
-            dispatch({ type: 'SET_DELIVERY_METHOD', payload: response.data[0].type });
+        const [deliveryRes, pointsRes] = await Promise.all([
+          deliveryService.getDeliveryMethods(accessToken),
+          userService.getLoyaltyPoints(accessToken)
+        ]);
+        
+        if (deliveryRes.success && deliveryRes.data) {
+          dispatch({ type: 'SET_DELIVERY_METHODS', payload: deliveryRes.data });
+          if (deliveryRes.data.length > 0) {
+            dispatch({ type: 'SET_DELIVERY_METHOD', payload: deliveryRes.data[0].type });
           }
         }
+        
+        if (pointsRes.success && pointsRes.data) {
+          dispatch({ type: 'SET_AVAILABLE_POINTS', payload: pointsRes.data.loyaltyPoints });
+        }
+        
       } catch (error: unknown) {
-        const errorMessage = error instanceof Error ? error.message : 'Không thể tải phương thức giao hàng';
+        const errorMessage = error instanceof Error ? error.message : 'Không thể tải dữ liệu ban đầu';
         toast.error("Lỗi", { description: errorMessage });
       } finally {
         dispatch({ type: 'SET_IS_LOADING_DELIVERY', payload: false });
       }
     };
     
-    fetchDeliveryMethods();
+    fetchInitialData();
   }, [accessToken]);
 
   // Fetch applicable vouchers khi selectedItems thay đổi
@@ -189,6 +210,7 @@ export default function PreviewClient({ accessToken }: PreviewClientProps) {
       })),
       shippingMethod: state.selectedDeliveryMethod as "express" | "regular" | "standard" | undefined,
       voucherCode: state.selectedVoucher || undefined,
+      pointsToApply: state.pointsApplied,
     };
 
     try {
@@ -205,7 +227,7 @@ export default function PreviewClient({ accessToken }: PreviewClientProps) {
     } finally {
       dispatch({ type: 'SET_IS_LOADING', payload: false });
     }
-  }, [accessToken, state.selectedItems, state.selectedDeliveryMethod, state.selectedVoucher]);
+  }, [accessToken, state.selectedItems, state.selectedDeliveryMethod, state.selectedVoucher, state.pointsApplied]);
 
   useEffect(() => {
     try {
@@ -231,7 +253,7 @@ export default function PreviewClient({ accessToken }: PreviewClientProps) {
     if (state.selectedItems.length > 0 && state.selectedDeliveryMethod) {
       updatePreview();
     }
-  }, [state.selectedItems, state.selectedDeliveryMethod, state.selectedVoucher, updatePreview]);
+  }, [state.selectedItems, state.selectedDeliveryMethod, state.selectedVoucher, state.pointsApplied, updatePreview]);
 
   const handleFieldChange = (field: string, value: string) => {
     dispatch({ type: 'SET_RECIPIENT_FIELD', payload: { field: field as keyof PreviewState, value } });
@@ -251,6 +273,15 @@ export default function PreviewClient({ accessToken }: PreviewClientProps) {
 
   const handleVoucherChange = (voucherCode: string | null) => {
     dispatch({ type: 'SET_VOUCHER', payload: voucherCode });
+  };
+
+  const handlePointsToggle = (apply: boolean) => {
+    const maxApplicablePoints = Math.min(
+      state.availablePoints,
+      Math.floor((state.previewData?.subtotal || 0) * 0.5)
+    );
+    const pointsToApply = apply ? maxApplicablePoints : 0;
+    dispatch({ type: 'SET_POINTS_APPLIED', payload: pointsToApply });
   };
 
   const handleCreateOrder = async () => {
@@ -351,6 +382,7 @@ export default function PreviewClient({ accessToken }: PreviewClientProps) {
                       src={item.productId.images[0]} 
                       alt={item.productId.name} 
                       fill
+                      unoptimized
                       sizes="80px"
                       style={{ objectFit: 'cover' }}
                     />
@@ -377,6 +409,14 @@ export default function PreviewClient({ accessToken }: PreviewClientProps) {
             deliveryMethods={deliveryMethods}
             selectedMethod={selectedDeliveryMethod}
             onMethodChange={handleDeliveryMethodChange}
+          />
+
+          <PointsSelector
+            availablePoints={state.availablePoints}
+            isApplied={state.pointsApplied > 0}
+            onToggle={handlePointsToggle}
+            orderSubtotal={state.previewData?.subtotal || 0}
+            isLoading={state.isLoading}
           />
 
           <VoucherSelector
@@ -411,6 +451,12 @@ export default function PreviewClient({ accessToken }: PreviewClientProps) {
                   <span className="text-gray-600">Giảm giá:</span>
                   <span className="font-semibold">-{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(previewData?.discount ?? 0)}</span>
                 </div>
+                {previewData?.pointsApplied && previewData.pointsApplied > 0 && (
+                  <div className="flex justify-between text-blue-600">
+                    <span className="text-gray-600">Điểm đã dùng:</span>
+                    <span className="font-semibold">-{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(previewData.pointsApplied)}</span>
+                  </div>
+                )}
                 <div className="border-t pt-3 flex justify-between">
                   <span className="text-lg font-bold">Tổng cộng:</span>
                   <span className="text-lg font-bold text-green-600">

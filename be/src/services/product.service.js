@@ -295,6 +295,7 @@ export const productService = {
     if (userId) {
       isSavedPromise = Favorite.exists({ userId, productId: id }).then(fav => !!fav);
     }
+    console.log({ userId, id });
 
     const [buyerCount, reviewerCount, isSaved] = await Promise.all([
       buyerCountPromise,

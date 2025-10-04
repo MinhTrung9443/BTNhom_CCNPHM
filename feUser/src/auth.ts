@@ -59,7 +59,8 @@ export const authConfig: NextAuthConfig = {
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
+      // ✅ Khi đăng nhập mới (có user từ authorize)
       if (user) {
         token.id = user.id;
         token.name = user.name;
@@ -69,6 +70,16 @@ export const authConfig: NextAuthConfig = {
         token.accessToken = user.accessToken;
         token.refreshToken = user.refreshToken;
       }
+      
+      // ✅ Khi gọi update() từ client (trigger === "update")
+      if (trigger === "update" && session) {
+        // Cập nhật token với dữ liệu mới từ session
+        token.name = session.user.name ?? token.name;
+        token.email = session.user.email ?? token.email;
+        token.avatar = session.user.avatar ?? token.avatar;
+        token.role = session.user.role ?? token.role;
+      }
+      
       return token;
     },
     async session({ session, token }) {

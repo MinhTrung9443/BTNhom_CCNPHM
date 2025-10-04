@@ -35,11 +35,7 @@ const io = new Server(server, {
     origin:
       process.env.NODE_ENV === "production"
         ? [process.env.FRONTEND_URL, process.env.ADMIN_URL].filter(Boolean)
-        : [
-            "http://localhost:5173",
-            "http://localhost:5174",
-            "http://localhost:3000",
-          ],
+        : ["http://localhost:5173", "http://localhost:5174", "http://localhost:3000"],
     methods: ["GET", "POST"],
   },
 });
@@ -53,27 +49,29 @@ app.use(
     origin:
       process.env.NODE_ENV === "production"
         ? [process.env.FRONTEND_URL, process.env.ADMIN_URL].filter(Boolean)
-        : [
-            "http://localhost:5173",
-            "http://localhost:5174",
-            "http://localhost:3000",
-          ],
+        : ["http://localhost:5173", "http://localhost:5174", "http://localhost:3000"],
     credentials: true,
   })
 );
-app.use(express.json());
+
 app.use("/uploads", express.static("uploads"));
 connectDB();
 
 // Khởi tạo cron jobs
 CronJobService.init();
 
+// Route upload phải được định nghĩa TRƯỚC body parser
+app.use("/api/upload", uploadRoutes);
+
+// Tăng giới hạn kích thước request body cho các route khác
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ limit: "50mb", extended: true }));
+
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/orders", orderRoutes);
-app.use("/api/upload", uploadRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/vouchers", voucherRoutes);
 app.use("/api/reviews", reviewRoutes);
@@ -85,10 +83,10 @@ app.use(errorHandler);
 
 // Socket.IO connection handling
 io.use((socket, next) => {
-  logger.info('Socket connection attempt from:', socket.handshake.address);
+  logger.info("Socket connection attempt from:", socket.handshake.address);
   const token = socket.handshake.auth.token;
   if (!token) {
-    logger.error('No token provided for socket connection');
+    logger.error("No token provided for socket connection");
     return next(new Error("Authentication error"));
   }
 
@@ -120,9 +118,7 @@ io.on("connection", (socket) => {
     const { room, message } = data;
     if (!room || !message) return;
 
-    logger.info(
-      `Message from ${socket.userRole} ${socket.userId} to room ${room}: ${message}`
-    );
+    logger.info(`Message from ${socket.userRole} ${socket.userId} to room ${room}: ${message}`);
 
     // For customer, room is chat_${userId}, join if not already
     if (socket.userRole === "user") {
@@ -133,9 +129,7 @@ io.on("connection", (socket) => {
         chatMessages[room] = [];
         io.to("admin").emit("newChatRoom", { room, userId: socket.userId });
         // Update all admins with new active rooms list
-        logger.info(
-          `Emitting active rooms to admins: ${Array.from(activeRooms)}`
-        );
+        logger.info(`Emitting active rooms to admins: ${Array.from(activeRooms)}`);
         io.to("admin").emit("activeChatRooms", Array.from(activeRooms));
       }
     }

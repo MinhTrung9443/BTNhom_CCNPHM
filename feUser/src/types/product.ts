@@ -20,6 +20,7 @@ export interface Product {
   categoryId: Category;
   averageRating: number;
   totalReviews: number;
+  soldCount: number;
   isActive: boolean;
   viewCount: number;
   __v: number;
@@ -29,6 +30,9 @@ export interface Product {
   buyerCount: number;
   reviewerCount: number;
   isSaved: boolean;
+  // Helper properties
+  finalPrice?: number; // Giá sau khi giảm giá
+  discountAmount?: number; // Số tiền giảm
   // Giữ lại các trường cũ có thể vẫn đang được dùng ở đâu đó, đánh dấu là optional
   title?: string;
   image?: string;
@@ -37,6 +41,7 @@ export interface Product {
     rate: number;
     count: number;
   };
+  originalPrice?: number;
   isNew?: boolean;
   isBestseller?: boolean;
   inStock?: boolean;
@@ -66,8 +71,8 @@ export interface SearchFilters {
   inStock?: boolean;
   page?: number;
   limit?: number;
-  sortBy?: 'name' | 'price' | 'createdAt' | 'averageRating' | 'soldCount' | 'viewCount';
-  sortOrder?: 'asc' | 'desc';
+  sortBy?: "name" | "price" | "createdAt" | "averageRating" | "soldCount" | "viewCount";
+  sortOrder?: "asc" | "desc";
 }
 
 export interface SearchProduct {

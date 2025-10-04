@@ -41,6 +41,7 @@ export default function AboutPage() {
               src="https://images.pexels.com/photos/1199957/pexels-photo-1199957.jpeg?auto=compress&cs=tinysrgb&w=800"
               alt="Bánh pía Sóc Trăng truyền thống"
               fill
+              unoptimized
               className="object-cover"
               sizes="(max-width: 1024px) 100vw, 50vw"
             />
@@ -60,6 +61,7 @@ export default function AboutPage() {
                   src="https://images.pexels.com/photos/1199957/pexels-photo-1199957.jpeg?auto=compress&cs=tinysrgb&w=800"
                   alt="Bánh Pía Sóc Trăng"
                   fill
+                  unoptimized
                   className="object-cover"
                   sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
                 />
@@ -78,6 +80,7 @@ export default function AboutPage() {
                   src="https://images.pexels.com/photos/1775043/pexels-photo-1775043.jpeg?auto=compress&cs=tinysrgb&w=800"
                   alt="Kẹo Dừa"
                   fill
+                  unoptimized
                   className="object-cover"
                   sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
                 />
@@ -96,6 +99,7 @@ export default function AboutPage() {
                   src="https://images.pexels.com/photos/1092730/pexels-photo-1092730.jpeg?auto=compress&cs=tinysrgb&w=800"
                   alt="Bánh Tráng"
                   fill
+                  unoptimized
                   className="object-cover"
                   sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
                 />

@@ -7,7 +7,6 @@ import { SkeletonOrderRow } from '../../components/common/Skeleton'
 import Pagination from '../../components/common/Pagination'
 import { toast } from 'react-toastify'
 import moment from 'moment'
-
 const OrdersPage = () => {
   const dispatch = useDispatch()
   const { orders, meta, loading, error } = useSelector((state) => state.orders);
@@ -96,6 +95,22 @@ const OrdersPage = () => {
     <Container fluid>
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h2 className="fw-bold">Quản lý đơn hàng</h2>
+        <div className="d-flex gap-2">
+          <Link 
+            to="/orders/cancellation-requests" 
+            className="btn btn-warning"
+          >
+            <i className="bi bi-exclamation-triangle me-2"></i>
+            Yêu cầu hủy đơn hàng
+          </Link>
+          <Link 
+            to="/orders/return-refund-requests" 
+            className="btn btn-info"
+          >
+            <i className="bi bi-arrow-return-left me-2"></i>
+            Yêu cầu trả hàng/hoàn tiền
+          </Link>
+        </div>
       </div>
 
       {/* Filters */}

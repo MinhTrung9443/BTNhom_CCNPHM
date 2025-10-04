@@ -1,14 +1,14 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useSession, signOut } from 'next-auth/react';
-import { useCart } from '@/contexts/cart-context';
-import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Menu, ShoppingCart, Heart, Search, User, LogOut, Settings, Package } from 'lucide-react';
-import { Input } from '@/components/ui/input';
+import Link from "next/link";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useSession, signOut } from "next-auth/react";
+import { useCart } from "@/contexts/cart-context";
+import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Menu, ShoppingCart, Heart, Search, User, LogOut, Settings, Package } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,31 +16,28 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { HeaderSearch } from '@/components/header-search';
+} from "@/components/ui/dropdown-menu";
+import { UserAvatar } from "@/components/user-avatar";
+import { UserInfo } from "@/components/user-info";
+import { HeaderSearch } from "@/components/header-search";
 
 const navigation = [
-  { name: 'Trang Chủ', href: '/' },
-  { name: 'Giới Thiệu', href: '/about' },
-  { name: 'Sản Phẩm', href: '/search' },
-  { name: 'Liên Hệ', href: '/contact' },
+  { name: "Trang Chủ", href: "/" },
+  { name: "Giới Thiệu", href: "/about" },
+  { name: "Sản Phẩm", href: "/search" },
+  { name: "Liên Hệ", href: "/lien-he" },
 ];
 
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false);
-  const { data: session, status } = useSession();
+  const { data: session, status } = useSession(); // ✅ Lấy cả session để truyền xuống
+
   const { cartCount, isLoading: cartLoading } = useCart();
 
-  const isLoggedIn = status === 'authenticated';
-  const user = {
-    name: session?.user?.name ?? 'User',
-    email: session?.user?.email ?? '',
-    avatar: session?.user?.avatar ?? ''
-  };
+  const isLoggedIn = status === "authenticated";
 
   const handleLogout = async () => {
-    await signOut({ callbackUrl: '/' });
+    await signOut({ callbackUrl: "/" });
   };
 
   return (
@@ -87,9 +84,11 @@ export default function Header() {
             <Link href="/cart">
               <Button variant="ghost" size="sm" className="relative">
                 <ShoppingCart className="w-4 h-4" />
-                {isLoggedIn && cartCount > 0 && (
+                {isLoggedIn && (cartLoading || cartCount > 0) && (
                   <span className="absolute -top-1 -right-1 text-xs bg-green-600 text-white rounded-full px-1.5 py-0.5 min-w-[18px] text-center leading-none">
-                    {cartLoading ? '...' : cartCount > 99 ? '99+' : cartCount}
+                    {cartLoading ? (
+                      <span className="inline-block w-2 h-2 bg-white rounded-full animate-pulse"></span>
+                    ) : cartCount > 99 ? "99+" : cartCount}
                   </span>
                 )}
               </Button>
@@ -100,22 +99,13 @@ export default function Header() {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src={user.avatar} alt={user.name} />
-                      <AvatarFallback className="bg-green-600 text-white">
-                        {user.name.split(' ').map((n: string) => n[0]).join('').toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
+                    {/* ✅ Truyền session để hiển thị ngay, không chờ fetch */}
+                    <UserAvatar size="sm" session={session} />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56" align="end" forceMount>
                   <DropdownMenuLabel className="font-normal">
-                    <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none">{user.name}</p>
-                      <p className="text-xs leading-none text-muted-foreground">
-                        {user.email}
-                      </p>
-                    </div>
+                    <UserInfo variant="desktop" session={session} />
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
@@ -134,12 +124,6 @@ export default function Header() {
                     <Link href="/yeu-thich">
                       <Heart className="mr-2 h-4 w-4" />
                       <span>Sản phẩm yêu thích</span>
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/settings">
-                      <Settings className="mr-2 h-4 w-4" />
-                      <span>Cài đặt</span>
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
@@ -178,16 +162,9 @@ export default function Header() {
                   {isLoggedIn ? (
                     <div className="border-b pb-4">
                       <div className="flex items-center space-x-3 mb-3">
-                        <Avatar className="h-10 w-10">
-                          <AvatarImage src={user.avatar} alt={user.name} />
-                          <AvatarFallback className="bg-green-600 text-white">
-                            {user.name.split(' ').map((n: string) => n[0]).join('').toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="text-sm font-medium">{user.name}</p>
-                          <p className="text-xs text-gray-500">{user.email}</p>
-                        </div>
+                        {/* ✅ Truyền session để hiển thị ngay, không chờ fetch */}
+                        <UserAvatar size="md" session={session} />
+                        <UserInfo variant="mobile" session={session} />
                       </div>
                       <div className="space-y-2">
                         <Link href="/profile" onClick={() => setIsOpen(false)}>
@@ -200,12 +177,6 @@ export default function Header() {
                           <Button variant="ghost" className="w-full justify-start" size="sm">
                             <Package className="mr-2 h-4 w-4" />
                             Đơn hàng của tôi
-                          </Button>
-                        </Link>
-                        <Link href="/settings" onClick={() => setIsOpen(false)}>
-                          <Button variant="ghost" className="w-full justify-start" size="sm">
-                            <Settings className="mr-2 h-4 w-4" />
-                            Cài đặt
                           </Button>
                         </Link>
                         <Link href="/yeu-thich" onClick={() => setIsOpen(false)}>
@@ -231,11 +202,7 @@ export default function Header() {
                   ) : (
                     <div className="border-b pb-4 space-y-2">
                       <Link href="/login" className="block">
-                        <Button
-                          className="w-full"
-                          size="sm"
-                          onClick={() => setIsOpen(false)}
-                        >
+                        <Button className="w-full" size="sm" onClick={() => setIsOpen(false)}>
                           Đăng nhập
                         </Button>
                       </Link>
@@ -270,20 +237,20 @@ export default function Header() {
 }
 
 function MobileSearch({ onSearch }: { onSearch: () => void }) {
-  const [keyword, setKeyword] = useState('');
+  const [keyword, setKeyword] = useState("");
   const router = useRouter();
 
   const handleSearch = () => {
     if (keyword.trim()) {
       router.push(`/search?keyword=${encodeURIComponent(keyword.trim())}`);
     } else {
-      router.push('/search');
+      router.push("/search");
     }
     onSearch();
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       handleSearch();
     }
   };
@@ -299,11 +266,7 @@ function MobileSearch({ onSearch }: { onSearch: () => void }) {
         className="pl-10 pr-4"
       />
       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-      <Button
-        onClick={handleSearch}
-        size="sm"
-        className="ml-2"
-      >
+      <Button onClick={handleSearch} size="sm" className="ml-2">
         Tìm
       </Button>
     </div>

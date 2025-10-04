@@ -103,4 +103,16 @@ const getPointsHistory = async (req, res, next) => {
   });
 };
 
-export { getMe, updateMe, getFavorites, toggleFavorite, getRecentlyViewed, getUserLoyaltyPoints, redeemPoints, getPointsHistory };
+const getCurrentLoyaltyPoints = async (req, res, next) => {
+  const userId = req.user.id;
+  const points = await userService.getLoyaltyPoints(userId);
+  res.status(200).json({
+    success: true,
+    message: 'Lấy số điểm tích lũy thành công.',
+    data: {
+      loyaltyPoints: points,
+    },
+  });
+};
+
+export { getMe, updateMe, getFavorites, toggleFavorite, getRecentlyViewed, getUserLoyaltyPoints, redeemPoints, getPointsHistory, getCurrentLoyaltyPoints };

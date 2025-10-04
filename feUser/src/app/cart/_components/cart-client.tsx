@@ -220,6 +220,7 @@ export default function CartClient({ cart: initialCart }: CartClientProps) {
                       src={item.productId.images[0]}
                       alt={item.productId.name}
                       fill
+                      unoptimized
                       sizes="96px"
                       style={{ objectFit: 'cover' }}
                     />

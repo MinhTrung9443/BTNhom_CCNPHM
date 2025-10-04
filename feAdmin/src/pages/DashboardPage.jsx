@@ -13,6 +13,7 @@ import {
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import Pagination from '../components/common/Pagination'; // Import component phân trang
 import moment from 'moment';
+import { getImageSrc, handleImageError } from '../utils/imageUtils';
 import { Line, Doughnut } from 'react-chartjs-2'
 import {
   Chart as ChartJS,
@@ -262,7 +263,13 @@ const DashboardPage = () => {
                         <td>{index + 1}</td>
                         <td>
                           <div className="d-flex align-items-center">
-                            <img src={product.image || '/placeholder.jpg'} alt={product.name} className="rounded me-2" style={{ width: '40px', height: '40px', objectFit: 'cover' }} />
+                            <img 
+                              src={getImageSrc(product.image, 40, 40)} 
+                              alt={product.name} 
+                              className="rounded me-2" 
+                              style={{ width: '40px', height: '40px', objectFit: 'cover' }}
+                              onError={(e) => handleImageError(e, 40, 40)}
+                            />
                             <span className="fw-semibold">{product.name}</span>
                           </div>
                         </td>

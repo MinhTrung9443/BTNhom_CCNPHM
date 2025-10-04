@@ -21,6 +21,20 @@ const getOrderById = {
   }),
 };
 export { getUserOrders, getOrderById };
+export const requestReturn = {
+  params: Joi.object().keys({
+    orderId: Joi.string().hex().length(24).required(),
+  }),
+  body: Joi.object().keys({
+    reason: Joi.string().required(),
+  }),
+};
+
+export const approveReturn = {
+  params: Joi.object().keys({
+    orderId: Joi.string().hex().length(24).required(),
+  }),
+};
 const addressSchema = Joi.object({
   province: Joi.string().required(),
   district: Joi.string().required(),
@@ -88,8 +102,37 @@ export const updateOrderStatus = {
       'delivered',
       'cancelled',
       'delivery_failed',
-      'refunded'
+      'refunded',
+      'return_requested'
     ).required(),
     reason: Joi.string().optional(),
+  }),
+};
+
+export const confirmReceived = {
+  params: Joi.object({
+    orderId: Joi.string().hex().length(24).required().messages({
+      'string.base': 'ID đơn hàng phải là một chuỗi.',
+      'string.hex': 'ID đơn hàng phải là một chuỗi hex.',
+      'string.length': 'ID đơn hàng phải có độ dài 24 ký tự.',
+      'any.required': 'ID đơn hàng là bắt buộc.',
+    }),
+  }),
+};
+
+export const cancelOrder = {
+  body: Joi.object({
+    reason: Joi.string().trim().max(500).optional().messages({
+      'string.base': 'Lý do hủy phải là một chuỗi.',
+      'string.max': 'Lý do hủy không được vượt quá 500 ký tự.',
+    }),
+  }),
+  params: Joi.object({
+    orderId: Joi.string().hex().length(24).required().messages({
+      'string.base': 'ID đơn hàng phải là một chuỗi.',
+      'string.hex': 'ID đơn hàng phải là một chuỗi hex.',
+      'string.length': 'ID đơn hàng phải có độ dài 24 ký tự.',
+      'any.required': 'ID đơn hàng là bắt buộc.',
+    }),
   }),
 };
