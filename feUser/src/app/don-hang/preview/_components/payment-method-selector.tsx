@@ -13,29 +13,26 @@ interface PaymentMethodSelectorProps {
 
 const paymentMethods = [
   {
-    value: 'COD' as PaymentMethod,
-    label: 'Thanh toán khi nhận hàng (COD)',
-    description: 'Thanh toán bằng tiền mặt khi nhận hàng',
-    icon: Wallet
+    value: "COD" as PaymentMethod,
+    label: "Thanh toán khi nhận hàng (COD)",
+    description: "Thanh toán bằng tiền mặt khi nhận hàng",
+    icon: Wallet,
   },
   {
-    value: 'VNPAY' as PaymentMethod,
-    label: 'Ví điện tử VNPAY',
-    description: 'Thanh toán qua ví điện tử VNPAY',
-    icon: CreditCard
+    value: "MOMO" as PaymentMethod,
+    label: "Ví MoMo",
+    description: "Thanh toán qua ví điện tử MoMo",
+    icon: CreditCard,
   },
   {
-    value: 'BANK' as PaymentMethod,
-    label: 'Chuyển khoản ngân hàng',
-    description: 'Chuyển khoản qua ngân hàng',
-    icon: Building2
-  }
+    value: "BANK" as PaymentMethod,
+    label: "Chuyển khoản ngân hàng",
+    description: "Chuyển khoản qua ngân hàng",
+    icon: Building2,
+  },
 ];
 
-export function PaymentMethodSelector({ 
-  selectedMethod, 
-  onMethodChange 
-}: PaymentMethodSelectorProps) {
+export function PaymentMethodSelector({ selectedMethod, onMethodChange }: PaymentMethodSelectorProps) {
   return (
     <Card>
       <CardHeader>
@@ -45,16 +42,14 @@ export function PaymentMethodSelector({
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <RadioGroup value={selectedMethod || ''} onValueChange={(value) => onMethodChange(value as PaymentMethod)}>
+        <RadioGroup value={selectedMethod || ""} onValueChange={(value) => onMethodChange(value as PaymentMethod)}>
           {paymentMethods.map((method) => {
             const Icon = method.icon;
             return (
               <div
                 key={method.value}
                 className={`flex items-start space-x-3 p-4 rounded-lg border-2 transition-colors cursor-pointer ${
-                  selectedMethod === method.value
-                    ? 'border-blue-600 bg-blue-50'
-                    : 'border-gray-200 hover:border-gray-300'
+                  selectedMethod === method.value ? "border-blue-600 bg-blue-50" : "border-gray-200 hover:border-gray-300"
                 }`}
                 onClick={() => onMethodChange(method.value)}
               >

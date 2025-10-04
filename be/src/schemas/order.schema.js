@@ -1,17 +1,10 @@
-import Joi from 'joi';
+import Joi from "joi";
 const getUserOrders = {
   query: Joi.object().keys({
     page: Joi.number().integer().min(1),
     limit: Joi.number().integer().min(1),
-    status: Joi.string().valid(
-      "pending",
-      "processing",
-      "shipping",
-      "completed",
-      "cancelled",
-      "return_refund"
-    ),
-    search: Joi.string().allow(''),
+    status: Joi.string().valid("pending", "processing", "shipping", "completed", "cancelled", "return_refund"),
+    search: Joi.string().allow(""),
   }),
 };
 
@@ -41,7 +34,7 @@ const addressSchema = Joi.object({
   ward: Joi.string().required(),
   street: Joi.string().required(),
   phoneNumber: Joi.string().required(),
-  recipientName: Joi.string().required()
+  recipientName: Joi.string().required(),
 });
 
 const orderLineSchema = Joi.object({
@@ -63,16 +56,14 @@ export const previewOrder = {
   body: Joi.object({
     orderLines: Joi.array().items(orderLineSchema).min(1).required(),
     shippingAddress: addressSchema.optional(),
-    voucherCode: Joi.string().allow('').optional(),
+    voucherCode: Joi.string().allow("").optional(),
     shippingMethod: Joi.string().valid("express", "regular", "standard").optional(),
     payment: Joi.object({
-      paymentMethod: Joi.string().valid("VNPAY", "COD", "BANK").required(),
+      paymentMethod: Joi.string().valid("MOMO", "COD", "BANK").required(),
     }).optional(),
     pointsToApply: Joi.number().integer().min(0).optional(),
   }),
 };
-
-
 
 export const placeOrder = {
   body: Joi.object({
@@ -86,7 +77,7 @@ export const placeOrder = {
       pointsApplied: Joi.number().required(),
       totalAmount: Joi.number().required(),
       voucherCode: Joi.string().allow(null),
-      paymentMethod: Joi.string().valid("VNPAY", "COD", "BANK").required(),
+      paymentMethod: Joi.string().valid("MOMO", "COD", "BANK").required(),
     }).required(),
   }),
 };
@@ -96,15 +87,9 @@ export const updateOrderStatus = {
     orderId: Joi.string().hex().length(24).required(),
   }),
   body: Joi.object().keys({
-    status: Joi.string().valid(
-      'preparing',
-      'shipping_in_progress',
-      'delivered',
-      'cancelled',
-      'delivery_failed',
-      'refunded',
-      'return_requested'
-    ).required(),
+    status: Joi.string()
+      .valid("preparing", "shipping_in_progress", "delivered", "cancelled", "delivery_failed", "refunded", "return_requested")
+      .required(),
     reason: Joi.string().optional(),
   }),
 };
@@ -112,10 +97,10 @@ export const updateOrderStatus = {
 export const confirmReceived = {
   params: Joi.object({
     orderId: Joi.string().hex().length(24).required().messages({
-      'string.base': 'ID đơn hàng phải là một chuỗi.',
-      'string.hex': 'ID đơn hàng phải là một chuỗi hex.',
-      'string.length': 'ID đơn hàng phải có độ dài 24 ký tự.',
-      'any.required': 'ID đơn hàng là bắt buộc.',
+      "string.base": "ID đơn hàng phải là một chuỗi.",
+      "string.hex": "ID đơn hàng phải là một chuỗi hex.",
+      "string.length": "ID đơn hàng phải có độ dài 24 ký tự.",
+      "any.required": "ID đơn hàng là bắt buộc.",
     }),
   }),
 };
@@ -123,16 +108,16 @@ export const confirmReceived = {
 export const cancelOrder = {
   body: Joi.object({
     reason: Joi.string().trim().max(500).optional().messages({
-      'string.base': 'Lý do hủy phải là một chuỗi.',
-      'string.max': 'Lý do hủy không được vượt quá 500 ký tự.',
+      "string.base": "Lý do hủy phải là một chuỗi.",
+      "string.max": "Lý do hủy không được vượt quá 500 ký tự.",
     }),
   }),
   params: Joi.object({
     orderId: Joi.string().hex().length(24).required().messages({
-      'string.base': 'ID đơn hàng phải là một chuỗi.',
-      'string.hex': 'ID đơn hàng phải là một chuỗi hex.',
-      'string.length': 'ID đơn hàng phải có độ dài 24 ký tự.',
-      'any.required': 'ID đơn hàng là bắt buộc.',
+      "string.base": "ID đơn hàng phải là một chuỗi.",
+      "string.hex": "ID đơn hàng phải là một chuỗi hex.",
+      "string.length": "ID đơn hàng phải có độ dài 24 ký tự.",
+      "any.required": "ID đơn hàng là bắt buộc.",
     }),
   }),
 };

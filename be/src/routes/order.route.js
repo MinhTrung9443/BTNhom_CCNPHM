@@ -12,6 +12,7 @@ router.use(protect);
 // === USER ROUTES ===
 router.post('/preview', restrictTo('user'), validate(previewOrder), OrderController.previewOrder);
 router.post('/', restrictTo('user'), validate(placeOrder), OrderController.placeOrder);
+router.post("/create-order-momo", restrictTo("user"), validate(placeOrder), OrderController.placeMomoOrder);
 router.get('/my', restrictTo('user'), validate(getUserOrders), OrderController.getUserOrders);
 router.get('/my/stats', restrictTo('user'), OrderController.getUserOrderStats);
 router.get('/:orderId', restrictTo('user'), OrderController.getOrderDetail);

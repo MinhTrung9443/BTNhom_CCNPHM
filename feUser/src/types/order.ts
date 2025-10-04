@@ -4,28 +4,28 @@
  */
 
 // Main order status - used for filtering/tabs
-export type OrderStatus = 'pending' | 'processing' | 'shipping' | 'completed' | 'cancelled' | 'return_refund';
+export type OrderStatus = "pending" | "processing" | "shipping" | "completed" | "cancelled" | "return_refund";
 
 // Alias for API compatibility
 export type ApiOrderStatus = OrderStatus;
 
 // Detailed status - used in timeline
 export type DetailedOrderStatus =
-  | 'new'
-  | 'confirmed'
-  | 'preparing'
-  | 'shipping_in_progress'
-  | 'delivered'
-  | 'completed'
-  | 'cancelled'
-  | 'cancellation_requested'
-  | 'payment_overdue'
-  | 'delivery_failed'
-  | 'return_requested'
-  | 'refunded';
+  | "new"
+  | "confirmed"
+  | "preparing"
+  | "shipping_in_progress"
+  | "delivered"
+  | "completed"
+  | "cancelled"
+  | "cancellation_requested"
+  | "payment_overdue"
+  | "delivery_failed"
+  | "return_requested"
+  | "refunded";
 
-export type PaymentMethod = 'COD' | 'VNPAY' | 'BANK';
-export type PaymentStatus = 'pending' | 'completed' | 'failed';
+export type PaymentMethod = "COD" | "MOMO" | "BANK";
+export type PaymentStatus = "pending" | "completed" | "failed";
 
 export interface ShippingAddress {
   recipientName: string;
@@ -61,7 +61,7 @@ export interface OrderLine {
   } | null;
 }
 
-export type PerformerRole = 'user' | 'admin' | 'system';
+export type PerformerRole = "user" | "admin" | "system";
 
 export interface OrderUser {
   _id: string;
@@ -103,7 +103,7 @@ export interface Order {
   shippingAt?: string;
   deliveredAt?: string;
   cancelledAt?: string;
-  cancelledBy?: 'user' | 'admin' | 'system';
+  cancelledBy?: "user" | "admin" | "system";
   cancelledReason?: string;
   cancellationRequestedAt?: string;
   cancellationRequestReason?: string;
@@ -124,7 +124,7 @@ export interface OrdersResponse {
   message: string;
   pagination: OrderPagination;
   data: Order[];
-} 
+}
 
 export interface GetOrdersParams {
   page?: number;
