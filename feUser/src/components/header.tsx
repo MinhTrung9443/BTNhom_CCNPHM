@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { useCart } from "@/contexts/cart-context";
 import { Button } from "@/components/ui/button";
@@ -31,27 +31,53 @@ const navigation = [
 
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false);
-  const { data: session, status } = useSession(); // ✅ Lấy cả session để truyền xuống
+  const [isScrolled, setIsScrolled] = useState(false);
+  const pathname = usePathname();
+  const { data: session, status } = useSession();
 
   const { cartCount, isLoading: cartLoading } = useCart();
 
   const isLoggedIn = status === "authenticated";
+  const isHomePage = pathname === "/";
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 100);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   const handleLogout = async () => {
     await signOut({ callbackUrl: "/" });
   };
 
+  const headerClasses = isHomePage && !isScrolled
+    ? "sticky top-0 z-50 bg-emerald-700/95 backdrop-blur-md border-b border-white/10 shadow-lg transition-all duration-300"
+    : "sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-sm transition-all duration-300";
+
+  const textColorClass = isHomePage && !isScrolled ? "text-white" : "text-gray-900";
+  const textHoverClass = isHomePage && !isScrolled ? "hover:text-white/80" : "hover:text-green-600";
+  const logoTextClass = isHomePage && !isScrolled ? "text-white" : "text-gray-900";
+  const logoAccentClass = isHomePage && !isScrolled ? "text-orange-300" : "text-green-600";
+  const navHoverBgClass = isHomePage && !isScrolled ? "hover:bg-white/10" : "hover:bg-green-50";
+  const iconHoverClass = isHomePage && !isScrolled ? "hover:bg-white/10 hover:text-white" : "hover:bg-green-50 hover:text-green-600";
+
   return (
-    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-sm">
+    <header className={headerClasses}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-3 group">
-            <div className="w-10 h-10 bg-gradient-to-br from-green-600 via-green-600 to-green-700 rounded-xl flex items-center justify-center shadow-md group-hover:shadow-lg group-hover:scale-105 transition-all duration-300">
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-md group-hover:shadow-lg group-hover:scale-105 transition-all duration-300 ${isHomePage && !isScrolled
+              ? "bg-white/20 backdrop-blur-sm"
+              : "bg-gradient-to-br from-green-600 via-green-600 to-green-700"
+              }`}>
               <span className="text-white font-bold text-base">ST</span>
             </div>
-            <span className="font-bold text-xl text-gray-900 group-hover:text-green-600 transition-colors duration-300">
-              Đặc Sản <span className="text-green-600">Sóc Trăng</span>
+            <span className={`font-bold text-xl ${logoTextClass} ${textHoverClass} transition-colors duration-300`}>
+              Đặc Sản <span className={logoAccentClass}>Sóc Trăng</span>
             </span>
           </Link>
 
@@ -61,10 +87,11 @@ export default function Header() {
               <Link
                 key={item.name}
                 href={item.href}
-                className="relative text-gray-700 hover:text-green-600 px-4 py-2 text-sm font-semibold transition-all duration-300 rounded-lg hover:bg-green-50 group"
+                className={`relative ${textColorClass} ${textHoverClass} px-4 py-2 text-sm font-semibold transition-all duration-300 rounded-lg ${navHoverBgClass} group`}
               >
                 {item.name}
-                <span className="absolute bottom-0 left-1/2 w-0 h-0.5 bg-green-600 group-hover:w-3/4 group-hover:left-1/8 transition-all duration-300 rounded-full"></span>
+                <span className={`absolute bottom-0 left-1/2 w-0 h-0.5 group-hover:w-3/4 group-hover:left-1/8 transition-all duration-300 rounded-full ${isHomePage && !isScrolled ? "bg-white" : "bg-green-600"
+                  }`}></span>
               </Link>
             ))}
           </nav>
@@ -81,9 +108,12 @@ export default function Header() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="hidden sm:flex text-red-500 hover:bg-red-50 hover:text-red-600 transition-all duration-300 rounded-lg group"
+                  className={`hidden sm:flex transition-all duration-300 rounded-lg group ${isHomePage && !isScrolled
+                    ? "text-white hover:bg-white/10 hover:text-white"
+                    : "text-red-500 hover:bg-red-50 hover:text-red-600"
+                    }`}
                 >
-                  <Heart className="w-5 h-5 group-hover:scale-110 group-hover:fill-red-500 transition-all duration-300" />
+                  <Heart className="w-5 h-5 group-hover:scale-110 group-hover:fill-current transition-all duration-300" />
                 </Button>
               </Link>
             )}
@@ -91,7 +121,7 @@ export default function Header() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="relative hover:bg-green-50 hover:text-green-600 transition-all duration-300 rounded-lg group"
+                className={`relative ${iconHoverClass} transition-all duration-300 rounded-lg group ${textColorClass}`}
               >
                 <ShoppingCart className="w-5 h-5 group-hover:scale-110 transition-transform duration-300" />
                 {isLoggedIn && (cartLoading || cartCount > 0) && (
@@ -112,8 +142,10 @@ export default function Header() {
             {isLoggedIn ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-10 w-10 rounded-full hover:ring-2 hover:ring-green-600 hover:ring-offset-2 transition-all duration-300">
-                    {/* ✅ Truyền session để hiển thị ngay, không chờ fetch */}
+                  <Button variant="ghost" className={`relative h-10 w-10 rounded-full hover:ring-2 hover:ring-offset-2 transition-all duration-300 ${isHomePage && !isScrolled
+                    ? "hover:ring-white"
+                    : "hover:ring-green-600"
+                    }`}>
                     <UserAvatar size="sm" session={session} />
                   </Button>
                 </DropdownMenuTrigger>
@@ -171,7 +203,10 @@ export default function Header() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="bg-gradient-to-r from-green-600 to-green-700 text-white hover:from-green-700 hover:to-green-800 shadow-md hover:shadow-lg transition-all duration-300 font-semibold"
+                    className={`shadow-md hover:shadow-lg transition-all duration-300 font-semibold ${isHomePage && !isScrolled
+                      ? "bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 border border-white/30"
+                      : "bg-gradient-to-r from-green-600 to-green-700 text-white hover:from-green-700 hover:to-green-800"
+                      }`}
                   >
                     Đăng nhập
                   </Button>
@@ -179,7 +214,10 @@ export default function Header() {
                 <Link href="/register">
                   <Button
                     size="sm"
-                    className="bg-white text-green-600 border-2 border-green-600 hover:bg-green-50 hover:border-green-700 hover:text-green-700 font-semibold shadow-sm hover:shadow-md transition-all duration-300"
+                    className={`font-semibold shadow-sm hover:shadow-md transition-all duration-300 ${isHomePage && !isScrolled
+                      ? "bg-white text-green-700 border-2 border-white hover:bg-white/90"
+                      : "bg-white text-green-600 border-2 border-green-600 hover:bg-green-50 hover:border-green-700 hover:text-green-700"
+                      }`}
                   >
                     Đăng ký
                   </Button>
@@ -192,7 +230,7 @@ export default function Header() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="md:hidden hover:bg-green-50 hover:text-green-600 transition-all duration-300 rounded-lg"
+                  className={`md:hidden ${iconHoverClass} transition-all duration-300 rounded-lg ${textColorClass}`}
                 >
                   <Menu className="w-5 h-5" />
                 </Button>

@@ -50,48 +50,48 @@ export default function CartClient({ cart: initialCart }: CartClientProps) {
   };
 
   // Phân loại sản phẩm
-  const activeItems = cart.items.filter(item => 
+  const activeItems = cart.items.filter(item =>
     item.productId.isActive && item.productId.stock > 0
   );
-  
-  const inactiveItems = cart.items.filter(item => 
+
+  const inactiveItems = cart.items.filter(item =>
     !item.productId.isActive || item.productId.stock === 0
   );
 
   // Tự động chọn sản phẩm khi có buyNowProductId từ localStorage
   useEffect(() => {
     const buyNowProductId = localStorage.getItem('buyNowProductId');
-    
+
     if (buyNowProductId) {
       // Tìm sản phẩm trong giỏ hàng
       const productToSelect = cart.items.find(
         item => item.productId._id === buyNowProductId
       );
-      
+
       if (productToSelect && !hasStockIssue(productToSelect)) {
         // Tự động chọn sản phẩm
         setSelectedItems([productToSelect]);
-        
+
         // Set highlighted item
         setHighlightedItemId(buyNowProductId);
-        
+
         // Cuộn đến item sau một chút delay để đảm bảo DOM đã render
         setTimeout(() => {
           const element = document.getElementById(`cart-item-${buyNowProductId}`);
           if (element) {
-            element.scrollIntoView({ 
-              behavior: 'smooth', 
+            element.scrollIntoView({
+              behavior: 'smooth',
               block: 'center'
             });
           }
         }, 100);
-        
+
         // Xóa highlight sau 3 giây
         setTimeout(() => {
           setHighlightedItemId(null);
         }, 3000);
       }
-      
+
       // Xóa buyNowProductId sau khi đã xử lý
       localStorage.removeItem('buyNowProductId');
     }
@@ -137,7 +137,7 @@ export default function CartClient({ cart: initialCart }: CartClientProps) {
     if (!session?.user?.accessToken) return;
     try {
       const response = await cartService.removeItem(session.user.accessToken, productId);
-      
+
       if (response.success) {
         // Cập nhật state local ngay lập tức
         setCart(prevCart => ({
@@ -163,21 +163,21 @@ export default function CartClient({ cart: initialCart }: CartClientProps) {
 
   const handleRemoveSelectedItems = async () => {
     if (!session?.user?.accessToken || selectedItems.length === 0) return;
-    
+
     try {
       // Lấy danh sách productId cần xóa
       const productIdsToRemove = selectedItems.map(item => item.productId._id);
 
       // Xóa tất cả item song song
       const responses = await Promise.all(
-        productIdsToRemove.map(productId => 
+        productIdsToRemove.map(productId =>
           cartService.removeItem(session.user.accessToken!, productId)
         )
       );
 
       // Kiểm tra tất cả response đều success
       const allSuccess = responses.every(response => response.success);
-      
+
       if (allSuccess) {
         // Cập nhật state local ngay lập tức
         setCart(prevCart => ({
@@ -206,21 +206,21 @@ export default function CartClient({ cart: initialCart }: CartClientProps) {
 
     try {
       const response = await cartService.updateItem(session.user.accessToken, { productId, quantity: newQuantity });
-      
+
       if (response.success) {
         // Cập nhật state local ngay lập tức
         setCart(prevCart => ({
           ...prevCart,
-          items: prevCart.items.map(item => 
-            item.productId._id === productId 
+          items: prevCart.items.map(item =>
+            item.productId._id === productId
               ? { ...item, quantity: newQuantity }
               : item
           )
         }));
 
         // Cập nhật selectedItems nếu item đang được chọn
-        setSelectedItems(prev => prev.map(item => 
-          item.productId._id === productId 
+        setSelectedItems(prev => prev.map(item =>
+          item.productId._id === productId
             ? { ...item, quantity: newQuantity }
             : item
         ));
@@ -247,7 +247,7 @@ export default function CartClient({ cart: initialCart }: CartClientProps) {
 
   const handleQuantityInputBlur = async (productId: string, currentQuantity: number) => {
     const inputValue = editingQuantity[productId];
-    
+
     if (inputValue === undefined || inputValue === '') {
       // Nếu input rỗng, reset về giá trị hiện tại
       setEditingQuantity(prev => {
@@ -259,7 +259,7 @@ export default function CartClient({ cart: initialCart }: CartClientProps) {
     }
 
     const newQuantity = parseInt(inputValue, 10);
-    
+
     if (isNaN(newQuantity) || newQuantity < 1) {
       toast.error("Số lượng phải lớn hơn 0");
       setEditingQuantity(prev => {
@@ -312,8 +312,8 @@ export default function CartClient({ cart: initialCart }: CartClientProps) {
     const isHighlighted = highlightedItemId === item.productId._id;
 
     return (
-      <Card 
-        key={item.productId._id} 
+      <Card
+        key={item.productId._id}
         id={`cart-item-${item.productId._id}`}
         className={`
           ${isInactive ? "opacity-60" : ""} 
@@ -423,87 +423,87 @@ export default function CartClient({ cart: initialCart }: CartClientProps) {
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-6">
-          {/* Sản phẩm hoạt động */}
-          {activeItems.length > 0 && (
-            <div className="space-y-4">
-              <Card>
-                <CardContent className="p-4 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Checkbox id="select-all" checked={isAllSelected} onCheckedChange={handleSelectAll} />
-                    <label htmlFor="select-all" className="font-medium cursor-pointer">
-                      Chọn tất cả ({activeItems.filter(item => !hasStockIssue(item)).length} sản phẩm)
-                    </label>
+          <div className="lg:col-span-2 space-y-6">
+            {/* Sản phẩm hoạt động */}
+            {activeItems.length > 0 && (
+              <div className="space-y-4">
+                <Card>
+                  <CardContent className="p-4 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Checkbox id="select-all" checked={isAllSelected} onCheckedChange={handleSelectAll} />
+                      <label htmlFor="select-all" className="font-medium cursor-pointer">
+                        Chọn tất cả ({activeItems.filter(item => !hasStockIssue(item)).length} sản phẩm)
+                      </label>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      className="text-red-600 hover:text-red-700"
+                      onClick={handleRemoveSelectedItems}
+                      disabled={selectedItems.length === 0}
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Xóa mục đã chọn
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                {activeItems.map((item: CartItem) => renderCartItem(item, false))}
+              </div>
+            )}
+
+            {/* Sản phẩm không hoạt động */}
+            {inactiveItems.length > 0 && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 text-gray-600">
+                  <XCircle className="w-5 h-5" />
+                  <h2 className="text-lg font-semibold">
+                    Sản phẩm không hoạt động ({inactiveItems.length})
+                  </h2>
+                </div>
+                <p className="text-sm text-gray-500 -mt-2">
+                  Các sản phẩm này hiện không còn kinh doanh hoặc đã hết hàng
+                </p>
+
+                {inactiveItems.map((item: CartItem) => renderCartItem(item, true))}
+              </div>
+            )}
+          </div>
+
+          <div>
+            <Card className="sticky top-24">
+              <CardContent className="p-6">
+                <h2 className="text-xl font-bold mb-4">Tổng đơn hàng</h2>
+
+                <div className="space-y-3 mb-6">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Tạm tính ({totalQuantity} sản phẩm):</span>
+                    <span className="font-semibold">{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(totalPrice)}</span>
                   </div>
-                  <Button 
-                    variant="ghost" 
-                    className="text-red-600 hover:text-red-700" 
-                    onClick={handleRemoveSelectedItems}
-                    disabled={selectedItems.length === 0}
-                  >
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    Xóa mục đã chọn
-                  </Button>
-                </CardContent>
-              </Card>
-
-              {activeItems.map((item: CartItem) => renderCartItem(item, false))}
-            </div>
-          )}
-
-          {/* Sản phẩm không hoạt động */}
-          {inactiveItems.length > 0 && (
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 text-gray-600">
-                <XCircle className="w-5 h-5" />
-                <h2 className="text-lg font-semibold">
-                  Sản phẩm không hoạt động ({inactiveItems.length})
-                </h2>
-              </div>
-              <p className="text-sm text-gray-500 -mt-2">
-                Các sản phẩm này không thể thanh toán
-              </p>
-
-              {inactiveItems.map((item: CartItem) => renderCartItem(item, true))}
-            </div>
-          )}
-        </div>
-
-        <div>
-          <Card className="sticky top-24">
-            <CardContent className="p-6">
-              <h2 className="text-xl font-bold mb-4">Tổng đơn hàng</h2>
-
-              <div className="space-y-3 mb-6">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Tạm tính ({totalQuantity} sản phẩm):</span>
-                  <span className="font-semibold">{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(totalPrice)}</span>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Phí vận chuyển:</span>
+                    <span className="font-semibold">Miễn phí</span>
+                  </div>
+                  <div className="border-t pt-3 flex justify-between">
+                    <span className="text-lg font-bold">Tổng cộng:</span>
+                    <span className="text-lg font-bold text-green-600">
+                      {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(totalPrice)}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Phí vận chuyển:</span>
-                  <span className="font-semibold">Miễn phí</span>
-                </div>
-                <div className="border-t pt-3 flex justify-between">
-                  <span className="text-lg font-bold">Tổng cộng:</span>
-                  <span className="text-lg font-bold text-green-600">
-                    {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(totalPrice)}
-                  </span>
-                </div>
-              </div>
 
-              <Button onClick={handleCheckout} className="w-full bg-green-600 hover:bg-green-700 mb-3" disabled={selectedItems.length === 0}>
-                Thanh toán
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </Button>
-
-              <Link href="/">
-                <Button variant="outline" className="w-full">
-                  Tiếp tục mua sắm
+                <Button onClick={handleCheckout} className="w-full bg-green-600 hover:bg-green-700 mb-3" disabled={selectedItems.length === 0}>
+                  Thanh toán
+                  <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
-              </Link>
-            </CardContent>
-          </Card>
-        </div>
+
+                <Link href="/">
+                  <Button variant="outline" className="w-full">
+                    Tiếp tục mua sắm
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       )}
     </>

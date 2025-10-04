@@ -21,9 +21,15 @@ interface ProductCardProps {
   product: ProductCardProduct;
   isFavorited?: boolean;
   showFavoriteButton?: boolean;
+  variant?: 'default' | 'bestseller' | 'discount' | 'viewed';
 }
 
-export default function ProductCard({ product, isFavorited = false, showFavoriteButton = true }: ProductCardProps) {
+export default function ProductCard({ 
+  product, 
+  isFavorited = false, 
+  showFavoriteButton = true,
+  variant = 'default'
+}: ProductCardProps) {
   const [isLoading, setIsLoading] = useState(false);
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -86,6 +92,33 @@ export default function ProductCard({ product, isFavorited = false, showFavorite
             )}
           </Link>
 
+          {/* Badge theo variant */}
+          {variant === 'discount' && product.discount && product.discount > 0 && (
+            <div className="absolute top-2 left-2 z-10">
+              <div className="bg-gradient-to-r from-red-500 to-red-600 text-white px-3 py-1 rounded-full font-bold text-sm shadow-lg animate-pulse">
+                -{product.discount}%
+              </div>
+            </div>
+          )}
+          
+          {variant === 'default' && (
+            <div className="absolute top-2 left-2 z-10">
+              <div className="bg-gradient-to-r from-green-500 to-green-600 text-white px-3 py-1 rounded-full font-bold text-sm shadow-lg flex items-center gap-1">
+                <span>✨</span>
+                <span>Mới</span>
+              </div>
+            </div>
+          )}
+          
+          {variant === 'viewed' && (
+            <div className="absolute top-2 left-2 z-10">
+              <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-3 py-1 rounded-full font-bold text-sm shadow-lg flex items-center gap-1">
+                <span>👁️</span>
+                <span>Xem nhiều</span>
+              </div>
+            </div>
+          )}
+
           {showFavoriteButton && (
             <FavoriteButton
               productId={product._id}
@@ -140,18 +173,36 @@ export default function ProductCard({ product, isFavorited = false, showFavorite
           </p>
 
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="text-lg font-bold text-green-600">
                 {new Intl.NumberFormat('vi-VN', {
                   style: 'currency',
                   currency: 'VND',
-                }).format(product.price)}
+                }).format(product.discount && product.discount > 0 
+                  ? product.price * (1 - product.discount / 100)
+                  : product.price
+                )}
               </span>
+              {product.discount && product.discount > 0 && (
+                <span className="text-sm text-gray-500 line-through">
+                  {new Intl.NumberFormat('vi-VN', {
+                    style: 'currency',
+                    currency: 'VND',
+                  }).format(product.price)}
+                </span>
+              )}
             </div>
             
             {/* Sold Count and Stock Info */}
             <div className="flex items-center justify-between text-xs">
-              {(product.buyerCount !== undefined && product.buyerCount > 0) && (
+              {/* Hiển thị totalSold cho bestseller, buyerCount cho các variant khác */}
+              {variant === 'bestseller' && (product as any).totalSold !== undefined && (
+                <span className="text-orange-600 font-bold flex items-center gap-1">
+                  <span>🔥</span>
+                  <span>Đã bán: {(product as any).totalSold}</span>
+                </span>
+              )}
+              {variant !== 'bestseller' && (product.buyerCount !== undefined && product.buyerCount > 0) && (
                 <span className="text-gray-600 font-medium">
                   Đã bán: {product.buyerCount}
                 </span>
