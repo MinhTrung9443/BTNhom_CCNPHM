@@ -29,6 +29,7 @@ export default function CartClient({ cart: initialCart }: CartClientProps) {
   const [selectedItems, setSelectedItems] = useState<CartItem[]>([]);
   const [isAllSelected, setIsAllSelected] = useState(false);
   const [editingQuantity, setEditingQuantity] = useState<{ [key: string]: string }>({});
+  const [highlightedItemId, setHighlightedItemId] = useState<string | null>(null);
 
   // Kiểm tra sản phẩm có vấn đề về tồn kho
   const hasStockIssue = (item: CartItem) => {
@@ -56,6 +57,45 @@ export default function CartClient({ cart: initialCart }: CartClientProps) {
   const inactiveItems = cart.items.filter(item => 
     !item.productId.isActive || item.productId.stock === 0
   );
+
+  // Tự động chọn sản phẩm khi có buyNowProductId từ localStorage
+  useEffect(() => {
+    const buyNowProductId = localStorage.getItem('buyNowProductId');
+    
+    if (buyNowProductId) {
+      // Tìm sản phẩm trong giỏ hàng
+      const productToSelect = cart.items.find(
+        item => item.productId._id === buyNowProductId
+      );
+      
+      if (productToSelect && !hasStockIssue(productToSelect)) {
+        // Tự động chọn sản phẩm
+        setSelectedItems([productToSelect]);
+        
+        // Set highlighted item
+        setHighlightedItemId(buyNowProductId);
+        
+        // Cuộn đến item sau một chút delay để đảm bảo DOM đã render
+        setTimeout(() => {
+          const element = document.getElementById(`cart-item-${buyNowProductId}`);
+          if (element) {
+            element.scrollIntoView({ 
+              behavior: 'smooth', 
+              block: 'center'
+            });
+          }
+        }, 100);
+        
+        // Xóa highlight sau 3 giây
+        setTimeout(() => {
+          setHighlightedItemId(null);
+        }, 3000);
+      }
+      
+      // Xóa buyNowProductId sau khi đã xử lý
+      localStorage.removeItem('buyNowProductId');
+    }
+  }, [cart.items]);
 
   useEffect(() => {
     // Update isAllSelected state when selectedItems or activeItems change
@@ -269,9 +309,18 @@ export default function CartClient({ cart: initialCart }: CartClientProps) {
     const warningMessage = getStockWarningMessage(item);
     const hasWarning = !!warningMessage;
     const canSelect = !isInactive && !hasWarning;
+    const isHighlighted = highlightedItemId === item.productId._id;
 
     return (
-      <Card key={item.productId._id} className={isInactive ? "opacity-60" : ""}>
+      <Card 
+        key={item.productId._id} 
+        id={`cart-item-${item.productId._id}`}
+        className={`
+          ${isInactive ? "opacity-60" : ""} 
+          ${isHighlighted ? "ring-4 ring-orange-500 ring-offset-4 shadow-2xl cart-item-highlight bg-orange-50/50" : "hover:shadow-md"} 
+          transition-all duration-300
+        `}
+      >
         <CardContent className="p-6">
           <div className="flex items-start gap-4">
             <Checkbox

@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import ImageGallery from "@/components/image-gallery";
 import AddToCartButton from "@/components/add-to-cart-button";
+import BuyNowButton from "@/components/buy-now-button";
 import { FavoriteButton } from "@/components/favorite-button";
 import { productService } from "@/services/productService";
 import { Star, AlertTriangle, XCircle } from "lucide-react";
@@ -150,6 +151,14 @@ async function ProductDetail({ slug }: { slug: string }) {
             showQuantityControls={true} 
             size="lg" 
             className="w-full" 
+            disabled={isUnavailable}
+          />
+
+          {/* Nút Mua ngay */}
+          <BuyNowButton 
+            productId={product._id}
+            size="lg"
+            className="w-full"
             disabled={isUnavailable}
           />
 

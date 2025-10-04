@@ -186,3 +186,17 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+/* Custom animations for cart highlight */
+@keyframes highlight-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(249, 115, 22, 0);
+  }
+}
+
+.cart-item-highlight {
+  animation: highlight-pulse 1.5s ease-in-out 2;
+}
