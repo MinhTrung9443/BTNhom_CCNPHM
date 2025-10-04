@@ -88,6 +88,26 @@ class OrderService {
     });
     return response;
   }
+
+  /**
+   * Gọi API momo-return để cập nhật trạng thái thanh toán
+   */
+  async momoReturn(
+    accessToken: string,
+    data: {
+      orderId: string;
+      resultCode: string;
+      amount?: string;
+      transId?: string;
+      message?: string;
+    }
+  ): Promise<ApiResponse<Order>> {
+    const response: ApiResponse<Order> = await apiFetch("/orders/momo-return", accessToken, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    return response;
+  }
 }
 
 export const orderService = new OrderService();

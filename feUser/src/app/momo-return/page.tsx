@@ -6,42 +6,94 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, XCircle, Loader2, Home, Receipt } from "lucide-react";
+import { toast } from "sonner";
 import Link from "next/link";
+import { orderService } from "@/services/orderService";
+import { useSession } from "next-auth/react";
 
 export default function MomoReturnPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { data: session } = useSession();
   const [status, setStatus] = useState<"loading" | "success" | "failed">("loading");
   const [orderInfo, setOrderInfo] = useState<{
     orderId?: string;
     amount?: string;
     resultCode?: string;
     message?: string;
+    transId?: string;
   }>({});
 
   useEffect(() => {
-    // Lấy thông tin từ query parameters
-    const orderId = searchParams.get("orderId");
-    const resultCode = searchParams.get("resultCode");
-    const amount = searchParams.get("amount");
-    const message = searchParams.get("message");
+    const processPaymentReturn = async () => {
+      // Lấy thông tin từ query parameters
+      const orderId = searchParams.get("orderId");
+      const resultCode = searchParams.get("resultCode");
+      const amount = searchParams.get("amount");
+      const message = searchParams.get("message");
+      const transId = searchParams.get("transId");
 
-    setOrderInfo({
-      orderId: orderId || undefined,
-      amount: amount || undefined,
-      resultCode: resultCode || undefined,
-      message: message || undefined,
-    });
+      const orderData = {
+        orderId: orderId || undefined,
+        amount: amount || undefined,
+        resultCode: resultCode || undefined,
+        message: message || undefined,
+        transId: transId || undefined,
+      };
 
-    // Xử lý kết quả thanh toán
-    if (resultCode === "0") {
-      // Thanh toán thành công
-      setStatus("success");
-    } else {
-      // Thanh toán thất bại
-      setStatus("failed");
+      setOrderInfo(orderData);
+
+      // Xử lý kết quả thanh toán
+      if (resultCode === "0") {
+        // Thanh toán thành công - gọi API cập nhật
+        if (orderId && session?.user?.accessToken) {
+          try {
+            console.log("Calling MoMo return API...");
+            await orderService.momoReturn(session.user.accessToken, {
+              orderId,
+              resultCode,
+              amount: amount || undefined,
+              transId: transId || undefined,
+              message: message || undefined,
+            });
+
+            toast.success("Thanh toán thành công!", {
+              description: "Đơn hàng của bạn đã được xác nhận.",
+            });
+            setStatus("success");
+          } catch (error) {
+            console.error("Error calling MoMo return API:", error);
+            toast.error("Lỗi cập nhật trạng thái", {
+              description: "Có lỗi xảy ra khi cập nhật trạng thái thanh toán.",
+            });
+            setStatus("success"); // Vẫn hiển thị success vì thanh toán đã thành công
+          }
+        } else {
+          setStatus("success");
+        }
+      } else {
+        // Thanh toán thất bại
+        if (orderId && session?.user?.accessToken) {
+          try {
+            await orderService.momoReturn(session.user.accessToken, {
+              orderId,
+              resultCode,
+              amount: amount || undefined,
+              transId: transId || undefined,
+              message: message || undefined,
+            });
+          } catch (error) {
+            console.error("Error calling MoMo return API for failed payment:", error);
+          }
+        }
+        setStatus("failed");
+      }
+    };
+
+    if (session?.user?.accessToken) {
+      processPaymentReturn();
     }
-  }, [searchParams]);
+  }, [searchParams, session]);
 
   if (status === "loading") {
     return (

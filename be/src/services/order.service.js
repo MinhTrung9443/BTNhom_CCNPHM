@@ -948,3 +948,67 @@ export const confirmOrderReceived = async (userId, orderId) => {
 
   return order;
 };
+
+// Update MoMo payment status from frontend return
+export const updateMomoPaymentFromReturn = async (orderId, userId, paymentData) => {
+  const { resultCode, transactionId, amount, message } = paymentData;
+
+  logger.info(`Updating MoMo payment from return for order ${orderId}: resultCode=${resultCode}`);
+
+  const order = await Order.findOne({
+    _id: orderId,
+    userId: userId,
+  });
+
+  if (!order) {
+    throw new AppError("Không tìm thấy đơn hàng.", 404);
+  }
+
+  // Chỉ cho phép cập nhật nếu đơn hàng vẫn đang pending payment
+  if (order.payment.status !== "pending") {
+    logger.info(`Order ${orderId} payment already processed with status: ${order.payment.status}`);
+    return order; // Trả về order hiện tại nếu đã được xử lý
+  }
+
+  if (resultCode === 0) {
+    // Thanh toán thành công
+    order.payment.status = "completed";
+    order.payment.transactionId = transactionId;
+    order.payment.updatedAt = new Date();
+
+    order.timeline.push({
+      status: DETAILED_ORDER_STATUS.CONFIRMED,
+      description: "Thanh toán MoMo thành công. Đơn hàng đã được xác nhận.",
+      performedBy: "system",
+      timestamp: new Date(),
+      metadata: {
+        transactionId: transactionId,
+        paymentMethod: "MOMO",
+      },
+    });
+
+    logger.info(`MoMo payment successful for order ${orderId}, transactionId: ${transactionId}`);
+  } else {
+    // Thanh toán thất bại
+    order.payment.status = "failed";
+    order.payment.updatedAt = new Date();
+
+    order.timeline.push({
+      status: DETAILED_ORDER_STATUS.PAYMENT_OVERDUE,
+      description: `Thanh toán MoMo thất bại: ${message || "Unknown error"}`,
+      performedBy: "system",
+      timestamp: new Date(),
+      metadata: {
+        errorCode: resultCode,
+        errorMessage: message,
+        paymentMethod: "MOMO",
+      },
+    });
+
+    logger.warn(`MoMo payment failed for order ${orderId}: ${message}`);
+  }
+
+  await order.save();
+
+  return order;
+};

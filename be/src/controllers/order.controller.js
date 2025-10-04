@@ -18,6 +18,44 @@ export const placeOrder = async (req, res) => {
   });
 };
 
+export const handleMomoCallback = async (req, res) => {
+  try {
+    const orderId = req.body.orderId;
+    const result = await OrderService.handleMomoCallback(orderId);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const handleMomoReturn = async (req, res) => {
+  try {
+    const { orderId, resultCode, amount, transId, message } = req.body;
+    const userId = req.user._id;
+
+    console.log(`MoMo return for order ${orderId}: resultCode=${resultCode}`);
+
+    const updatedOrder = await OrderService.updateMomoPaymentFromReturn(orderId, userId, {
+      resultCode: parseInt(resultCode),
+      transactionId: transId,
+      amount: amount,
+      message: message,
+    });
+
+    res.json({
+      success: true,
+      message: "Cập nhật trạng thái thanh toán thành công.",
+      data: updatedOrder,
+    });
+  } catch (error) {
+    console.error("MoMo return error:", error);
+    res.status(400).json({
+      success: false,
+      message: error.message || "Lỗi cập nhật trạng thái thanh toán.",
+    });
+  }
+};
+
 export const placeMomoOrder = async (req, res) => {
   const result = await OrderService.placeMomoOrder(req.user._id, req.body);
   res.status(201).json({
