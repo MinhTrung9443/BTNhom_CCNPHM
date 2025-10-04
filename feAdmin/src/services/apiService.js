@@ -46,7 +46,7 @@ api.interceptors.response.use(
     } else if (error.response?.status === 403) {
       toast.error('Bạn không có quyền thực hiện hành động này.')
     } else if (error.response?.status >= 500) {
-      toast.error('Lỗi server. Vui lòng thử lại sau.')
+      toast.error(error.response?.data?.message || 'Có lỗi xảy ra. Vui lòng thử lại sau.')
     }
     
     return Promise.reject(error)

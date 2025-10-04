@@ -120,8 +120,12 @@ const ProductsPage = () => {
         });
 
         // Call productService directly with FormData
-        await productService.updateProduct(selectedProduct._id, formData);
+        try{
+          const resp=        await productService.updateProduct(selectedProduct._id, formData);
         toast.success('Cập nhật sản phẩm thành công')
+        }catch(error){
+          toast.error(error.response.data.message)
+        }
       } else {
         // Add new image files for creation
         newImageFiles.forEach(file => {
@@ -129,8 +133,12 @@ const ProductsPage = () => {
         });
 
         // Call productService directly with FormData
-        await productService.createProduct(formData);
+        try {
+          const resp=        await productService.createProduct(formData);
         toast.success('Tạo sản phẩm thành công')
+        } catch (error) {
+          toast.error(error.response.data.message)
+        }
       }
 
       setShowProductModal(false)
