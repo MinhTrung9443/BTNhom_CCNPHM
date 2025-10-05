@@ -13,6 +13,8 @@ import Favorite from "./Favorite.js";
 import LoyaltyPoints from "./LoyaltyPoints.js";
 import Notification from "./Notification.js";
 import ViewHistory from "./ViewHistory.js";
+import Coupon from "./Coupon.js";
+
 export {
   User,
   OTP,
@@ -29,4 +31,5 @@ export {
   Favorite,
   Notification,
   ViewHistory,
+  Coupon,
 };
