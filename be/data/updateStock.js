@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import Product from './src/models/Product.js';
+import Product from '../src/models/Product.js';
 
 // Kết nối MongoDB
 mongoose.connect('mongodb://localhost:27017/auth_db');

@@ -1,6 +1,6 @@
 // updateUserRole.js - Script to update user role to admin for testing
 import mongoose from 'mongoose';
-import User from './src/models/User.js';
+import User from '../src/models/User.js';
 
 // Connect to MongoDB
 mongoose.connect('mongodb://localhost:27017/auth_db');

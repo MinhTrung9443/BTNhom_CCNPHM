@@ -1,10 +1,10 @@
 // insertData.js
 import mongoose from "mongoose";
-import Category from "./src/models/Category.js";
-import Product from "./src/models/Product.js";
-import User from "./src/models/User.js";
-import Voucher from "./src/models/Voucher.js";
-import LoyaltyPoints from "./src/models/LoyaltyPoints.js";
+import Category from "../src/models/Category.js";
+import Product from "../src/models/Product.js";
+import User from "../src/models/User.js";
+import Voucher from "../src/models/Voucher.js";
+import LoyaltyPoints from "../src/models/LoyaltyPoints.js";
 
 // Kết nối MongoDB
 mongoose.connect("mongodb://localhost:27017/soctrang");

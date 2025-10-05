@@ -1,15 +1,49 @@
 {
-  "name": "mern-app",
+  "name": "be",
   "version": "1.0.0",
-  "private": true,
+  "description": "",
+  "main": "index.js",
+  "type": "module",
   "scripts": {
-    "start": "node backend/server.js",
-    "client": "npm start --prefix fe",
-    "server": "npm start --prefix be",
-    "clientAdmin": "npm start --prefix feAdmin",
-    "dev": "concurrently \"npm run server\" \"npm run client\" \"npm run clientAdmin\""
+    "start": "node index.js",
+    "dev": "nodemon --trace-warnings index.js",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "seed:orders": "node src/seeders/orderSeeder.js",
+    "seed:all": "node insertData.js",
+    "slug:generate": "node generateProductSlugs.js",
+    "slug:generate:force": "node generateProductSlugs.js --force",
+    "slug:generate:dry": "node generateProductSlugs.js --dry-run",
+    "slug:check": "node scripts/checkProductSlugs.js",
+    "slug:find": "node scripts/findProductBySlug.js",
+    "slug:drop-index": "node scripts/dropSlugIndex.js"
   },
+  "author": "",
+  "license": "ISC",
   "dependencies": {
-    "concurrently": "^8.0.1"  
+    "bcrypt": "^6.0.0",
+    "bcryptjs": "^3.0.2",
+    "cloudinary": "^2.7.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.1",
+    "express": "^5.1.0",
+    "express-async-handler": "^1.2.0",
+    "express-validator": "^7.2.1",
+    "html-to-text": "^9.0.5",
+    "joi": "^18.0.1",
+    "jsonwebtoken": "^9.0.2",
+    "mongodb": "^6.18.0",
+    "mongoose": "^8.18.0",
+    "morgan": "^1.10.1",
+    "multer": "^2.0.2",
+    "multer-storage-cloudinary": "^4.0.0",
+    "node-cron": "^4.2.1",
+    "nodemailer": "^7.0.5",
+    "otp-generator": "^4.0.1",
+    "pug": "^3.0.3",
+    "socket.io": "^4.8.1",
+    "winston": "^3.17.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
   }
 }
