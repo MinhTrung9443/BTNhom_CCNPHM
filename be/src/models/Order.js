@@ -37,7 +37,7 @@ const DETAILED_ORDER_STATUS = {
   // PROCESSING
   CONFIRMED: "confirmed", // Đơn hàng đã xác nhận (tự động bởi hệ thống)
   PREPARING: "preparing", // Người bán đang chuẩn bị hàng (thủ công bởi admin)
- 
+
   // SHIPPING
   SHIPPING_IN_PROGRESS: "shipping_in_progress", // Đang giao hàng (thủ công bởi admin)
   DELIVERED: "delivered", // Đã giao hàng (thủ công bởi admin)
@@ -57,25 +57,15 @@ const DETAILED_ORDER_STATUS = {
 };
 const STATUS_MAP = {
   [ORDER_STATUS.PENDING]: [DETAILED_ORDER_STATUS.NEW],
-  [ORDER_STATUS.PROCESSING]: [
-    DETAILED_ORDER_STATUS.CONFIRMED,
-    DETAILED_ORDER_STATUS.PREPARING,
-  ],
+  [ORDER_STATUS.PROCESSING]: [DETAILED_ORDER_STATUS.CONFIRMED, DETAILED_ORDER_STATUS.PREPARING],
   [ORDER_STATUS.SHIPPING]: [
     DETAILED_ORDER_STATUS.SHIPPING_IN_PROGRESS,
     DETAILED_ORDER_STATUS.DELIVERED,
     DETAILED_ORDER_STATUS.CANCELLATION_REQUESTED,
   ],
   [ORDER_STATUS.COMPLETED]: [DETAILED_ORDER_STATUS.COMPLETED],
-  [ORDER_STATUS.CANCELLED]: [
-    DETAILED_ORDER_STATUS.PAYMENT_OVERDUE,
-    DETAILED_ORDER_STATUS.CANCELLED,
-  ],
-  [ORDER_STATUS.RETURN_REFUND]: [
-    DETAILED_ORDER_STATUS.DELIVERY_FAILED,
-    DETAILED_ORDER_STATUS.RETURN_REQUESTED,
-    DETAILED_ORDER_STATUS.REFUNDED,
-  ],
+  [ORDER_STATUS.CANCELLED]: [DETAILED_ORDER_STATUS.PAYMENT_OVERDUE, DETAILED_ORDER_STATUS.CANCELLED],
+  [ORDER_STATUS.RETURN_REFUND]: [DETAILED_ORDER_STATUS.DELIVERY_FAILED, DETAILED_ORDER_STATUS.RETURN_REQUESTED, DETAILED_ORDER_STATUS.REFUNDED],
 };
 // Schema cho timeline entry
 const timelineEntrySchema = new mongoose.Schema(
@@ -145,27 +135,24 @@ const orderSchema = new mongoose.Schema(
       province: { type: String, required: true },
     },
     notes: { type: String },
-    payment: { 
-      amount : { type: Number },
+    payment: {
+      amount: { type: Number },
       paymentMethod: {
         type: String,
-        enum: ["VNPAY", "COD", "BANK"],
+        enum: ["MOMO", "COD", "BANK"],
         required: true,
       },
-      status : { type: String,
-        enum: ["pending", "completed", "failed"],
-        default: "pending",
-      },
-      transactionId : { type: String },
-      createdAt: { type: Date, default: Date.now }, 
-      updatedAt: { type: Date},
+      status: { type: String, enum: ["pending", "completed", "failed"], default: "pending" },
+      transactionId: { type: String },
+      createdAt: { type: Date, default: Date.now },
+      updatedAt: { type: Date },
     },
     // Timestamps cho các trạng thái
     confirmedAt: { type: Date },
     preparingAt: { type: Date },
     shippingAt: { type: Date },
     deliveredAt: { type: Date },
-    
+
     // Thông tin hủy đơn
     cancelledAt: { type: Date },
     cancelledBy: { type: String, enum: ["user", "admin"] },
@@ -177,10 +164,10 @@ const orderSchema = new mongoose.Schema(
     returnRequestedAt: { type: Date },
     returnRequestReason: { type: String },
     refundedAt: { type: Date },
-    
+
     // Timeline theo dõi lịch sử thay đổi trạng thái
     timeline: [timelineEntrySchema],
-    
+
     // Ghi chú nội bộ
     internalNotes: { type: String },
   },
