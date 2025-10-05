@@ -36,10 +36,10 @@ export const getUserOrders = async (userId, page = 1, limit = 10, status = null,
     filter._id = new mongoose.Types.ObjectId(search);
   }
   else
-  if (search) {
-    const searchRegex = new RegExp(search, "i");
-    filter.$or = [{ "orderLines.productName": searchRegex }, { recipientName: searchRegex }, { phoneNumber: searchRegex }];
-  }
+    if (search) {
+      const searchRegex = new RegExp(search, "i");
+      filter.$or = [{ "orderLines.productName": searchRegex }, { recipientName: searchRegex }, { phoneNumber: searchRegex }];
+    }
 
   const skip = (page - 1) * limit;
 
@@ -702,7 +702,7 @@ export const updateOrderStatusByAdmin = async (orderId, newDetailedStatus, metad
     throw new AppError(`Admin không thể tự cập nhật trạng thái thành '${newDetailedStatus}'.`, 403);
   }
 
-  const order = await Order.findById(orderId);
+  const order = await Order.findById(orderId).populate("userId");
   if (!order) {
     throw new AppError("Không tìm thấy đơn hàng.", 404);
   }
@@ -736,6 +736,47 @@ export const updateOrderStatusByAdmin = async (orderId, newDetailedStatus, metad
     runValidators: true,
   }).lean();
 
+  // Send notifications to user based on status change
+  const notificationMessages = {
+    [DETAILED_ORDER_STATUS.SHIPPING_IN_PROGRESS]: {
+      title: "Đơn hàng đang được giao",
+      message: `Đơn hàng #${orderId} của bạn đang trên đường giao`,
+    },
+    [DETAILED_ORDER_STATUS.DELIVERED]: {
+      title: "Đơn hàng đã được giao",
+      message: `Đơn hàng #${orderId} đã được giao thành công. Vui lòng xác nhận đã nhận hàng.`,
+    },
+    [DETAILED_ORDER_STATUS.CANCELLED]: {
+      title: "Đơn hàng đã bị hủy",
+      message: `Đơn hàng #${orderId} của bạn đã bị hủy`,
+    },
+  };
+
+  if (notificationMessages[newDetailedStatus]) {
+    await Notification.create({
+      title: notificationMessages[newDetailedStatus].title,
+      message: notificationMessages[newDetailedStatus].message,
+      type: "order",
+      referenceId: orderId,
+      recipient: "user",
+      userId: order.userId._id || order.userId,
+      metadata: {
+        orderAmount: order.totalAmount,
+        status: newDetailedStatus,
+      },
+    });
+
+    // Send real-time notification to user
+    if (global.io) {
+      const userSocketId = order.userId._id?.toString() || order.userId.toString();
+      global.io.to(userSocketId).emit("orderStatusUpdate", {
+        orderId: updatedOrder._id,
+        status: newDetailedStatus,
+        message: notificationMessages[newDetailedStatus].message,
+      });
+    }
+  }
+
   return updatedOrder;
 };
 
@@ -746,6 +787,7 @@ export const cancelOrderByUser = async (userId, orderId, reason) => {
     throw new AppError("Không tìm thấy đơn hàng hoặc bạn không có quyền truy cập.", 404);
   }
 
+  const user = await User.findById(userId).select("name").lean();
   const latestDetailedStatus = order.timeline[order.timeline.length - 1]?.status;
 
   // Case 1: Order is PENDING (detailed status is NEW) -> Direct cancel
@@ -758,6 +800,29 @@ export const cancelOrderByUser = async (userId, orderId, reason) => {
 
     await order.save();
     await _revertOrderSideEffects(order);
+
+    // Notify admin about cancellation
+    await Notification.create({
+      title: "Đơn hàng đã bị hủy",
+      message: `Khách hàng ${user?.name || "N/A"} đã hủy đơn hàng #${order._id}. Lý do: ${order.cancelledReason}`,
+      type: "order",
+      referenceId: order._id,
+      recipient: "admin",
+      metadata: {
+        orderAmount: order.totalAmount,
+        userName: user?.name || "N/A",
+        cancelReason: order.cancelledReason,
+      },
+    });
+
+    if (global.io) {
+      global.io.to("admin").emit("orderCancelled", {
+        orderId: order._id,
+        userId: order.userId,
+        reason: order.cancelledReason,
+      });
+    }
+
     return order;
   }
 
@@ -769,7 +834,29 @@ export const cancelOrderByUser = async (userId, orderId, reason) => {
       order.cancellationRequestReason = reason || "Người dùng yêu cầu hủy khi người bán đang chuẩn bị hàng.";
       order.timeline.push(createTimelineEntry(DETAILED_ORDER_STATUS.CANCELLATION_REQUESTED, "user", { reason: order.cancellationRequestReason }));
       await order.save();
-      // TODO: Notify admin about the cancellation request
+
+      // Notify admin about cancellation request
+      await Notification.create({
+        title: "Yêu cầu hủy đơn hàng",
+        message: `Khách hàng ${user?.name || "N/A"} yêu cầu hủy đơn hàng #${order._id}. Lý do: ${order.cancellationRequestReason}`,
+        type: "order",
+        referenceId: order._id,
+        recipient: "admin",
+        metadata: {
+          orderAmount: order.totalAmount,
+          userName: user?.name || "N/A",
+          cancelReason: order.cancellationRequestReason,
+        },
+      });
+
+      if (global.io) {
+        global.io.to("admin").emit("cancellationRequested", {
+          orderId: order._id,
+          userId: order.userId,
+          reason: order.cancellationRequestReason,
+        });
+      }
+
       return order;
     }
     // If order is just confirmed, user can cancel directly
@@ -782,6 +869,29 @@ export const cancelOrderByUser = async (userId, orderId, reason) => {
 
       await order.save();
       await _revertOrderSideEffects(order);
+
+      // Notify admin about cancellation
+      await Notification.create({
+        title: "Đơn hàng đã bị hủy",
+        message: `Khách hàng ${user?.name || "N/A"} đã hủy đơn hàng #${order._id}. Lý do: ${order.cancelledReason}`,
+        type: "order",
+        referenceId: order._id,
+        recipient: "admin",
+        metadata: {
+          orderAmount: order.totalAmount,
+          userName: user?.name || "N/A",
+          cancelReason: order.cancelledReason,
+        },
+      });
+
+      if (global.io) {
+        global.io.to("admin").emit("orderCancelled", {
+          orderId: order._id,
+          userId: order.userId,
+          reason: order.cancelledReason,
+        });
+      }
+
       return order;
     }
   }
@@ -816,7 +926,7 @@ export const getOrdersWithCancellationRequests = async (page = 1, limit = 10) =>
 };
 
 export const approveCancellationRequest = async (orderId, adminId) => {
-  const order = await Order.findById(orderId);
+  const order = await Order.findById(orderId).populate("userId", "name");
 
   if (!order) {
     throw new AppError("Không tìm thấy đơn hàng.", 404);
@@ -847,7 +957,27 @@ export const approveCancellationRequest = async (orderId, adminId) => {
   // Revert stock, vouchers, points
   await _revertOrderSideEffects(order);
 
-  // TODO: Notify user that their cancellation request was approved.
+  // Notify user that their cancellation request was approved
+  await Notification.create({
+    title: "Yêu cầu hủy đơn đã được chấp thuận",
+    message: `Yêu cầu hủy đơn hàng #${orderId} của bạn đã được chấp thuận. Đơn hàng đã được hủy thành công.`,
+    type: "order",
+    referenceId: orderId,
+    recipient: "user",
+    userId: order.userId._id || order.userId,
+    metadata: {
+      orderAmount: order.totalAmount,
+      cancelReason: order.cancelledReason,
+    },
+  });
+
+  if (global.io) {
+    const userSocketId = order.userId._id?.toString() || order.userId.toString();
+    global.io.to(userSocketId).emit("cancellationApproved", {
+      orderId: order._id,
+      message: "Yêu cầu hủy đơn của bạn đã được chấp thuận",
+    });
+  }
 
   return order;
 };
@@ -871,7 +1001,30 @@ export const requestReturn = async (userId, orderId, reason) => {
   order.timeline.push(createTimelineEntry(DETAILED_ORDER_STATUS.RETURN_REQUESTED, "user", { reason }));
 
   await order.save();
-  // TODO: Notify admin about the return request
+
+  // Notify admin about the return request
+  const user = await User.findById(userId).select("name").lean();
+  await Notification.create({
+    title: "Yêu cầu trả hàng/hoàn tiền",
+    message: `Khách hàng ${user?.name || "N/A"} yêu cầu trả hàng cho đơn #${orderId}. Lý do: ${reason}`,
+    type: "order",
+    referenceId: orderId,
+    recipient: "admin",
+    metadata: {
+      orderAmount: order.totalAmount,
+      userName: user?.name || "N/A",
+      returnReason: reason,
+    },
+  });
+
+  if (global.io) {
+    global.io.to("admin").emit("returnRequested", {
+      orderId: order._id,
+      userId: order.userId,
+      reason: reason,
+      orderAmount: order.totalAmount,
+    });
+  }
 
   return order;
 };
@@ -901,7 +1054,7 @@ export const getPendingReturns = async (page = 1, limit = 10) => {
 };
 
 export const approveReturn = async (orderId) => {
-  const order = await Order.findById(orderId);
+  const order = await Order.findById(orderId).populate("userId", "name");
 
   if (!order) {
     throw new AppError("Không tìm thấy đơn hàng.", 404);
@@ -917,7 +1070,29 @@ export const approveReturn = async (orderId) => {
 
   await order.save();
   await _revertOrderSideEffects(order);
-  // TODO: Notify user that their return request was approved and refunded.
+
+  // Notify user that their return request was approved and refunded
+  await Notification.create({
+    title: "Yêu cầu trả hàng đã được chấp thuận",
+    message: `Yêu cầu trả hàng cho đơn #${orderId} đã được chấp thuận. Số tiền ${order.totalAmount.toLocaleString("vi-VN")} VNĐ sẽ được hoàn lại cho bạn.`,
+    type: "order",
+    referenceId: orderId,
+    recipient: "user",
+    userId: order.userId._id || order.userId,
+    metadata: {
+      orderAmount: order.totalAmount,
+      refundedAt: order.refundedAt,
+    },
+  });
+
+  if (global.io) {
+    const userSocketId = order.userId._id?.toString() || order.userId.toString();
+    global.io.to(userSocketId).emit("returnApproved", {
+      orderId: order._id,
+      refundAmount: order.totalAmount,
+      message: "Yêu cầu trả hàng của bạn đã được chấp thuận",
+    });
+  }
 
   return order;
 };

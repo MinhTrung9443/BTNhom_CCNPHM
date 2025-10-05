@@ -27,6 +27,7 @@ const notificationSchema = new mongoose.Schema({
     default: 'admin',
     required: true
   },
+  userId: {type : mongoose.Schema.Types.ObjectId, ref : 'User'},
   isRead: {
     type: Boolean,
     default: false
@@ -34,7 +35,6 @@ const notificationSchema = new mongoose.Schema({
   metadata: {
     orderAmount: { type: Number },
     userName: { type: String },
-    // Add more metadata as needed
   }
 }, {
   timestamps: true

@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Container, Row, Col, Card, Form, Button, Alert } from 'react-bootstrap'
+import { Container, Row, Col, Card, Form, Button, Alert, Badge } from 'react-bootstrap'
 import { toast } from 'react-toastify'
 
 const SettingsPage = () => {
@@ -43,8 +43,8 @@ const SettingsPage = () => {
     <Container fluid>
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h2 className="fw-bold">Cài đặt hệ thống</h2>
-        <Button 
-          variant="primary" 
+        <Button
+          variant="primary"
           onClick={handleSaveSettings}
           disabled={loading}
         >

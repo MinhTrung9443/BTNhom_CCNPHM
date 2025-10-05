@@ -6,7 +6,14 @@ class SocketService {
     this.socket = null;
     this.isConnected = false;
     this.onNewOrderCallback = null;
-    this.lastToastTime = 0;
+    this.onOrderStatusUpdateCallback = null;
+    this.onOrderCancelledCallback = null;
+    this.onCancellationRequestedCallback = null;
+    this.onCancellationApprovedCallback = null;
+    this.onReturnRequestedCallback = null;
+    this.onReturnApprovedCallback = null;
+    this.lastToastTimes = {}; // Track last toast time per event type
+    this.listenersRegistered = false; // Track if listeners are already registered
   }
 
   connect(token) {
@@ -27,6 +34,10 @@ class SocketService {
     this.socket.on("connect", () => {
       console.log("Connected to WebSocket server");
       this.isConnected = true;
+
+      // Auto-join admin room when connected
+      this.socket.emit('joinRoom', 'admin');
+      console.log("Auto-joined admin room");
     });
 
     this.socket.on("disconnect", () => {
@@ -39,13 +50,74 @@ class SocketService {
       this.isConnected = false;
     });
 
-    // Listen for new order notifications (remove existing listener to prevent duplicates)
-    this.socket.off("newOrder");
+    // Only register listeners once
+    if (!this.listenersRegistered) {
+      this.registerEventListeners();
+      this.listenersRegistered = true;
+    }
+  }
+
+  registerEventListeners() {
+    // Listen for new order notifications
     this.socket.on("newOrder", (orderData) => {
       console.log("New order received:", orderData);
       this.handleNewOrderNotification(orderData);
       if (this.onNewOrderCallback) {
         this.onNewOrderCallback(orderData);
+      }
+    });
+
+    // Listen for order status updates
+    this.socket.on("orderStatusUpdate", (data) => {
+      console.log("Order status updated:", data);
+      this.handleOrderStatusUpdate(data);
+      if (this.onOrderStatusUpdateCallback) {
+        this.onOrderStatusUpdateCallback(data);
+      }
+    });
+
+    // Listen for order cancellations
+    this.socket.on("orderCancelled", (data) => {
+      console.log("Order cancelled:", data);
+      this.handleOrderCancelled(data);
+      if (this.onOrderCancelledCallback) {
+        this.onOrderCancelledCallback(data);
+      }
+    });
+
+    // Listen for cancellation requests
+    this.socket.on("cancellationRequested", (data) => {
+      console.log("Cancellation requested:", data);
+      this.handleCancellationRequested(data);
+      if (this.onCancellationRequestedCallback) {
+        this.onCancellationRequestedCallback(data);
+      }
+    });
+
+    // Listen for cancellation approvals
+    this.socket.on("cancellationApproved", (data) => {
+      console.log("Cancellation approved:", data);
+      this.handleCancellationApproved(data);
+      if (this.onCancellationApprovedCallback) {
+        this.onCancellationApprovedCallback(data);
+      }
+    });
+
+    // Listen for return requests
+    this.socket.on("returnRequested", (data) => {
+      console.log("Return requested:", data);
+      this.handleReturnRequested(data);
+      if (this.onReturnRequestedCallback) {
+        this.onReturnRequestedCallback(data);
+      }
+    });
+
+    // Listen for return approvals
+    this.socket.on("returnApproved", (data) => {
+      console.log("Return approved:", data);
+      this.handleReturnApproved(data);
+      if (this.onReturnApprovedCallback) {
+        this.onReturnApprovedCallback(data);
       }
     });
   }
@@ -55,23 +127,56 @@ class SocketService {
       this.socket.disconnect();
       this.socket = null;
       this.isConnected = false;
+      this.listenersRegistered = false;
     }
   }
 
-  handleNewOrderNotification(orderData) {
+  waitForConnection(timeout = 5000) {
+    return new Promise((resolve, reject) => {
+      if (this.isConnected) {
+        resolve(true);
+        return;
+      }
+
+      const startTime = Date.now();
+      const checkConnection = () => {
+        if (this.isConnected) {
+          resolve(true);
+        } else if (Date.now() - startTime > timeout) {
+          reject(new Error("Socket connection timeout"));
+        } else {
+          setTimeout(checkConnection, 100);
+        }
+      };
+
+      checkConnection();
+    });
+  }
+
+  shouldShowToast(eventKey, orderId) {
+    const key = `${eventKey}_${orderId}`;
     const now = Date.now();
-    if (this.lastToastTime && now - this.lastToastTime < 2000) {
-      console.log("Ignoring duplicate new order notification");
+    const lastTime = this.lastToastTimes[key] || 0;
+
+    if (now - lastTime < 3000) {
+      console.log(`Ignoring duplicate ${eventKey} notification for order ${orderId}`);
+      return false;
+    }
+
+    this.lastToastTimes[key] = now;
+    return true;
+  }
+
+  handleNewOrderNotification(orderData) {
+    if (!this.shouldShowToast('newOrder', orderData.orderId)) {
       return;
     }
-    this.lastToastTime = now;
 
-    const message = `Đơn hàng mới: #${orderData.orderId.slice(-8)} - ${
-      orderData.orderLines
-    } sản phẩm - ${new Intl.NumberFormat("vi-VN", {
-      style: "currency",
-      currency: "VND",
-    }).format(orderData.totalAmount)}`;
+    const message = `Đơn hàng mới: #${orderData.orderId.slice(-8)} - ${orderData.orderLines
+      } sản phẩm - ${new Intl.NumberFormat("vi-VN", {
+        style: "currency",
+        currency: "VND",
+      }).format(orderData.totalAmount)}`;
 
     toast.info(message, {
       position: "bottom-right",
@@ -87,8 +192,125 @@ class SocketService {
     });
   }
 
+  handleOrderStatusUpdate(data) {
+    if (!this.shouldShowToast('orderStatusUpdate', data.orderId)) {
+      return;
+    }
+
+    const message = `Đơn hàng #${data.orderId.slice(-8)} đã được cập nhật: ${data.message}`;
+    toast.info(message, {
+      position: "bottom-right",
+      autoClose: 8000,
+      onClick: () => {
+        window.location.href = `/orders/${data.orderId}`;
+      },
+    });
+  }
+
+  handleOrderCancelled(data) {
+    if (!this.shouldShowToast('orderCancelled', data.orderId)) {
+      return;
+    }
+
+    const message = `Đơn hàng #${data.orderId.slice(-8)} đã bị hủy${data.reason ? `: ${data.reason}` : ""}`;
+    toast.warning(message, {
+      position: "bottom-right",
+      autoClose: 8000,
+      onClick: () => {
+        window.location.href = `/orders/${data.orderId}`;
+      },
+    });
+  }
+
+  handleCancellationRequested(data) {
+    if (!this.shouldShowToast('cancellationRequested', data.orderId)) {
+      return;
+    }
+
+    const message = `Yêu cầu hủy đơn hàng #${data.orderId.slice(-8)}${data.reason ? `: ${data.reason}` : ""}`;
+    toast.info(message, {
+      position: "bottom-right",
+      autoClose: 10000,
+      onClick: () => {
+        window.location.href = `/orders/${data.orderId}`;
+      },
+    });
+  }
+
+  handleCancellationApproved(data) {
+    if (!this.shouldShowToast('cancellationApproved', data.orderId)) {
+      return;
+    }
+
+    const message = data.message || `Yêu cầu hủy đơn #${data.orderId.slice(-8)} đã được chấp thuận`;
+    toast.success(message, {
+      position: "bottom-right",
+      autoClose: 8000,
+      onClick: () => {
+        window.location.href = `/orders/${data.orderId}`;
+      },
+    });
+  }
+
+  handleReturnRequested(data) {
+    if (!this.shouldShowToast('returnRequested', data.orderId)) {
+      return;
+    }
+
+    const message = `Yêu cầu trả hàng cho đơn #${data.orderId.slice(-8)} - ${new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
+    }).format(data.orderAmount)}`;
+    toast.info(message, {
+      position: "bottom-right",
+      autoClose: 10000,
+      onClick: () => {
+        window.location.href = `/orders/${data.orderId}`;
+      },
+    });
+  }
+
+  handleReturnApproved(data) {
+    if (!this.shouldShowToast('returnApproved', data.orderId)) {
+      return;
+    }
+
+    const message = data.message || `Yêu cầu trả hàng cho đơn #${data.orderId.slice(-8)} đã được chấp thuận`;
+    toast.success(message, {
+      position: "bottom-right",
+      autoClose: 8000,
+      onClick: () => {
+        window.location.href = `/orders/${data.orderId}`;
+      },
+    });
+  }
+
   setOnNewOrderCallback(callback) {
     this.onNewOrderCallback = callback;
+  }
+
+  setOnOrderStatusUpdateCallback(callback) {
+    this.onOrderStatusUpdateCallback = callback;
+  }
+
+  setOnOrderCancelledCallback(callback) {
+    this.onOrderCancelledCallback = callback;
+  }
+
+  setOnCancellationRequestedCallback(callback) {
+    this.onCancellationRequestedCallback = callback;
+  }
+
+  setOnCancellationApprovedCallback(callback) {
+    this.onCancellationApprovedCallback = callback;
+  }
+
+  setOnReturnRequestedCallback(callback) {
+    this.onReturnRequestedCallback = callback;
+  }
+
+  setOnReturnApprovedCallback(callback) {
+    this.onReturnApprovedCallback = callback;
   }
 
   emit(event, data) {
@@ -98,12 +320,24 @@ class SocketService {
   }
 
   getActiveRooms() {
-    this.emit("getActiveRooms");
+    if (this.socket && this.isConnected) {
+      console.log("[SocketService] Requesting active rooms...");
+      this.emit("getActiveRooms");
+      return true;
+    } else {
+      console.warn("[SocketService] Cannot get active rooms - socket not connected");
+      return false;
+    }
   }
 
   // Chat methods
   joinRoom(room) {
-    this.emit("joinRoom", room);
+    if (this.socket && this.isConnected) {
+      console.log(`[SocketService] Joining room: ${room}`);
+      this.emit("joinRoom", room);
+    } else {
+      console.warn(`[SocketService] Cannot join room ${room} - socket not connected`);
+    }
   }
 
   leaveRoom(room) {

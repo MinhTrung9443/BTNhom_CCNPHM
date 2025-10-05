@@ -31,19 +31,30 @@ const Header = () => {
   }, [dispatch]);
 
   useEffect(() => {
-  socketService.connect(token);
-
     // Set callback to refetch notifications on new order
     socketService.setOnNewOrderCallback(() => {
       dispatch(fetchNotifications({ page: 1, limit: 5 }));
     });
 
-    // Join admin room
-    socketService.emit('joinRoom', 'admin');
+    // Set callback for other order events to refresh notifications
+    socketService.setOnOrderCancelledCallback(() => {
+      dispatch(fetchNotifications({ page: 1, limit: 5 }));
+    });
 
-    // Cleanup on unmount
+    socketService.setOnCancellationRequestedCallback(() => {
+      dispatch(fetchNotifications({ page: 1, limit: 5 }));
+    });
+
+    socketService.setOnReturnRequestedCallback(() => {
+      dispatch(fetchNotifications({ page: 1, limit: 5 }));
+    });
+
+    // Cleanup callbacks on unmount
     return () => {
-      socketService.disconnect();
+      socketService.setOnNewOrderCallback(null);
+      socketService.setOnOrderCancelledCallback(null);
+      socketService.setOnCancellationRequestedCallback(null);
+      socketService.setOnReturnRequestedCallback(null);
     };
   }, [dispatch]);
 
@@ -123,9 +134,8 @@ const Header = () => {
                   notifications.slice(0, 5).map((notification) => (
                     <Dropdown.Item
                       key={notification._id}
-                      className={`p-3 border-bottom notification-item ${
-                        !notification.isRead ? "bg-light" : ""
-                      }`}
+                      className={`p-3 border-bottom notification-item ${!notification.isRead ? "bg-light" : ""
+                        }`}
                       style={{ cursor: "pointer" }}
                       onClick={() => {
                         if (!notification.isRead) {
@@ -140,9 +150,8 @@ const Header = () => {
                         <div className="flex-grow-1">
                           <div className="d-flex justify-content-between align-items-start mb-1">
                             <strong
-                              className={`notification-title ${
-                                !notification.isRead ? "text-primary" : ""
-                              }`}
+                              className={`notification-title ${!notification.isRead ? "text-primary" : ""
+                                }`}
                             >
                               {notification.title}
                             </strong>
