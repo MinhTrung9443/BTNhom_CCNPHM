@@ -19,7 +19,9 @@ export interface ExistingReview {
   orderId: string;
   rating: number;
   comment: string;
+  editCount: number;
   createdAt: string;
+  updatedAt?: string;
 }
 
 export interface Review {

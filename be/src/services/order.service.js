@@ -31,6 +31,11 @@ export const getUserOrders = async (userId, page = 1, limit = 10, status = null,
     filter.status = { $in: status };
   }
 
+  // check valid ObjectId if search is _id
+  if (search && mongoose.isValidObjectId(search)) {
+    filter._id = new mongoose.Types.ObjectId(search);
+  }
+  else
   if (search) {
     const searchRegex = new RegExp(search, "i");
     filter.$or = [{ "orderLines.productName": searchRegex }, { recipientName: searchRegex }, { phoneNumber: searchRegex }];
