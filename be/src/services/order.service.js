@@ -97,6 +97,29 @@ export const getAllOrders = async (page = 1, limit = 10, status = null, search =
   };
 };
 
+export const getLatestOrderAddress = async (userId) => {
+  // Tìm đơn hàng gần nhất của user (đã hoàn thành hoặc đang xử lý)
+  const latestOrder = await Order.findOne({
+    userId
+  })
+    .sort({ createdAt: -1 })
+    .select("shippingAddress")
+    .lean();
+
+  if (!latestOrder) {
+    throw new AppError("Không tìm thấy đơn hàng nào", 404);
+  }
+
+  return {
+    recipientName: latestOrder.shippingAddress.recipientName,
+    phone: latestOrder.shippingAddress.phoneNumber,
+    address: latestOrder.shippingAddress.street,
+    ward: latestOrder.shippingAddress.ward,
+    district: latestOrder.shippingAddress.district,
+    province: latestOrder.shippingAddress.province,
+  };
+};
+
 export const getOrderDetail = async (orderId, userId = null) => {
   const filter = { _id: orderId };
   if (userId) {
@@ -1229,12 +1252,12 @@ export const confirmOrderReceived = async (userId, orderId) => {
   try {
     const orderAmount = order.subtotal; // Giá trị đơn hàng trước khuyến mãi
     const orderNumber = order._id.toString().slice(-8).toUpperCase();
-    
+
     const loyaltyResult = await addLoyaltyPoints(userId, orderAmount, orderId, orderNumber);
-    
+
     if (loyaltyResult.earnedPoints > 0) {
       logger.info(`Added ${loyaltyResult.earnedPoints} loyalty points to user ${userId} for order ${orderId}`);
-      
+
       // Gửi thông báo về xu nhận được
       await Notification.create({
         title: "Nhận điểm tích lũy",

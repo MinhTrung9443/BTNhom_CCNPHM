@@ -17,6 +17,7 @@ router.post("/momo-return", restrictTo("user"), OrderController.handleMomoReturn
 router.post("/my/:orderId/retry-momo", restrictTo("user"), OrderController.retryMomoPayment);
 router.get("/my", restrictTo("user"), validate(getUserOrders), OrderController.getUserOrders);
 router.get("/my/stats", restrictTo("user"), OrderController.getUserOrderStats);
+router.get("/latest-address", restrictTo("user"), OrderController.getLatestOrderAddress);
 router.get("/:orderId", restrictTo("user"), OrderController.getOrderDetail);
 router.patch("/my/:orderId/cancel", restrictTo("user"), validate(cancelOrder), OrderController.cancelOrderByUser);
 router.post("/:orderId/request-return", restrictTo("user"), validate(requestReturn), OrderController.requestReturn);

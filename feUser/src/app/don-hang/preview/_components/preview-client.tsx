@@ -410,6 +410,7 @@ export default function PreviewClient({ accessToken }: PreviewClientProps) {
             formData={{ recipientName, phoneNumber, street, province, district, ward }}
             onFieldChange={handleFieldChange}
             resetFields={handleResetFields}
+            accessToken={accessToken}
           />
 
           <DeliveryMethodSelector

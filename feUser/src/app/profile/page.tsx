@@ -342,36 +342,6 @@ export default function ProfilePage() {
           </div>
         </CardContent>
       </Card>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Ngày tham gia</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{user.createdAt ? new Date(user.createdAt).toLocaleDateString("vi-VN") : "N/A"}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Điểm tích lũy</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">{user.loyaltyPoints || 0}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Lần đăng nhập cuối</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">{user.lastLogin ? new Date(user.lastLogin).toLocaleDateString("vi-VN") : "N/A"}</div>
-          </CardContent>
-        </Card>
-      </div>
     </div>
   );
 }

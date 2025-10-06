@@ -118,6 +118,23 @@ class OrderService {
     });
     return response;
   }
+
+  /**
+   * Lấy địa chỉ từ đơn hàng gần nhất
+   */
+  async getLatestOrderAddress(accessToken: string): Promise<ApiResponse<{
+    recipientName: string;
+    phone: string;
+    address: string;
+    ward: string;
+    district: string;
+    province: string;
+  }>> {
+    const response = await apiFetch("/orders/latest-address", accessToken, {
+      method: "GET",
+    });
+    return response;
+  }
 }
 
 export const orderService = new OrderService();
