@@ -2,6 +2,7 @@ import { useCart } from '@/contexts/cart-context';
 import { useSession } from 'next-auth/react';
 import { cartService } from '@/services/cartService';
 import { toast } from 'sonner';
+import { HttpError } from '@/lib/api';
 
 /**
  * Custom hook để thực hiện các thao tác với giỏ hàng
@@ -22,19 +23,23 @@ export function useCartActions() {
                 productId,
                 quantity,
             });
-            console.log('response', response.message);
-            // Cập nhật cart count optimistically
-            incrementCartCount(quantity);
-            toast.success(response.message || 'Đã thêm sản phẩm vào giỏ hàng');
+            
+            if (response.success) {
+                // Cập nhật cart count optimistically
+                incrementCartCount(quantity);
+                toast.success(response.message);
 
-            // Refresh để đảm bảo chính xác (optional, có thể bỏ nếu muốn tối ưu)
-            await refreshCartCount();
+                // Refresh để đảm bảo chính xác (optional, có thể bỏ nếu muốn tối ưu)
+                await refreshCartCount();
 
-            return true;
-
+                return true;
+            }
+            return false;
         } catch (error) {
-            console.error('Add to cart error:', error);
-            toast.error(error.response.data.message || 'Có lỗi xảy ra khi thêm sản phẩm vào giỏ hàng');
+            console.error(error);
+            if (error instanceof HttpError) {
+                toast.error(error.response.data.message);
+            }
             return false;
         }
     };
@@ -54,15 +59,15 @@ export function useCartActions() {
             if (response.success) {
                 // Refresh cart count để đảm bảo chính xác
                 await refreshCartCount();
-                toast.success(response.message || 'Đã cập nhật giỏ hàng');
+                toast.success(response.message);
                 return true;
-            } else {
-                toast.error(response.message || 'Không thể cập nhật giỏ hàng');
-                return false;
             }
+            return false;
         } catch (error) {
-            console.error('Update cart error:', error);
-            toast.error('Có lỗi xảy ra khi cập nhật giỏ hàng');
+            console.error(error);
+            if (error instanceof HttpError) {
+                toast.error(error.response.data.message);
+            }
             return false;
         }
     };
@@ -79,19 +84,19 @@ export function useCartActions() {
             if (response.success) {
                 // Cập nhật cart count optimistically
                 decrementCartCount(currentQuantity);
-                toast.success(response.message || 'Đã xóa sản phẩm khỏi giỏ hàng');
+                toast.success(response.message);
 
                 // Refresh để đảm bảo chính xác (optional)
                 // await refreshCartCount();
 
                 return true;
-            } else {
-                toast.error(response.message || 'Không thể xóa sản phẩm khỏi giỏ hàng');
-                return false;
             }
+            return false;
         } catch (error) {
-            console.error('Remove from cart error:', error);
-            toast.error('Có lỗi xảy ra khi xóa sản phẩm khỏi giỏ hàng');
+            console.error(error);
+            if (error instanceof HttpError) {
+                toast.error(error.response.data.message);
+            }
             return false;
         }
     };

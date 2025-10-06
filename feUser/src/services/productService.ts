@@ -37,12 +37,40 @@ class ProductService {
   }
 
   // Các hàm khác như getLatestProducts, getBestsellerProducts...
-  async getLatestProducts(accessToken?: string): Promise<ApiResponse<ProductListResponse>> {
-    return await apiFetch<ApiResponse<ProductListResponse>>("/products/latest", accessToken);
+  async getLatestProducts(params?: { page?: number; limit?: number }, accessToken?: string): Promise<ApiResponse<ProductListResponse>> {
+    const searchParams = new URLSearchParams();
+    if (params?.page) searchParams.append("page", params.page.toString());
+    if (params?.limit) searchParams.append("limit", params.limit.toString());
+    
+    const endpoint = `/products/latest${searchParams.toString() ? "?" + searchParams.toString() : ""}`;
+    return await apiFetch<ApiResponse<ProductListResponse>>(endpoint, accessToken);
   }
 
-  async getBestsellerProducts(accessToken?: string): Promise<ApiResponse<ProductListResponse>> {
-    return await apiFetch<ApiResponse<ProductListResponse>>("/products/bestsellers", accessToken);
+  async getBestsellerProducts(params?: { page?: number; limit?: number }, accessToken?: string): Promise<ApiResponse<ProductListResponse>> {
+    const searchParams = new URLSearchParams();
+    if (params?.page) searchParams.append("page", params.page.toString());
+    if (params?.limit) searchParams.append("limit", params.limit.toString());
+    
+    const endpoint = `/products/bestsellers${searchParams.toString() ? "?" + searchParams.toString() : ""}`;
+    return await apiFetch<ApiResponse<ProductListResponse>>(endpoint, accessToken);
+  }
+
+  async getMostViewedProducts(params?: { page?: number; limit?: number }, accessToken?: string): Promise<ApiResponse<ProductListResponse>> {
+    const searchParams = new URLSearchParams();
+    if (params?.page) searchParams.append("page", params.page.toString());
+    if (params?.limit) searchParams.append("limit", params.limit.toString());
+    
+    const endpoint = `/products/most-viewed${searchParams.toString() ? "?" + searchParams.toString() : ""}`;
+    return await apiFetch<ApiResponse<ProductListResponse>>(endpoint, accessToken);
+  }
+
+  async getTopDiscountProducts(params?: { page?: number; limit?: number }, accessToken?: string): Promise<ApiResponse<ProductListResponse>> {
+    const searchParams = new URLSearchParams();
+    if (params?.page) searchParams.append("page", params.page.toString());
+    if (params?.limit) searchParams.append("limit", params.limit.toString());
+    
+    const endpoint = `/products/top-discounts${searchParams.toString() ? "?" + searchParams.toString() : ""}`;
+    return await apiFetch<ApiResponse<ProductListResponse>>(endpoint, accessToken);
   }
 
   // Tìm kiếm sản phẩm

@@ -9,6 +9,7 @@ import Header from "@/components/header";
 import Footer from "@/components/footer";
 import ChatWidget from "@/components/chat-widget";
 import N8nChatbot from "@/components/n8n-chatbot";
+import Preloader from "@/components/preloader";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -69,6 +70,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="vi">
       <body className={`${inter.className} flex flex-col min-h-screen`}>
+        <Preloader />
         <SessionProvider session={session}>
           <CartProvider>
             <Header />

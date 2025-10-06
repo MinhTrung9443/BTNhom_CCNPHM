@@ -17,6 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { orderService } from "@/services/orderService";
 import { PackageCheck, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { HttpError } from "@/lib/api";
 
 interface ConfirmReceivedDialogProps {
   orderId: string;
@@ -63,19 +64,16 @@ export function ConfirmReceivedDialog({ orderId, onSuccess, variant = "default",
           // Refresh trang hiện tại
           router.refresh();
         }
-      } else {
+      }
+    } catch (error) {
+      console.error(error);
+      if (error instanceof HttpError) {
         toast({
           title: "Có lỗi xảy ra",
-          description: response.message,
+          description: error.response.data.message,
           variant: "destructive",
         });
       }
-    } catch {
-      toast({
-        title: "Có lỗi xảy ra",
-        description: "Không thể xác nhận đã nhận hàng. Vui lòng thử lại sau.",
-        variant: "destructive",
-      });
     } finally {
       setIsLoading(false);
     }

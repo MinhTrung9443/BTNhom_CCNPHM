@@ -427,65 +427,128 @@ export const productService = {
     sortBy = 'createdAt',
     sortOrder = 'desc'
   }) {
-    // Xây dựng filter object
-    const filter = { isActive: true };
+    const pipeline = [];
 
-    // Text search - không phân biệt hoa thường
+    // 1️⃣ Xây dựng $search stage với Atlas Search
+    const must = [
+      { equals: { path: 'isActive', value: true } }
+    ];
+    const filter = [];
+
+    // Text search với fuzzy matching
     if (keyword && keyword.trim()) {
-      const searchRegex = new RegExp(keyword.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
-      filter.$or = [
-        { name: searchRegex },
-        { description: searchRegex }
-      ];
+      must.push({
+        text: {
+          query: keyword.trim(),
+          path: ['name', 'description'],
+          fuzzy: { maxEdits: 2 }
+        }
+      });
     }
 
-    // Filter theo danh mục
+    // Filter theo category
     if (categoryId) {
-      filter.categoryId = categoryId;
+      filter.push({ 
+        equals: { 
+          path: 'categoryId', 
+          value: new Product.base.Types.ObjectId(categoryId) 
+        } 
+      });
     }
 
     // Filter theo khoảng giá
     if (minPrice !== null || maxPrice !== null) {
-      filter.price = {};
-      if (minPrice !== null) filter.price.$gte = minPrice;
-      if (maxPrice !== null) filter.price.$lte = maxPrice;
+      filter.push({
+        range: {
+          path: 'price',
+          gte: minPrice ?? 0,
+          lte: maxPrice ?? Number.MAX_SAFE_INTEGER
+        }
+      });
     }
 
-    // Filter theo đánh giá tối thiểu
+    // Filter theo rating tối thiểu
     if (minRating !== null) {
-      filter.averageRating = { $gte: minRating };
+      filter.push({ 
+        range: { 
+          path: 'averageRating', 
+          gte: minRating 
+        } 
+      });
     }
 
-    // Filter theo tình trạng còn hàng
+    // Filter theo tình trạng kho
     if (inStock === true) {
-      filter.stock = { $gt: 0 };
+      filter.push({ range: { path: 'stock', gt: 0 } });
     } else if (inStock === false) {
-      filter.stock = 0;
+      filter.push({ equals: { path: 'stock', value: 0 } });
     }
 
-    // Xây dựng sort object
-    const sort = {};
-    sort[sortBy] = sortOrder === 'asc' ? 1 : -1;
+    // Thêm $search stage
+    pipeline.push({
+      $search: {
+        index: 'default',
+        compound: { must, filter }
+      }
+    });
 
-    // Nếu không sort theo createdAt, thêm createdAt làm sort thứ hai để đảm bảo consistent
+    // 2️⃣ Sort stage
+    const sortStage = {};
+    sortStage[sortBy] = sortOrder === 'asc' ? 1 : -1;
     if (sortBy !== 'createdAt') {
-      sort.createdAt = -1;
+      sortStage.createdAt = -1;
     }
+    pipeline.push({ $sort: sortStage });
 
-    // Tính toán pagination
-    const skip = (page - 1) * limit;
+    // 3️⃣ Pagination
+    pipeline.push({ $skip: (page - 1) * limit });
+    pipeline.push({ $limit: limit });
 
-    // Thực hiện truy vấn song song
-    const [products, total] = await Promise.all([
-      Product.find(filter)
-        .populate('categoryId', 'name slug')
-        .sort(sort)
-        .skip(skip)
-        .limit(limit)
-        .select('name slug price discount images averageRating totalReviews soldCount stock categoryId createdAt')
-        .lean(),
-      Product.countDocuments(filter)
-    ]);
+    // 4️⃣ Lookup để populate categoryId
+    pipeline.push({
+      $lookup: {
+        from: 'categories',
+        localField: 'categoryId',
+        foreignField: '_id',
+        as: 'categoryId'
+      }
+    });
+
+    pipeline.push({
+      $unwind: {
+        path: '$categoryId',
+        preserveNullAndEmptyArrays: true
+      }
+    });
+
+    // 5️⃣ Project để chọn fields cần thiết
+    pipeline.push({
+      $project: {
+        name: 1,
+        slug: 1,
+        price: 1,
+        discount: 1,
+        images: 1,
+        averageRating: 1,
+        totalReviews: 1,
+        soldCount: 1,
+        stock: 1,
+        categoryId: {
+          _id: '$categoryId._id',
+          name: '$categoryId.name',
+          slug: '$categoryId.slug'
+        },
+        createdAt: 1,
+        score: { $meta: 'searchScore' }
+      }
+    });
+
+    console.log(JSON.stringify(pipeline, null, 2));
+    // Thực hiện aggregation
+    const products = await Product.aggregate(pipeline);
+
+    // Đếm tổng số sản phẩm (dùng countDocuments cho đơn giản)
+    const total = await Product.countDocuments({ isActive: true });
 
     // Tính toán thông tin phân trang
     const totalPages = Math.ceil(total / limit);
@@ -497,14 +560,15 @@ export const productService = {
       slug: product.slug,
       mainImage: product.images?.[0] || null,
       price: product.price,
-      discount: product.discount,
-      finalPrice: product.price * (1 - product.discount / 100),
+      discount: product.discount || 0,
+      finalPrice: product.price * (1 - (product.discount || 0) / 100),
       averageRating: product.averageRating || 0,
       totalReviews: product.totalReviews || 0,
       soldCount: product.soldCount || 0,
       stock: product.stock,
       category: product.categoryId,
-      createdAt: product.createdAt
+      createdAt: product.createdAt,
+      searchScore: product.score
     }));
 
     const meta = {

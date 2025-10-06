@@ -5,9 +5,10 @@ interface ProductSectionProps {
   title: string;
   subtitle?: string;
   products: Product[];
+  showFavoriteButton?: boolean;
 }
 
-export default function ProductSection({ title, subtitle, products }: ProductSectionProps) {
+export default function ProductSection({ title, subtitle, products, showFavoriteButton = true }: ProductSectionProps) {
   return (
     <section className="py-12">
       <div className="text-center mb-8">
@@ -19,7 +20,11 @@ export default function ProductSection({ title, subtitle, products }: ProductSec
       
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {products.map((product) => (
-          <ProductCard key={product._id} product={product} />
+          <ProductCard 
+            key={product._id} 
+            product={product} 
+            showFavoriteButton={showFavoriteButton}
+          />
         ))}
       </div>
     </section>

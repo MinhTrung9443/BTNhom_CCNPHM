@@ -183,6 +183,96 @@ body {
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-gradient-to-br from-slate-50 via-white to-green-50/30 text-foreground;
   }
+}
+
+/* Custom animations for cart highlight */
+@keyframes highlight-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(249, 115, 22, 0);
+  }
+}
+
+.cart-item-highlight {
+  animation: highlight-pulse 1.5s ease-in-out 2;
+}
+
+/* Custom Swiper styles */
+.swiper {
+  padding-bottom: 3rem !important;
+}
+
+.swiper-pagination {
+  bottom: 0 !important;
+}
+
+.swiper-pagination-bullet {
+  width: 10px;
+  height: 10px;
+  background: #16a34a;
+  opacity: 0.3;
+  transition: all 0.3s ease;
+}
+
+.swiper-pagination-bullet-active {
+  opacity: 1;
+  width: 24px;
+  border-radius: 5px;
+  background: linear-gradient(to right, #16a34a, #15803d);
+}
+
+.swiper-button-disabled {
+  opacity: 0 !important;
+  cursor: not-allowed;
+}
+
+/* Smooth slide transitions */
+.swiper-slide {
+  transition: transform 0.3s ease, opacity 0.3s ease;
+  cursor: pointer;
+}
+
+.swiper-slide-active {
+  transform: scale(1);
+  opacity: 1;
+}
+
+.swiper-slide-next,
+.swiper-slide-prev {
+  opacity: 0.7;
+}
+
+/* Coverflow effect enhancements */
+.swiper-3d .swiper-slide-shadow-left,
+.swiper-3d .swiper-slide-shadow-right {
+  background-image: linear-gradient(to right, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0));
+}
+
+/* Ensure all slides are clickable - especially for coverflow */
+.swiper-slide {
+  pointer-events: auto !important;
+  cursor: pointer;
+}
+
+.swiper-slide > * {
+  pointer-events: auto !important;
+}
+
+.swiper-slide a,
+.swiper-slide button {
+  pointer-events: auto !important;
+  cursor: pointer;
+}
+
+/* Fix for coverflow effect blocking clicks */
+.swiper-3d .swiper-slide {
+  pointer-events: auto !important;
+}
+
+.swiper-wrapper {
+  pointer-events: auto !important;
 }

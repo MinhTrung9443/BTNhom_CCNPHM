@@ -12,16 +12,24 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Product } from '@/types/product';
 import { cartService } from '@/services/cartService';
 import { FavoriteButton } from './favorite-button';
+import { HttpError } from '@/lib/api';
 
 // Kiểu dữ liệu linh hoạt cho ProductCard, chỉ yêu cầu các trường cần thiết
 type ProductCardProduct = Pick<Product, '_id' | 'name' | 'price' | 'images' | 'slug'> & Partial<Product>;
 
 interface ProductCardProps {
   product: ProductCardProduct;
-  isFavorited: boolean;
+  isFavorited?: boolean;
+  showFavoriteButton?: boolean;
+  variant?: 'default' | 'bestseller' | 'discount' | 'viewed';
 }
 
-export default function ProductCard({ product, isFavorited }: ProductCardProps) {
+export default function ProductCard({ 
+  product, 
+  isFavorited = false, 
+  showFavoriteButton = true,
+  variant = 'default'
+}: ProductCardProps) {
   const [isLoading, setIsLoading] = useState(false);
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -44,13 +52,13 @@ export default function ProductCard({ product, isFavorited }: ProductCardProps) 
       });
 
       if (response.success) {
-        toast.success(`Đã thêm "${product.name || 'sản phẩm'}" vào giỏ hàng.`);
-      } else {
-        toast.error(response.message || 'Không thể thêm sản phẩm.');
+        toast.success(response.message);
       }
     } catch (error) {
-      console.error('Failed to add to cart:', error);
-      toast.error('Không thể thêm sản phẩm. Vui lòng thử lại.');
+      console.error(error);
+      if (error instanceof HttpError) {
+        toast.error(error.response.data.message);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -84,11 +92,40 @@ export default function ProductCard({ product, isFavorited }: ProductCardProps) 
             )}
           </Link>
 
-          <FavoriteButton
-            productId={product._id}
-            initialIsFavorited={isFavorited}
-            className="absolute top-2 right-2 z-10 bg-white/80 hover:bg-white"
-          />
+          {/* Badge theo variant */}
+          {variant === 'discount' && product.discount && product.discount > 0 && (
+            <div className="absolute top-2 left-2 z-10">
+              <div className="bg-gradient-to-r from-red-500 to-red-600 text-white px-3 py-1 rounded-full font-bold text-sm shadow-lg animate-pulse">
+                -{product.discount}%
+              </div>
+            </div>
+          )}
+          
+          {variant === 'default' && (
+            <div className="absolute top-2 left-2 z-10">
+              <div className="bg-gradient-to-r from-green-500 to-green-600 text-white px-3 py-1 rounded-full font-bold text-sm shadow-lg flex items-center gap-1">
+                <span>✨</span>
+                <span>Mới</span>
+              </div>
+            </div>
+          )}
+          
+          {variant === 'viewed' && (
+            <div className="absolute top-2 left-2 z-10">
+              <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-3 py-1 rounded-full font-bold text-sm shadow-lg flex items-center gap-1">
+                <span>👁️</span>
+                <span>Xem nhiều</span>
+              </div>
+            </div>
+          )}
+
+          {showFavoriteButton && (
+            <FavoriteButton
+              productId={product._id}
+              initialIsFavorited={isFavorited}
+              className="absolute top-2 right-2 z-10 bg-white/80 hover:bg-white"
+            />
+          )}
 
           {/* Quick actions */}
           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center pointer-events-none">
@@ -136,18 +173,36 @@ export default function ProductCard({ product, isFavorited }: ProductCardProps) 
           </p>
 
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="text-lg font-bold text-green-600">
                 {new Intl.NumberFormat('vi-VN', {
                   style: 'currency',
                   currency: 'VND',
-                }).format(product.price)}
+                }).format(product.discount && product.discount > 0 
+                  ? product.price * (1 - product.discount / 100)
+                  : product.price
+                )}
               </span>
+              {product.discount && product.discount > 0 && (
+                <span className="text-sm text-gray-500 line-through">
+                  {new Intl.NumberFormat('vi-VN', {
+                    style: 'currency',
+                    currency: 'VND',
+                  }).format(product.price)}
+                </span>
+              )}
             </div>
             
             {/* Sold Count and Stock Info */}
             <div className="flex items-center justify-between text-xs">
-              {(product.buyerCount !== undefined && product.buyerCount > 0) && (
+              {/* Hiển thị totalSold cho bestseller, buyerCount cho các variant khác */}
+              {variant === 'bestseller' && (product as any).totalSold !== undefined && (
+                <span className="text-orange-600 font-bold flex items-center gap-1">
+                  <span>🔥</span>
+                  <span>Đã bán: {(product as any).totalSold}</span>
+                </span>
+              )}
+              {variant !== 'bestseller' && (product.buyerCount !== undefined && product.buyerCount > 0) && (
                 <span className="text-gray-600 font-medium">
                   Đã bán: {product.buyerCount}
                 </span>
