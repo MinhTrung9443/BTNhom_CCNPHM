@@ -37,3 +37,4 @@ be/.env
 feUser/.env.local
 /be/logs
 /be
+.vscode
