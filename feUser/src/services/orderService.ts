@@ -108,6 +108,16 @@ class OrderService {
     });
     return response;
   }
+
+  /**
+   * Thanh toán lại đơn hàng MoMo bị pending hoặc failed
+   */
+  async retryMomoPayment(accessToken: string, orderId: string): Promise<ApiResponse<{ payUrl: string; order: Order }>> {
+    const response: ApiResponse<{ payUrl: string; order: Order }> = await apiFetch(`/orders/my/${orderId}/retry-momo`, accessToken, {
+      method: "POST",
+    });
+    return response;
+  }
 }
 
 export const orderService = new OrderService();

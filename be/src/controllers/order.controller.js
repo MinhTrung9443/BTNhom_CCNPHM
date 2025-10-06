@@ -28,6 +28,26 @@ export const handleMomoCallback = async (req, res) => {
   }
 };
 
+export const retryMomoPayment = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const userId = req.user._id;
+
+    const result = await OrderService.retryMomoPayment(userId, orderId);
+
+    res.json({
+      success: true,
+      message: "Tạo lại link thanh toán MoMo thành công.",
+      data: result,
+    });
+  } catch (error) {
+    res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message || "Lỗi khi tạo lại link thanh toán.",
+    });
+  }
+};
+
 export const handleMomoReturn = async (req, res) => {
   try {
     const { orderId, resultCode, amount, transId, message } = req.body;
