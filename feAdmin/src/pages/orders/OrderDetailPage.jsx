@@ -14,6 +14,7 @@ import { toast } from 'react-toastify'
 import moment from 'moment'
 import React from 'react';
 import { getImageSrc, handleImageError } from '../../utils/imageUtils'
+import ProductSnapshotModal from '../../components/orders/ProductSnapshotModal'
 
 const OrderDetailPage = () => {
   const { orderId } = useParams()
@@ -23,6 +24,8 @@ const OrderDetailPage = () => {
   const [showStatusModal, setShowStatusModal] = useState(false)
   const [showNoteModal, setShowNoteModal] = useState(false)
   const [showCancellationModal, setShowCancellationModal] = useState(false)
+  const [showSnapshotModal, setShowSnapshotModal] = useState(false)
+  const [selectedOrderLine, setSelectedOrderLine] = useState(null)
   const [statusForm, setStatusForm] = useState({
     status: '',
     reason: "",
@@ -166,6 +169,11 @@ const OrderDetailPage = () => {
     return lastStatus === 'new' || order?.status === 'pending'
   }
 
+  const handleViewSnapshot = (orderLine) => {
+    setSelectedOrderLine(orderLine)
+    setShowSnapshotModal(true)
+  }
+
   if (loading) {
     return <LoadingSpinner />
   }
@@ -303,6 +311,7 @@ const OrderDetailPage = () => {
                     <th>Đơn giá</th>
                     <th>Số lượng</th>
                     <th>Thành tiền</th>
+                    <th className="text-center">Thao tác</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -326,6 +335,19 @@ const OrderDetailPage = () => {
                       <td>{item.quantity}</td>
                       <td className="fw-semibold">
                         {formatCurrency(item.productPrice * item.quantity)}
+                      </td>
+                      <td className="text-center">
+                        {item.productSnapshot && (
+                          <Button
+                            variant="outline-primary"
+                            size="sm"
+                            className="btn-snapshot"
+                            onClick={() => handleViewSnapshot(item)}
+                            title="Xem ảnh chụp nhanh sản phẩm"
+                          >
+                            <i className="bi bi-camera-fill"></i>
+                          </Button>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -482,6 +504,13 @@ const OrderDetailPage = () => {
           </Button>
         </Modal.Footer>
       </Modal>
+
+      {/* Product Snapshot Modal */}
+      <ProductSnapshotModal
+        show={showSnapshotModal}
+        onHide={() => setShowSnapshotModal(false)}
+        orderLine={selectedOrderLine}
+      />
     </Container>
   )
 }

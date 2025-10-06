@@ -178,6 +178,14 @@ export const previewOrder = async (userId, { orderLines, shippingAddress, vouche
     const lineTotal = productActualPrice * line.quantity;
 
     subtotal += lineTotal;
+    
+    // Lấy thông tin category nếu có
+    let categoryName = null;
+    if (product.categoryId) {
+      const category = await mongoose.model('Category').findById(product.categoryId).select('name').lean();
+      categoryName = category?.name || null;
+    }
+    
     processedOrderLines.push({
       productId: product._id,
       productCode: product.code,
@@ -188,7 +196,26 @@ export const previewOrder = async (userId, { orderLines, shippingAddress, vouche
       discount: discountPerProduct,
       productActualPrice,
       lineTotal,
-    });
+      // Lưu snapshot đầy đủ sản phẩm tại thời điểm đặt hàng
+      productSnapshot: {
+        name: product.name,
+        slug: product.slug,
+        code: product.code,
+        description: product.description || "",
+        price: product.price,
+        discount: discountPerProduct,
+        images: product.images || [],
+        stock: product.stock,
+        categoryId: product.categoryId,
+        categoryName: categoryName,
+        averageRating: product.averageRating || 0,
+        totalReviews: product.totalReviews || 0,
+        soldCount: product.soldCount || 0,
+        isActive: product.isActive,
+        viewCount: product.viewCount || 0,
+        capturedAt: new Date(),
+      },
+    })
   }
 
   if (unavailableItems.length > 0) {

@@ -15,6 +15,25 @@ const orderLineSchema = new mongoose.Schema(
     discount: { type: Number, required: true, default: 0 },
     productActualPrice: { type: Number, required: true },
     lineTotal: { type: Number, required: true }, // productActualPrice * quantity
+    // Snapshot đầy đủ sản phẩm tại thời điểm đặt hàng
+    productSnapshot: {
+      name: { type: String },
+      slug: { type: String },
+      code: { type: String },
+      description: { type: String },
+      price: { type: Number },
+      discount: { type: Number },
+      images: [{ type: String }],
+      stock: { type: Number },
+      categoryId: { type: mongoose.Schema.Types.ObjectId, ref: "Category" },
+      categoryName: { type: String }, // Lưu tên category để tránh populate
+      averageRating: { type: Number },
+      totalReviews: { type: Number },
+      soldCount: { type: Number },
+      isActive: { type: Boolean },
+      viewCount: { type: Number },
+      capturedAt: { type: Date, default: Date.now },
+    },
   },
   { _id: false }
 );

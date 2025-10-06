@@ -15,7 +15,7 @@ import { Separator } from "@/components/ui/separator";
 import { ArrowLeft, MapPin, CreditCard, Package, CheckCircle2, Clock, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { OrderDetailClient } from "./_components/order-detail-client";
-import { ReviewButton } from "@/components/review-button";
+import { OrderItemsWithSnapshot } from "./_components/order-items-with-snapshot";
 
 // Helper functions for formatting
 const formatPrice = (price: number) => {
@@ -140,49 +140,7 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    {order.orderLines.map((item, index) => (
-                      <div key={index}>
-                        <div className="flex flex-col sm:flex-row gap-4">
-                          <div className="relative w-24 h-24 flex-shrink-0 rounded-md overflow-hidden bg-gray-100 self-center sm:self-start">
-                            <Image src={item.productImage} alt={item.productName} fill unoptimized className="object-cover" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h4 className="font-semibold mb-1">{item.productName}</h4>
-                            <p className="text-sm text-muted-foreground mb-2">Mã SP: {item.productCode}</p>
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                {item.discount > 0 && (
-                                  <>
-                                    <span className="text-sm line-through text-muted-foreground">{formatPrice(item.productPrice)}</span>
-                                    <span className="text-xs bg-red-100 text-red-800 px-2 py-0.5 rounded">-{item.discount}%</span>
-                                  </>
-                                )}
-                              </div>
-                              <p className="text-muted-foreground text-sm">Số lượng: {item.quantity}</p>
-                            </div>
-                            <div className="flex items-center justify-between mt-2">
-                              <p className="font-semibold">{formatPrice(item.productActualPrice)}</p>
-                              <p className="font-bold text-lg">{formatPrice(item.lineTotal)}</p>
-                            </div>
-                          </div>
-                          {order.status === "completed" && (
-                            <div className="self-center sm:self-end">
-                              <ReviewButton
-                                product={{
-                                  id: item.productId,
-                                  name: item.productName,
-                                  image: item.productImage,
-                                }}
-                                orderId={order._id}
-                              />
-                            </div>
-                          )}
-                        </div>
-                        {index < order.orderLines.length - 1 && <Separator className="mt-4" />}
-                      </div>
-                    ))}
-                  </div>
+                  <OrderItemsWithSnapshot order={order} />
                 </CardContent>
               </Card>
 

@@ -5,12 +5,26 @@ import { UserLoyaltyPoints } from "@/types/user";
 
 class UserService {
   /**
-   * Lấy danh sách sản phẩm yêu thích của người dùng.
+   * Lấy danh sách sản phẩm yêu thích của người dùng với phân trang và tìm kiếm.
    * @param accessToken - Bắt buộc, vì đây là endpoint cần xác thực.
+   * @param page - Số trang (default: 1)
+   * @param limit - Số items mỗi trang (default: 10)
+   * @param search - Từ khóa tìm kiếm (optional)
    */
-  async getFavorites(accessToken: string): Promise<ApiResponse<FavoriteProduct[]>> {
+  async getFavorites(
+    accessToken: string, 
+    page: number = 1, 
+    limit: number = 10, 
+    search?: string
+  ): Promise<ApiResponse<FavoriteProduct[]> & {
+    pagination?: {
+      current: number;
+      limit: number;
+      total: number;
+      totalItems: number;
+    };
+  }> {
     if (!accessToken) {
-      // Trả về một cấu trúc hợp lệ nếu không có token
       return {
         success: false,
         message: "Yêu cầu xác thực.",
@@ -18,18 +32,19 @@ class UserService {
       };
     }
 
-    // API này có cấu trúc response đặc biệt, cần được chuẩn hóa
-    const rawResponse: FavoritesResponse = await apiFetch("/users/favorites", accessToken, {
+    const queryParams = new URLSearchParams();
+    queryParams.append("page", page.toString());
+    queryParams.append("limit", limit.toString());
+    if (search) {
+      queryParams.append("search", search);
+    }
+
+    const response = await apiFetch(`/users/favorites?${queryParams.toString()}`, accessToken, {
       method: "GET",
-      cache: "no-store", // Không cache danh sách yêu thích để luôn cập nhật
+      cache: "no-store",
     });
 
-    // Chuẩn hóa response về dạng ApiResponse<T>
-    return {
-      success: true,
-      message: "Lấy danh sách yêu thích thành công.",
-      data: rawResponse.favorites || [],
-    };
+    return response;
   }
 
   /**
