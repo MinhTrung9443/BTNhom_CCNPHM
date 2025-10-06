@@ -23,7 +23,7 @@ export const getLoyaltyBalance = async (req, res) => {
  */
 export const getLoyaltyHistory = async (req, res) => {
   const userId = req.user._id;
-  const type = req.query.type || "all";
+  const type = req.query.type || "all"; // "all" | "earned" | "redeemed" | "expired" | "refund"
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 10;
 
@@ -32,7 +32,7 @@ export const getLoyaltyHistory = async (req, res) => {
   res.status(200).json({
     success: true,
     message: "Lấy lịch sử điểm tích lũy thành công",
-    ...result.meta,
+    meta: result.meta,
     data: result.data
   });
 };
@@ -53,7 +53,7 @@ export const getLoyaltyTransactions = async (req, res) => {
   res.status(200).json({
     success: true,
     message: "Lấy danh sách giao dịch thành công",
-    ...result.meta,
+    meta: result.meta,
     data: result.data
   });
 };
@@ -65,9 +65,7 @@ export const getLoyaltyTransactions = async (req, res) => {
  */
 export const getExpiringPoints = async (req, res) => {
   const userId = req.user._id;
-  const days = parseInt(req.query.days) || 30;
-
-  const data = await loyaltyService.getExpiringPoints(userId, days);
+  const data = await loyaltyService.getExpiringPoints(userId);
 
   res.status(200).json({
     success: true,

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { loyaltyService, LoyaltyBalance, LoyaltyTransaction, ExpiringPointsData } from '@/services/loyaltyService';
+import { loyaltyService, LoyaltyBalance, LoyaltyTransaction, ExpiringPointsData, LoyaltyHistoryResponse } from '@/services/loyaltyService';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -23,7 +23,7 @@ export default function LoyaltyPointsPage() {
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [activeTab, setActiveTab] = useState<'all' | 'earn' | 'redeem' | 'expire'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'earned' | 'redeemed' | 'expired'>('all');
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -56,14 +56,14 @@ export default function LoyaltyPointsPage() {
     }
   };
 
-  const loadHistory = async (type: 'all' | 'earn' | 'redeem' | 'expire', page: number) => {
+  const loadHistory = async (type: 'all' | 'earned' | 'redeemed' | 'expired', page: number) => {
     try {
       setLoadingHistory(true);
-      const response = await loyaltyService.getTransactions(session!.user.accessToken, type, page, 10);
-      if (response.success) {
+      const response = await loyaltyService.getHistory(session!.user.accessToken, type, page, 10);
+      if (response.success && response.meta) {
         setTransactions(response.data);
-        setTotalPages(response.totalPages);
-        setCurrentPage(response.currentPage);
+        setTotalPages(response.meta.totalPages ?? 1);
+        setCurrentPage((response.meta as any).currentPage ?? 1);
       }
     } catch (error: any) {
       toast({
@@ -78,7 +78,7 @@ export default function LoyaltyPointsPage() {
 
   const loadExpiringPoints = async () => {
     try {
-      const response = await loyaltyService.getExpiringPoints(session!.user.accessToken, 30);
+      const response = await loyaltyService.getExpiringPoints(session!.user.accessToken);
       if (response.success) {
         setExpiringPoints(response.data);
       }
@@ -88,7 +88,7 @@ export default function LoyaltyPointsPage() {
   };
 
   const handleTabChange = (value: string) => {
-    const type = value as 'all' | 'earn' | 'redeem' | 'expire';
+    const type = value as 'all' | 'earned' | 'redeemed' | 'expired';
     setActiveTab(type);
     loadHistory(type, 1);
   };
@@ -108,26 +108,30 @@ export default function LoyaltyPointsPage() {
   };
 
   const getTransactionIcon = (type: string) => {
+    if (activeTab === 'expired') {
+      return <Clock className="h-4 w-4 text-gray-500" />;
+    }
     switch (type) {
-      case 'earn':
+      case 'earned':
+      case 'refund':
         return <TrendingUp className="h-4 w-4 text-green-500" />;
-      case 'redeem':
+      case 'redeemed':
         return <TrendingDown className="h-4 w-4 text-red-500" />;
-      case 'expire':
-        return <Clock className="h-4 w-4 text-gray-500" />;
       default:
         return <Coins className="h-4 w-4" />;
     }
   };
 
   const getTransactionColor = (type: string) => {
+    if (activeTab === 'expired') {
+      return 'text-gray-600';
+    }
     switch (type) {
-      case 'earn':
+      case 'earned':
+      case 'refund':
         return 'text-green-600';
-      case 'redeem':
+      case 'redeemed':
         return 'text-red-600';
-      case 'expire':
-        return 'text-gray-600';
       default:
         return 'text-gray-600';
     }
@@ -176,15 +180,15 @@ export default function LoyaltyPointsPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg">
                 <AlertCircle className="h-5 w-5 text-orange-500" />
-                Sắp hết hạn (30 ngày)
+                Sắp hết hạn (Tháng này)
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-orange-500">
-                {expiringPoints?.totalExpiringPoints.toLocaleString('vi-VN') || 0}
+                {balance?.pointsExpiringThisMonth.toLocaleString('vi-VN') || 0}
               </div>
               <p className="text-sm text-muted-foreground mt-1">
-                Điểm sẽ hết hạn trong 30 ngày tới
+                Điểm sẽ hết hạn vào cuối tháng này
               </p>
             </CardContent>
           </Card>
@@ -225,9 +229,9 @@ export default function LoyaltyPointsPage() {
             <Tabs value={activeTab} onValueChange={handleTabChange}>
               <TabsList className="grid w-full grid-cols-4 mb-6">
                 <TabsTrigger value="all">Tất cả</TabsTrigger>
-                <TabsTrigger value="earn">Tích điểm</TabsTrigger>
-                <TabsTrigger value="redeem">Dùng điểm</TabsTrigger>
-                <TabsTrigger value="expire">Hết hạn</TabsTrigger>
+                <TabsTrigger value="earned">Đã nhận</TabsTrigger>
+                <TabsTrigger value="redeemed">Đã dùng</TabsTrigger>
+                <TabsTrigger value="expired">Hết hạn</TabsTrigger>
               </TabsList>
 
               <TabsContent value={activeTab} className="space-y-4">
@@ -249,28 +253,30 @@ export default function LoyaltyPointsPage() {
                         >
                           <div className="flex items-start gap-3 flex-1">
                             <div className="mt-1">
-                              {getTransactionIcon(transaction.type)}
+                              {getTransactionIcon(transaction.transactionType)}
                             </div>
                             <div className="flex-1">
                               <p className="font-medium">{transaction.description}</p>
                               <p className="text-sm text-muted-foreground">
                                 {formatDate(transaction.createdAt)}
                               </p>
-                              {transaction.expiresAt && transaction.status === 'active' && (
+                              {transaction.expiryDate && new Date(transaction.expiryDate) > new Date() && (
                                 <p className="text-xs text-orange-600 mt-1">
-                                  Hết hạn: {formatDate(transaction.expiresAt)}
+                                  Hết hạn: {formatDate(transaction.expiryDate)}
                                 </p>
                               )}
                             </div>
                           </div>
                           <div className="text-right">
-                            <div className={`text-lg font-semibold ${getTransactionColor(transaction.type)}`}>
-                              {transaction.type === 'redeem' || transaction.type === 'expire' ? '-' : '+'}
+                            <div className={`text-lg font-semibold ${getTransactionColor(transaction.transactionType)}`}>
+                              {activeTab === 'expired' || transaction.transactionType === 'redeemed' ? '-' : '+'}
                               {Math.abs(transaction.points).toLocaleString('vi-VN')}
                             </div>
-                            <Badge variant={transaction.status === 'active' ? 'default' : 'secondary'} className="text-xs">
-                              {transaction.status === 'active' ? 'Hoạt động' : 
-                               transaction.status === 'expired' ? 'Hết hạn' : 'Đã dùng'}
+                            <Badge variant={activeTab === 'expired' ? 'destructive' : 'default'} className="text-xs">
+                              {activeTab === 'expired' ? 'Hết hạn' :
+                               transaction.transactionType === 'earned' ? 'Đã nhận' :
+                               transaction.transactionType === 'redeemed' ? 'Đã dùng' :
+                               'Hoàn trả'}
                             </Badge>
                           </div>
                         </div>
@@ -326,7 +332,7 @@ export default function LoyaltyPointsPage() {
                 Chi tiết điểm sắp hết hạn
               </CardTitle>
               <CardDescription>
-                Các giao dịch tích điểm sẽ hết hạn trong 30 ngày tới
+                Các giao dịch tích điểm sẽ hết hạn trong tháng này
               </CardDescription>
             </CardHeader>
             <CardContent>

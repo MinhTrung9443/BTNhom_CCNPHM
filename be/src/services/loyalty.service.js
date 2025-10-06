@@ -14,19 +14,21 @@ export const getLoyaltyBalance = async (userId) => {
     throw new NotFoundError("Không tìm thấy người dùng");
   }
 
-  // Tính ngày cuối tháng hiện tại
+  // Tính ngày bắt đầu và kết thúc của tháng hiện tại
   const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
   const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
 
-  // Tìm các giao dịch tích điểm sẽ hết hạn trong tháng này (chưa hết hạn)
+  // Tìm các giao dịch tích điểm (earned, bonus) sẽ hết hạn trong tháng này.
+  // Lưu ý: Cách tính này chưa trừ đi số điểm đã sử dụng (FIFO),
+  // mà chỉ tính tổng các "khoản điểm" sẽ hết hạn.
   const expiringTransactions = await LoyaltyPoints.find({
     userId,
     transactionType: "earned",
-    expiryDate: { 
-      $ne: null,
-      $lte: endOfMonth, 
-      $gte: now 
-    }
+    expiryDate: {
+      $gte: startOfMonth,
+      $lte: endOfMonth,
+    },
   }).lean();
 
   const pointsExpiringThisMonth = expiringTransactions.reduce((sum, tx) => sum + tx.points, 0);
@@ -39,20 +41,31 @@ export const getLoyaltyBalance = async (userId) => {
 };
 
 /**
- * Lấy lịch sử giao dịch điểm tích lũy
+ * Lấy lịch sử giao dịch điểm tích lũy (phiên bản mới, hợp nhất)
  * @param {String} userId - ID người dùng
- * @param {String} type - Loại giao dịch: "earn" | "redeem" | "all"
+ * @param {String} type - Loại giao dịch: "all" | "earned" | "redeemed" | "expired" | "refund"
  * @param {Number} page - Trang hiện tại
  * @param {Number} limit - Số bản ghi mỗi trang
  * @returns {Object} { meta, data }
  */
 export const getLoyaltyHistory = async (userId, type = "all", page = 1, limit = 10) => {
   const skip = (page - 1) * limit;
-  
+
   // Build query filter
   const filter = { userId };
   if (type !== "all") {
-    filter.transactionType = type;
+    if (type === "expired") {
+      // Lọc các giao dịch đã hết hạn (expiryDate trong quá khứ)
+      filter.expiryDate = { $lt: new Date() };
+      // Chỉ quan tâm đến các loại giao dịch có thể hết hạn
+      filter.transactionType = "earned";
+    } else {
+      // Các loại giao dịch khác
+      const validTypes = ["earned", "refund", "redeemed"];
+      if (validTypes.includes(type)) {
+        filter.transactionType = type;
+      }
+    }
   }
 
   const [transactions, totalRecords] = await Promise.all([
@@ -60,6 +73,7 @@ export const getLoyaltyHistory = async (userId, type = "all", page = 1, limit = 
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
+      .populate("orderId", "orderNumber totalAmount")
       .select("-__v")
       .lean(),
     LoyaltyPoints.countDocuments(filter)
@@ -79,44 +93,17 @@ export const getLoyaltyHistory = async (userId, type = "all", page = 1, limit = 
 };
 
 /**
- * Lấy danh sách giao dịch điểm tích lũy (có phân trang và lọc)
+/**
+ * Lấy danh sách giao dịch điểm tích lũy cho admin (Sử dụng lại logic của getLoyaltyHistory)
  * @param {String} userId - ID người dùng
- * @param {String} type - Loại giao dịch: "earned" | "expired" | "bonus" | "refund" | "all"
+ * @param {String} type - Loại giao dịch: "all" | "earned" | "redeemed" | "expired" | "refund"
  * @param {Number} page - Trang hiện tại
  * @param {Number} limit - Số bản ghi mỗi trang
  * @returns {Object} { meta, data }
  */
 export const getLoyaltyTransactions = async (userId, type = "all", page = 1, limit = 10) => {
-  const skip = (page - 1) * limit;
-  
-  // Build query filter
-  const filter = { userId };
-  if (type !== "all") {
-    filter.transactionType = type;
-  }
-
-  const [transactions, totalItems] = await Promise.all([
-    LoyaltyPoints.find(filter)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .populate("orderId", "orderNumber totalAmount")
-      .select("-__v")
-      .lean(),
-    LoyaltyPoints.countDocuments(filter)
-  ]);
-
-  const totalPages = Math.ceil(totalItems / limit);
-
-  return {
-    meta: {
-      currentPage: page,
-      totalPages,
-      totalItems,
-      itemsPerPage: limit
-    },
-    data: transactions
-  };
+  // Gọi lại hàm getLoyaltyHistory để đảm bảo logic nhất quán
+  return getLoyaltyHistory(userId, type, page, limit);
 };
 
 /**
@@ -126,19 +113,18 @@ export const getLoyaltyTransactions = async (userId, type = "all", page = 1, lim
  * @param {Number} days - Số ngày tới để kiểm tra (mặc định 30)
  * @returns {Object} { totalExpiringPoints, expiringWithinDays, details }
  */
-export const getExpiringPoints = async (userId, days = 30) => {
+export const getExpiringPoints = async (userId) => {
   const now = new Date();
-  const futureDate = new Date(now);
-  futureDate.setDate(futureDate.getDate() + days);
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
 
-  // Tìm các giao dịch earned chưa hết hạn và sắp hết hạn trong khoảng thời gian
+  // Tìm các giao dịch earned/bonus sẽ hết hạn trong tháng này
   const expiringTransactions = await LoyaltyPoints.find({
     userId,
     transactionType: "earned",
     expiryDate: {
-      $ne: null,
-      $gte: now,
-      $lte: futureDate
+      $gte: startOfMonth,
+      $lte: endOfMonth
     }
   })
     .sort({ expiryDate: 1 })
@@ -162,7 +148,7 @@ export const getExpiringPoints = async (userId, days = 30) => {
 
   return {
     totalExpiringPoints,
-    expiringWithinDays: days,
+    expirationDate: endOfMonth,
     details
   };
 };

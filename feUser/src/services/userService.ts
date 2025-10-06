@@ -136,14 +136,13 @@ class UserService {
     points: number;
     totalPoints: number;
     expiryDate: string;
-    consecutiveDays: number;
     nextCheckinDate: string;
   }>> {
     if (!accessToken) {
       return {
         success: false,
         message: "Yêu cầu xác thực.",
-        data: { points: 0, totalPoints: 0, expiryDate: '', consecutiveDays: 0, nextCheckinDate: '' },
+        data: { points: 0, totalPoints: 0, expiryDate: '', nextCheckinDate: '' },
       };
     }
     return await apiFetch("/users/daily-checkin", accessToken, {
@@ -159,14 +158,13 @@ class UserService {
   async getCheckinStatus(accessToken: string): Promise<ApiResponse<{
     canCheckin: boolean;
     lastCheckinDate: string | null;
-    consecutiveDays: number;
     nextCheckinDate: string;
   }>> {
     if (!accessToken) {
       return {
         success: false,
         message: "Yêu cầu xác thực.",
-        data: { canCheckin: false, lastCheckinDate: null, consecutiveDays: 0, nextCheckinDate: '' },
+        data: { canCheckin: false, lastCheckinDate: null, nextCheckinDate: '' },
       };
     }
     return await apiFetch("/users/checkin-status", accessToken, {

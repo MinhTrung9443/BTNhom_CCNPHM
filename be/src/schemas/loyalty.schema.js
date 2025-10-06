@@ -2,8 +2,8 @@ import Joi from "joi";
 
 export const getLoyaltyHistorySchema = {
   query: Joi.object().keys({
-    type: Joi.string().valid("earn", "redeem", "all").default("all").messages({
-      "any.only": 'Loại giao dịch phải là "earn", "redeem" hoặc "all".',
+    type: Joi.string().valid("all", "earned", "redeemed", "expired", "refund").default("all").messages({
+      "any.only": 'Loại giao dịch không hợp lệ.',
     }),
     page: Joi.number().integer().min(1).default(1).messages({
       "number.base": "Số trang phải là một số.",

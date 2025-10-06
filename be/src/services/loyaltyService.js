@@ -116,36 +116,3 @@ export const getExpiringPoints = async (userId, days = 7) => {
   };
 };
 
-/**
- * Xử lý xu hết hạn (chạy bằng cron job)
- */
-export const expireLoyaltyPoints = async () => {
-  const now = new Date();
-
-  // Tìm các giao dịch đã hết hạn
-  const expiredTransactions = await LoyaltyPoints.find({
-    transactionType: "earned",
-    expiryDate: { $lte: now }
-  });
-
-  for (const transaction of expiredTransactions) {
-    const user = await User.findById(transaction.userId);
-    if (!user) continue;
-
-    // Trừ điểm
-    const newBalance = Math.max(0, user.loyaltyPoints - transaction.points);
-    user.loyaltyPoints = newBalance;
-    await user.save();
-
-    // Tạo giao dịch hết hạn
-    await LoyaltyPoints.create({
-      userId: transaction.userId,
-      points: transaction.points,
-      transactionType: "expired",
-      description: `Điểm hết hạn từ giao dịch ngày ${transaction.createdAt.toLocaleDateString("vi-VN")}`,
-      expiryDate: null
-    });
-  }
-
-  return { expiredCount: expiredTransactions.length };
-};

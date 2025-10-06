@@ -10,12 +10,15 @@ export interface LoyaltyBalance {
 export interface LoyaltyTransaction {
   _id: string;
   userId: string;
-  type: "earn" | "redeem" | "expire" | "adjust";
+  transactionType: "earned" | "redeemed" | "expired" | "bonus" | "refund";
   points: number;
   description: string;
-  orderId?: string;
-  expiresAt?: string;
-  status: "active" | "expired" | "used";
+  orderId?: {
+    _id: string;
+    orderNumber: string;
+    totalAmount: number;
+  };
+  expiryDate?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -44,7 +47,7 @@ export interface ExpiringPointDetail {
 
 export interface ExpiringPointsData {
   totalExpiringPoints: number;
-  expiringWithinDays: number;
+  expirationDate: string;
   details: ExpiringPointDetail[];
 }
 
@@ -81,7 +84,7 @@ class LoyaltyService {
    */
   async getHistory(
     accessToken: string,
-    type: "earn" | "redeem" | "all" = "all",
+    type: "all" | "earned" | "redeemed" | "expired" = "all",
     page: number = 1,
     limit: number = 10
   ): Promise<LoyaltyHistoryResponse> {
@@ -110,44 +113,20 @@ class LoyaltyService {
   }
 
   /**
-   * Lấy danh sách giao dịch điểm tích lũy (endpoint mới)
+   * Lấy danh sách giao dịch điểm tích lũy (endpoint mới) - DEPRECATED: Use getHistory
    * @param accessToken - Token xác thực
-   * @param type - Loại giao dịch: "earn" | "redeem" | "expire" | "adjust" | "all"
+   * @param type - Loại giao dịch: "all" | "earned" | "redeemed" | "expired"
    * @param page - Trang hiện tại
    * @param limit - Số bản ghi mỗi trang
    */
   async getTransactions(
     accessToken: string,
-    type: "earn" | "redeem" | "expire" | "adjust" | "all" = "all",
+    type: "all" | "earned" | "redeemed" | "expired" = "all",
     page: number = 1,
     limit: number = 10
-  ): Promise<LoyaltyTransactionsResponse> {
-    if (!accessToken) {
-      return {
-        success: false,
-        message: "Yêu cầu xác thực.",
-        data: [],
-        currentPage: 1,
-        totalPages: 0,
-        totalItems: 0,
-        itemsPerPage: 10,
-      };
-    }
-
-    const queryParams = new URLSearchParams({
-      type,
-      page: page.toString(),
-      limit: limit.toString(),
-    });
-
-    return await apiFetch<LoyaltyTransactionsResponse>(
-      `/users/loyalty-transactions?${queryParams}`,
-      accessToken,
-      {
-        method: "GET",
-        cache: "no-store",
-      }
-    );
+  ): Promise<LoyaltyHistoryResponse> {
+    // This function now calls getHistory to ensure consistency.
+    return this.getHistory(accessToken, type, page, limit);
   }
 
   /**
@@ -156,8 +135,7 @@ class LoyaltyService {
    * @param days - Số ngày tới (mặc định 30)
    */
   async getExpiringPoints(
-    accessToken: string,
-    days: number = 30
+    accessToken: string
   ): Promise<ApiResponse<ExpiringPointsData>> {
     if (!accessToken) {
       return {
@@ -165,18 +143,14 @@ class LoyaltyService {
         message: "Yêu cầu xác thực.",
         data: {
           totalExpiringPoints: 0,
-          expiringWithinDays: 30,
+          expirationDate: new Date().toISOString(),
           details: [],
         },
       };
     }
 
-    const queryParams = new URLSearchParams({
-      days: days.toString(),
-    });
-
     return await apiFetch<ApiResponse<ExpiringPointsData>>(
-      `/users/expiring-points?${queryParams}`,
+      `/users/expiring-points`,
       accessToken,
       {
         method: "GET",

@@ -12,7 +12,6 @@ import { useRouter } from 'next/navigation';
 interface CheckinStatus {
   canCheckin: boolean;
   lastCheckinDate: string | null;
-  consecutiveDays: number;
   nextCheckinDate: string;
 }
 

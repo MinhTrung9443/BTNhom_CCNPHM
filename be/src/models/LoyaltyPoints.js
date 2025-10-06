@@ -13,14 +13,13 @@ const loyaltyPointsSchema = new mongoose.Schema(
     },
     transactionType: {
       type: String,
-      enum: ["earned", "expired", "bonus", "refund"],
+      enum: ["earned", "redeemed", "refund"],
       required: true
     },
 //     Ý nghĩa từng giá trị:
 
-// "earned" → Điểm người dùng nhận được (ví dụ mua hàng được 1% giá trị đơn).
-// "expired" → Điểm bị hết hạn (không dùng được nữa).
-// "bonus" → Điểm cộng thêm do chương trình khuyến mãi/đặc biệt (ví dụ: review đơn hàng).
+// "earned" → Điểm người dùng nhận được (ví dụ mua hàng được 1% giá trị đơn, điểm danh).
+// "redeemed" → Điểm người dùng sử dụng để đổi lấy ưu đãi/giảm giá.
 // "refund" → Điểm trả lại do hoàn đơn, hủy giao dịch, hoặc điều chỉnh.
     description: {
       type: String,

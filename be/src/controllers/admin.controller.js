@@ -5,6 +5,7 @@ import logger from "../utils/logger.js";
 import AppError from "../utils/AppError.js";
 import * as orderService from "../services/order.service.js";
 import * as adminService from '../services/admin.service.js';
+import * as loyaltyService from '../services/loyalty.service.js';
 import voucherService from '../services/voucher.service.js';
 
 export const adminController = {
@@ -168,34 +169,21 @@ export const adminController = {
   getAllLoyaltyPoints: async (req, res, next) => {
     try {
       const { page = 1, limit = 10, userId, type } = req.query;
-      const skip = (page - 1) * limit;
 
-      let filter = {};
-      if (userId) filter.userId = userId;
-      if (type) filter.transactionType = type;
-
-      const [transactions, total] = await Promise.all([
-        LoyaltyPoints.find(filter)
-          .sort({ createdAt: -1 })
-          .skip(skip)
-          .limit(parseInt(limit))
-          .populate("userId", "name email")
-          .populate("orderId", "totalAmount status")
-          .populate("couponId", "code name"),
-        LoyaltyPoints.countDocuments(filter),
-      ]);
+      // Sử dụng lại service đã được chuẩn hóa
+      const result = await loyaltyService.getLoyaltyHistory(userId, type, page, limit);
 
       res.json({
         success: true,
         message: "Lấy lịch sử điểm thành công",
         pagination: {
-          currentPage: parseInt(page),
-          totalPages: Math.ceil(total / limit),
-          totalTransactions: total,
-          hasNext: page * limit < total,
-          hasPrev: page > 1,
+          currentPage: result.meta.currentPage,
+          totalPages: result.meta.totalPages,
+          totalTransactions: result.meta.totalRecords,
+          hasNext: result.meta.currentPage < result.meta.totalPages,
+          hasPrev: result.meta.currentPage > 1,
         },
-        data: transactions,
+        data: result.data,
       });
     } catch (error) {
       logger.error(`Lỗi lấy lịch sử điểm: ${error.message}`);
@@ -232,7 +220,7 @@ export const adminController = {
       const { userId } = req.params;
       const { points, transactionType, description, metadata } = req.body;
 
-      if (!["bonus", "refund"].includes(transactionType)) {
+      if (!["earned", "refund"].includes(transactionType)) {
         return next(new AppError("Loại giao dịch không hợp lệ", 400));
       }
 
@@ -280,7 +268,7 @@ export const adminController = {
           LoyaltyPoints.aggregate([
             {
               $match: {
-                transactionType: { $in: ["earned", "bonus", "refund"] },
+                transactionType: { $in: ["earned", "refund"] },
               },
             },
             { $group: { _id: null, total: { $sum: "$points" } } },

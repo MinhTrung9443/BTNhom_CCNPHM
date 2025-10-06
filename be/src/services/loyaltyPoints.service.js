@@ -18,14 +18,20 @@ export const loyaltyPointsService = {
         logger.info(`No points to award for order ${orderId}`);
         return null;
       }
+      
+      const now = new Date();
+      const expiryDate = new Date(now.getFullYear(), now.getMonth() + 2, 0, 23, 59, 59, 999);
 
-      const transaction = await LoyaltyPoints.earnPoints(
+
+      const transaction = await LoyaltyPoints.create({
         userId,
-        pointsToEarn,
-        description || `Đặt hàng #${orderId} - ${orderAmount.toLocaleString('vi-VN')} VNĐ`,
+        points: pointsToEarn,
+        transactionType: 'earned',
+        description: description || `Điểm tích lũy cho đơn hàng #${orderId}`,
         orderId,
-        { orderAmount }
-      );
+        metadata: { orderAmount },
+        expiryDate,
+      });
 
       logger.info(`Awarded ${pointsToEarn} points to user ${userId} for order ${orderId}`);
       return transaction;
@@ -77,7 +83,7 @@ export const loyaltyPointsService = {
             totalPoints: {
               $sum: {
                 $cond: [
-                  { $in: ['$transactionType', ['earned', 'bonus', 'refund']] },
+                  { $in: ['$transactionType', ['earned', 'refund']] },
                   '$points',
                   { $multiply: ['$points', -1] },
                 ],
@@ -125,7 +131,7 @@ export const loyaltyPointsService = {
       ] = await Promise.all([
         LoyaltyPoints.countDocuments(),
         LoyaltyPoints.aggregate([
-          { $match: { transactionType: { $in: ['earned', 'bonus', 'refund'] } } },
+          { $match: { transactionType: { $in: ['earned', 'refund'] } } },
           { $group: { _id: null, total: { $sum: '$points' } } }
         ]),
         LoyaltyPoints.aggregate([
@@ -140,7 +146,7 @@ export const loyaltyPointsService = {
               totalPoints: {
                 $sum: {
                   $cond: [
-                    { $in: ['$transactionType', ['earned', 'bonus', 'refund']] },
+                    { $in: ['$transactionType', ['earned', 'refund']] },
                     '$points',
                     { $multiply: ['$points', -1] }
                   ]
@@ -187,24 +193,6 @@ export const loyaltyPointsService = {
     }
   },
 
-  // Bonus points for special actions
-  awardBonusPoints: async (userId, points, reason, metadata = {}) => {
-    try {
-      const transaction = await LoyaltyPoints.create({
-        userId,
-        points,
-        transactionType: 'bonus',
-        description: reason,
-        metadata: { ...metadata, bonus: true }
-      });
-
-      logger.info(`Awarded ${points} bonus points to user ${userId} for: ${reason}`);
-      return transaction;
-    } catch (error) {
-      logger.error(`Lỗi award bonus points: ${error.message}`);
-      throw new AppError('Lỗi thưởng điểm thưởng', 500);
-    }
-  },
 
   // Refund points for cancelled order
   refundPointsForOrder: async (userId, orderId, pointsToRefund, reason = null) => {
@@ -270,7 +258,6 @@ export const loyaltyPointsService = {
       const expiryDate = new Date(now.getFullYear(), now.getMonth() + 2, 0, 23, 59, 59, 999);
 
       // Check consecutive days
-      let consecutiveDays = 1;
       if (user.lastCheckinDate) {
         const lastCheckin = new Date(user.lastCheckinDate);
         const yesterday = new Date(today);
@@ -282,13 +269,12 @@ export const loyaltyPointsService = {
       const transaction = await LoyaltyPoints.create({
         userId,
         points: pointsToAward,
-        transactionType: 'bonus',
+        transactionType: 'earned',
         description: `Điểm danh ngày ${now.toLocaleDateString('vi-VN')} - ${dayOfWeek === 0 ? 'Chủ nhật' : 'Thứ ' + (dayOfWeek + 1)}`,
         expiryDate,
         metadata: {
           checkin: true,
           dayOfWeek,
-          consecutiveDays
         }
       });
 
@@ -305,7 +291,6 @@ export const loyaltyPointsService = {
         points: pointsToAward,
         totalPoints,
         expiryDate,
-        consecutiveDays,
         nextCheckinDate: new Date(today.getTime() + 24 * 60 * 60 * 1000)
       };
     } catch (error) {
