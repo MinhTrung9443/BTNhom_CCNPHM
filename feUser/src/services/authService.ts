@@ -51,6 +51,19 @@ class AuthService {
       body: JSON.stringify({ password }),
     });
   }
+
+  /**
+   * Gửi yêu cầu kích hoạt tài khoản.
+   * @param email - Email của tài khoản cần kích hoạt.
+   * @param password - Mật khẩu của tài khoản.
+   * @returns Promise<ApiResponse<{email: string}>>
+   */
+  async activateAccount(email: string, password: string): Promise<ApiResponse<{ email: string }>> {
+    return await apiFetch<ApiResponse<{ email: string }>>("/auth/activate-account", null, {
+      method: "POST",
+      body: JSON.stringify({ email, password }),
+    });
+  }
 }
 
 export const authService = new AuthService();

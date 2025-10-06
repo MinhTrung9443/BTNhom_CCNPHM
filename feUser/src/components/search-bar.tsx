@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Search } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 interface SearchBarProps {
   placeholder?: string;
@@ -12,7 +12,7 @@ interface SearchBarProps {
 }
 
 export function SearchBar({ placeholder = "Tìm kiếm sản phẩm...", className = "" }: SearchBarProps) {
-  const [keyword, setKeyword] = useState('');
+  const [keyword, setKeyword] = useState("");
   const router = useRouter();
 
   const handleSearch = () => {
@@ -22,7 +22,7 @@ export function SearchBar({ placeholder = "Tìm kiếm sản phẩm...", classNa
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       handleSearch();
     }
   };
@@ -38,13 +38,10 @@ export function SearchBar({ placeholder = "Tìm kiếm sản phẩm...", classNa
           onChange={(e) => setKeyword(e.target.value)}
           onKeyPress={handleKeyPress}
           className="pl-10 pr-4"
+          suppressHydrationWarning
         />
       </div>
-      <Button 
-        onClick={handleSearch}
-        className="ml-2"
-        disabled={!keyword.trim()}
-      >
+      <Button onClick={handleSearch} className="ml-2" disabled={!keyword.trim()} suppressHydrationWarning>
         Tìm
       </Button>
     </div>

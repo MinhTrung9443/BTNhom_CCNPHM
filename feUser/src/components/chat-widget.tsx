@@ -140,6 +140,7 @@ export default function ChatWidget() {
             className={`rounded-full h-14 w-14 bg-green-600 hover:bg-green-700 shadow-lg relative transition-all duration-200 ${
               hasNewMessage ? "chat-button-pulse" : ""
             }`}
+            suppressHydrationWarning
           >
             <MessageCircle className="h-6 w-6" />
             {hasNewMessage && <div className="new-message-indicator"></div>}
@@ -221,14 +222,14 @@ export default function ChatWidget() {
                       </div>
                       {msg.senderRole === "user" && (
                         <Avatar className="h-7 w-7 flex-shrink-0 order-1">
-                          <AvatarImage 
+                          <AvatarImage
                             src={
                               session?.user?.avatar
-                                ? session.user.avatar.startsWith('http')
+                                ? session.user.avatar.startsWith("http")
                                   ? session.user.avatar
                                   : `${process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api", "") || "http://localhost:5000"}${session.user.avatar}`
                                 : ""
-                            } 
+                            }
                           />
                           <AvatarFallback className="bg-green-600 text-white text-xs font-medium">
                             {session?.user?.name?.charAt(0).toUpperCase() || "B"}
@@ -252,6 +253,7 @@ export default function ChatWidget() {
                   onKeyPress={handleKeyPress}
                   disabled={!isConnected}
                   className="text-sm pr-10 border-gray-200 focus:border-green-500 bg-white"
+                  suppressHydrationWarning
                 />
                 {!isConnected && (
                   <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
@@ -264,6 +266,7 @@ export default function ChatWidget() {
                 disabled={!inputMessage.trim() || !isConnected}
                 size="sm"
                 className="px-3 bg-green-600 hover:bg-green-700 disabled:bg-gray-300"
+                suppressHydrationWarning
               >
                 <Send className="h-4 w-4" />
               </Button>
