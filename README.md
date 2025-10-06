@@ -4,16 +4,6 @@
 
 "Đặc Sản Sóc Trăng" là một dự án thương mại điện tử đầy đủ chức năng được xây dựng với MERN stack (MongoDB, Express, React, Node.js) và Next.js. Dự án bao gồm một trang web cho người dùng để duyệt và mua sản phẩm, và một trang quản trị để quản lý sản phẩm, đơn hàng, người dùng và các khía cạnh khác của cửa hàng.
 
-## Mục lục
-
-  - [Tính năng chính](https://www.google.com/search?q=%23t%C3%ADnh-n%C4%83ng-ch%C3%ADnh)
-  - [Công nghệ sử dụng](https://www.google.com/search?q=%23c%C3%B4ng-ngh%E1%BB%87-s%E1%BB%AD-d%E1%BB%A5ng)
-  - [Cấu trúc dự án](https://www.google.com/search?q=%23c%E1%BA%A5u-tr%C3%BAc-d%E1%BB%B1-%C3%A1n)
-  - [Yêu cầu hệ thống](https://www.google.com/search?q=%23y%C3%AAu-c%E1%BA%A7u-h%E1%BB%87-th%E1%BB%91ng)
-  - [Hướng dẫn cài đặt](https://www.google.com/search?q=%23h%C6%B0%E1%BB%9Bng-d%E1%BA%ABn-c%C3%A0i-%C4%91%E1%BA%B7t)
-  - [Chạy dự án](https://www.google.com/search?q=%23ch%E1%BA%A1y-d%E1%BB%B1-%C3%A1n)
-  - [API Endpoints](https://www.google.com/search?q=%23api-endpoints)
-
 ## Tính năng chính
 
 ### Trang người dùng (Frontend - Next.js)
