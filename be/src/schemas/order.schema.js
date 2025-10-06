@@ -51,6 +51,7 @@ const orderLinePreviewSchema = Joi.object({
   discount: Joi.number().required(),
   productActualPrice: Joi.number().required(),
   lineTotal: Joi.number().required(),
+  productSnapshot:  Joi.object().optional(), //có thể ko cần truyền
 });
 export const previewOrder = {
   body: Joi.object({
@@ -78,6 +79,7 @@ export const placeOrder = {
       totalAmount: Joi.number().required(),
       voucherCode: Joi.string().allow(null),
       paymentMethod: Joi.string().valid("MOMO", "COD", "BANK").required(),
+      
     }).required(),
   }),
 };

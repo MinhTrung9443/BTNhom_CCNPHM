@@ -3,6 +3,7 @@ import Product from "../models/Product.js";
 import ProductView from "../models/ProductView.js";
 import Favorite from "../models/Favorite.js";
 import { AppError } from "../utils/AppError.js";
+import mongoose from "mongoose";
 
 const updateUserProfile = async (userId, updateData, file) => {
   const allowedUpdates = ["name", "phone", "address"];
@@ -51,12 +52,94 @@ const toggleFavorite = async (userId, productId) => {
   }
 };
 
-const getFavorites = async (userId) => {
-  const favorites = await Favorite.find({ userId }).populate({
-    path: "productId",
-    select: "slug name price images discount",
-  });
-  return favorites.map((fav) => fav.productId);
+const getFavorites = async (userId, page = 1, limit = 5, search = null) => {
+  // Convert userId sang ObjectId nếu cần
+  const userObjectId = typeof userId === 'string' ? new mongoose.Types.ObjectId(userId) : userId;
+  const filter = { userId: userObjectId };
+
+  // Nếu có search, sử dụng aggregation để filter theo tên sản phẩm
+  if (search) {
+    const searchRegex = new RegExp(search, "i");
+
+    const favorites = await Favorite.aggregate([
+      { $match: filter },
+      {
+        $lookup: {
+          from: "products",
+          localField: "productId",
+          foreignField: "_id",
+          as: "product"
+        }
+      },
+      { $unwind: "$product" },
+      {
+        $match: {
+          "product.name": searchRegex
+        }
+      },
+      { $sort: { createdAt: -1 } },
+      {
+        $facet: {
+          data: [
+            { $skip: (page - 1) * limit },
+            { $limit: limit },
+            {
+              $project: {
+                _id: "$product._id",
+                slug: "$product.slug",
+                name: "$product.name",
+                price: "$product.price",
+                images: "$product.images",
+                discount: "$product.discount"
+              }
+            }
+          ],
+          total: [{ $count: "count" }]
+        }
+      }
+    ]);
+
+    const products = favorites[0].data;
+    const total = favorites[0].total[0]?.count || 0;
+
+    return {
+      products,
+      pagination: {
+        current: page,
+        limit,
+        total: Math.ceil(total / limit),
+        totalItems: total,
+      }
+    };
+  }
+
+  // Không có search, query bình thường
+  const skip = (page - 1) * limit;
+
+  const [favorites, total] = await Promise.all([
+    Favorite.find(filter)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .populate({
+        path: "productId",
+        select: "slug name price images discount",
+      })
+      .lean(),
+    Favorite.countDocuments(filter)
+  ]);
+
+  const products = favorites.map((fav) => fav.productId).filter(Boolean);
+
+  return {
+    products,
+    pagination: {
+      current: page,
+      limit,
+      total: Math.ceil(total / limit),
+      totalItems: total,
+    }
+  };
 };
 
 const getRecentlyViewed = async (userId) => {

@@ -215,6 +215,7 @@ export default function PreviewClient({ accessToken }: PreviewClientProps) {
     try {
       const response = await orderService.previewOrder(accessToken, requestData);
       if (response.success && response.data.previewOrder) {
+        
         dispatch({ type: "SET_PREVIEW_DATA", payload: response.data.previewOrder });
       } else {
         throw new Error(response.message);
@@ -410,6 +411,7 @@ export default function PreviewClient({ accessToken }: PreviewClientProps) {
             formData={{ recipientName, phoneNumber, street, province, district, ward }}
             onFieldChange={handleFieldChange}
             resetFields={handleResetFields}
+            accessToken={accessToken}
           />
 
           <DeliveryMethodSelector

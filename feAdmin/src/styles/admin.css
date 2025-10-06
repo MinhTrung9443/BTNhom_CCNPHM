@@ -421,3 +421,28 @@
     padding: 0.75rem;
   }
 }
+
+/* Product Snapshot Modal */
+.product-snapshot-modal .carousel-item img {
+  border-radius: 8px;
+}
+
+.product-snapshot-modal .carousel-control-prev-icon,
+.product-snapshot-modal .carousel-control-next-icon {
+  background-color: rgba(0, 0, 0, 0.5);
+  border-radius: 50%;
+  padding: 10px;
+}
+
+.product-snapshot-modal .alert {
+  border-left: 4px solid var(--admin-info);
+}
+
+/* Order Line Snapshot Button */
+.btn-snapshot {
+  transition: all 0.2s ease;
+}
+
+.btn-snapshot:hover {
+  transform: scale(1.1);
+}

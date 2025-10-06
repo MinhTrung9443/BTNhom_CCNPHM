@@ -43,3 +43,5 @@ yarn-error.log*
 # .clinerules/rule.md
 # .kilocode/rules/rule.md
 # .github/copilot-instructions.md
+
+.env.local

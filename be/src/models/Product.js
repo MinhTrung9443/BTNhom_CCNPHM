@@ -61,18 +61,18 @@ function generateSlug(name) {
   };
 
   let slug = name.toLowerCase().trim();
-  
+
   // Thay thế ký tự tiếng Việt
   for (const [key, value] of Object.entries(vietnameseMap)) {
     slug = slug.replace(new RegExp(key, 'g'), value.toLowerCase());
   }
-  
+
   // Thay thế khoảng trắng và ký tự đặc biệt bằng dấu gạch ngang
   slug = slug.replace(/[^a-z0-9]+/g, '-');
-  
+
   // Xóa dấu gạch ngang ở đầu và cuối
   slug = slug.replace(/^-+|-+$/g, '');
-  
+
   return slug;
 }
 

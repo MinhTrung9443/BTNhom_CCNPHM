@@ -235,3 +235,15 @@ export const cancelOrderByUser = async (req, res) => {
     data: updatedOrder,
   });
 };
+
+export const getLatestOrderAddress = async (req, res) => {
+  const userId = req.user._id;
+
+  const address = await OrderService.getLatestOrderAddress(userId);
+
+  res.json({
+    success: true,
+    message: "Lấy địa chỉ đơn hàng gần nhất thành công",
+    data: address,
+  });
+};

@@ -97,6 +97,29 @@ export const getAllOrders = async (page = 1, limit = 10, status = null, search =
   };
 };
 
+export const getLatestOrderAddress = async (userId) => {
+  // Tìm đơn hàng gần nhất của user (đã hoàn thành hoặc đang xử lý)
+  const latestOrder = await Order.findOne({
+    userId
+  })
+    .sort({ createdAt: -1 })
+    .select("shippingAddress")
+    .lean();
+
+  if (!latestOrder) {
+    throw new AppError("Không tìm thấy đơn hàng nào", 404);
+  }
+
+  return {
+    recipientName: latestOrder.shippingAddress.recipientName,
+    phone: latestOrder.shippingAddress.phoneNumber,
+    address: latestOrder.shippingAddress.street,
+    ward: latestOrder.shippingAddress.ward,
+    district: latestOrder.shippingAddress.district,
+    province: latestOrder.shippingAddress.province,
+  };
+};
+
 export const getOrderDetail = async (orderId, userId = null) => {
   const filter = { _id: orderId };
   if (userId) {
@@ -155,6 +178,14 @@ export const previewOrder = async (userId, { orderLines, shippingAddress, vouche
     const lineTotal = productActualPrice * line.quantity;
 
     subtotal += lineTotal;
+    
+    // Lấy thông tin category nếu có
+    let categoryName = null;
+    if (product.categoryId) {
+      const category = await mongoose.model('Category').findById(product.categoryId).select('name').lean();
+      categoryName = category?.name || null;
+    }
+    
     processedOrderLines.push({
       productId: product._id,
       productCode: product.code,
@@ -165,7 +196,26 @@ export const previewOrder = async (userId, { orderLines, shippingAddress, vouche
       discount: discountPerProduct,
       productActualPrice,
       lineTotal,
-    });
+      // Lưu snapshot đầy đủ sản phẩm tại thời điểm đặt hàng
+      productSnapshot: {
+        name: product.name,
+        slug: product.slug,
+        code: product.code,
+        description: product.description || "",
+        price: product.price,
+        discount: discountPerProduct,
+        images: product.images || [],
+        stock: product.stock,
+        categoryId: product.categoryId,
+        categoryName: categoryName,
+        averageRating: product.averageRating || 0,
+        totalReviews: product.totalReviews || 0,
+        soldCount: product.soldCount || 0,
+        isActive: product.isActive,
+        viewCount: product.viewCount || 0,
+        capturedAt: new Date(),
+      },
+    })
   }
 
   if (unavailableItems.length > 0) {
@@ -1229,12 +1279,12 @@ export const confirmOrderReceived = async (userId, orderId) => {
   try {
     const orderAmount = order.subtotal; // Giá trị đơn hàng trước khuyến mãi
     const orderNumber = order._id.toString().slice(-8).toUpperCase();
-    
+
     const loyaltyResult = await addLoyaltyPoints(userId, orderAmount, orderId, orderNumber);
-    
+
     if (loyaltyResult.earnedPoints > 0) {
       logger.info(`Added ${loyaltyResult.earnedPoints} loyalty points to user ${userId} for order ${orderId}`);
-      
+
       // Gửi thông báo về xu nhận được
       await Notification.create({
         title: "Nhận điểm tích lũy",

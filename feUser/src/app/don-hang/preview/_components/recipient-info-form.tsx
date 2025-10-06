@@ -1,11 +1,20 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, lazy, Suspense } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/ui/button";
 import { useAddress } from '@/hooks/use-address';
+import { mapGoongLocationToStandard } from '@/lib/locationUtils';
+import { orderService } from '@/services/orderService';
+import { toast } from 'sonner';
+import { History, Loader2 } from 'lucide-react';
+
+// Lazy load component phía client
+const GoongLocationPicker = lazy(() => import('@/components/shared/goong-location-picker'));
 
 interface RecipientInfoFormProps {
   formData: {
@@ -18,12 +27,15 @@ interface RecipientInfoFormProps {
   };
   onFieldChange: (field: string, value: string) => void;
   resetFields: (fields: ('district' | 'ward')[]) => void;
+  accessToken?: string;
 }
 
-export function RecipientInfoForm({ formData, onFieldChange, resetFields }: RecipientInfoFormProps) {
+export function RecipientInfoForm({ formData, onFieldChange, resetFields, accessToken }: RecipientInfoFormProps) {
   const { provinces, getDistricts, getWards, loading: addressLoading } = useAddress();
   const [districts, setDistricts] = useState<{ name: string }[]>([]);
   const [wards, setWards] = useState<string[]>([]);
+  const [showMap, setShowMap] = useState(true); // State để bật/tắt bản đồ
+  const [isLoadingLatestAddress, setIsLoadingLatestAddress] = useState(false);
 
   useEffect(() => {
     if (formData.province) {
@@ -41,10 +53,88 @@ export function RecipientInfoForm({ formData, onFieldChange, resetFields }: Reci
     }
   }, [formData.province, formData.district, getWards]);
 
+  // Hàm xử lý khi có dữ liệu từ bản đồ
+  const handleLocationChange = (locationData: any) => {
+    const mapped = mapGoongLocationToStandard(locationData);
+
+    // Cập nhật địa chỉ chi tiết
+    onFieldChange('street', locationData.address || '');
+
+    // Cập nhật Tỉnh/Thành
+    onFieldChange('province', mapped.province);
+
+    // Sử dụng requestAnimationFrame để đảm bảo React cập nhật state tuần tự, tránh lỗi race condition
+    requestAnimationFrame(() => {
+      onFieldChange('district', mapped.district);
+      requestAnimationFrame(() => {
+        onFieldChange('ward', mapped.commune);
+      });
+    });
+  };
+
+  // Hàm xử lý khi người dùng muốn sử dụng địa chỉ từ đơn hàng gần nhất
+  const handleUseLatestAddress = async () => {
+    if (!accessToken) {
+      toast.error('Lỗi', { description: 'Không tìm thấy thông tin xác thực' });
+      return;
+    }
+
+    setIsLoadingLatestAddress(true);
+    try {
+      const response = await orderService.getLatestOrderAddress(accessToken);
+      if (response.success && response.data) {
+        const { recipientName, phone, address, ward, district, province } = response.data;
+        
+        // Cập nhật thông tin người nhận
+        onFieldChange('recipientName', recipientName);
+        onFieldChange('phoneNumber', phone);
+        onFieldChange('street', address);
+        onFieldChange('province', province);
+
+        // Cập nhật district và ward tuần tự
+        requestAnimationFrame(() => {
+          onFieldChange('district', district);
+          requestAnimationFrame(() => {
+            onFieldChange('ward', ward);
+          });
+        });
+
+        toast.success('Thành công', { description: 'Đã điền địa chỉ từ đơn hàng gần nhất' });
+      } else {
+        toast.error('Lỗi', { description: response.message || 'Không thể lấy địa chỉ' });
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Không thể lấy địa chỉ đơn hàng gần nhất';
+      toast.error('Lỗi', { description: errorMessage });
+    } finally {
+      setIsLoadingLatestAddress(false);
+    }
+  };
+
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
         <CardTitle>Thông tin người nhận</CardTitle>
+        {accessToken && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleUseLatestAddress}
+            disabled={isLoadingLatestAddress}
+          >
+            {isLoadingLatestAddress ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Đang tải...
+              </>
+            ) : (
+              <>
+                <History className="w-4 h-4 mr-2" />
+                Dùng địa chỉ của đơn hàng gần nhất mà bạn đã đặt
+              </>
+            )}
+          </Button>
+        )}
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -113,6 +203,21 @@ export function RecipientInfoForm({ formData, onFieldChange, resetFields }: Reci
             onChange={(e) => onFieldChange('street', e.target.value)}
           />
         </div>
+
+        {/* Thêm Switch để bật/tắt bản đồ */}
+        <div className="flex items-center space-x-2 pt-2">
+          {/* <Switch id="show-map-switch" checked={showMap} onCheckedChange={setShowMap} /> */}
+          <Label htmlFor="show-map-switch" className="cursor-pointer">
+            Sử dụng bản đồ để chọn địa chỉ
+          </Label>
+        </div>
+
+        {/* Hiển thị bản đồ nếu được bật */}
+        {showMap && (
+          <Suspense fallback={<div className="h-80 w-full bg-gray-200 animate-pulse rounded-lg"></div>}>
+            <GoongLocationPicker onLocationChange={handleLocationChange} />
+          </Suspense>
+        )}
       </CardContent>
     </Card>
   );

@@ -32,8 +32,21 @@ const toggleFavorite = async (req, res, next) => {
 
 const getFavorites = async (req, res, next) => {
   const userId = req.user.id;
-  const favorites = await userService.getFavorites(userId);
-  res.status(200).json({ favorites });
+  const { page = 1, limit = 10, search } = req.query;
+  
+  const result = await userService.getFavorites(
+    userId, 
+    parseInt(page), 
+    parseInt(limit), 
+    search
+  );
+  
+  res.status(200).json({
+    success: true,
+    message: 'Lấy danh sách sản phẩm yêu thích thành công',
+    pagination: result.pagination,
+    data: result.products
+  });
 };
 
 const getRecentlyViewed = async (req, res, next) => {
