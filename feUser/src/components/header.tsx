@@ -7,7 +7,7 @@ import { useSession, signOut } from "next-auth/react";
 import { useCart } from "@/contexts/cart-context";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, ShoppingCart, Heart, Search, User, LogOut, Package, Eye, MessageSquare, Gift } from "lucide-react";
+import { Menu, ShoppingCart, Heart, Search, User, LogOut, Package, Eye, MessageSquare, Gift, Calendar, Coins } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
@@ -199,6 +199,18 @@ export default function Header() {
                       <span className="font-medium">Voucher của tôi</span>
                     </Link>
                   </DropdownMenuItem>
+                  <DropdownMenuItem asChild className="cursor-pointer">
+                    <Link href="/diem-danh" className="flex items-center">
+                      <Calendar className="mr-3 h-4 w-4 text-gray-600" />
+                      <span className="font-medium">Điểm danh nhận điểm</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild className="cursor-pointer">
+                    <Link href="/diem-tich-luy" className="flex items-center">
+                      <Coins className="mr-3 h-4 w-4 text-gray-600" />
+                      <span className="font-medium">Điểm tích lũy</span>
+                    </Link>
+                  </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-600 focus:text-red-700 focus:bg-red-50">
                     <LogOut className="mr-3 h-4 w-4" />
@@ -289,6 +301,18 @@ export default function Header() {
                           <Button variant="ghost" className="w-full justify-start" size="sm">
                             <Gift className="mr-2 h-4 w-4" />
                             Voucher của tôi
+                          </Button>
+                        </Link>
+                        <Link href="/diem-danh" onClick={() => setIsOpen(false)}>
+                          <Button variant="ghost" className="w-full justify-start" size="sm">
+                            <Calendar className="mr-2 h-4 w-4" />
+                            Điểm danh nhận điểm
+                          </Button>
+                        </Link>
+                        <Link href="/diem-tich-luy" onClick={() => setIsOpen(false)}>
+                          <Button variant="ghost" className="w-full justify-start" size="sm">
+                            <Coins className="mr-2 h-4 w-4" />
+                            Điểm tích lũy
                           </Button>
                         </Link>
                         <Button

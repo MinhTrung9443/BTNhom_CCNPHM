@@ -1,9 +1,11 @@
 import cron from 'node-cron';
 import * as orderService from './order.service.js';
+import * as loyaltyService from './loyaltyService.js';
 import logger from '../utils/logger.js';
 
 export const init = () => {
   scheduleOrderAutoConfirm();
+  scheduleLoyaltyPointsExpiry();
   logger.info('Cron jobs đã được khởi tạo');
 };
 
@@ -66,6 +68,26 @@ export const scheduleOrderReminders = () => {
   });
 
   logger.info('Đã lên lịch cron job nhắc nhở đơn hàng (chạy mỗi 6 tiếng)');
+};
+
+/**
+ * Tự động xử lý xu hết hạn (chạy hàng ngày lúc 0:00 AM)
+ */
+export const scheduleLoyaltyPointsExpiry = () => {
+  cron.schedule('0 0 * * *', async () => {
+    try {
+      logger.info('Bắt đầu xử lý xu hết hạn');
+      const result = await loyaltyService.expireLoyaltyPoints();
+      logger.info(`Đã xử lý ${result.expiredCount} giao dịch xu hết hạn`);
+    } catch (error) {
+      logger.error(`Lỗi trong cron job xử lý xu hết hạn: ${error.message}`);
+    }
+  }, {
+    scheduled: true,
+    timezone: "Asia/Ho_Chi_Minh"
+  });
+
+  logger.info('Đã lên lịch cron job xử lý xu hết hạn (chạy hàng ngày lúc 0:00 AM)');
 };
 
 /**

@@ -55,9 +55,22 @@ export const expirePoints = createAsyncThunk(
   }
 )
 
+export const fetchCheckinStats = createAsyncThunk(
+  'loyalty/fetchCheckinStats',
+  async (params = {}, { rejectWithValue }) => {
+    try {
+      const response = await adminService.getCheckinStats(params)
+      return response.data
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || error.message)
+    }
+  }
+)
+
 const initialState = {
   transactions: [],
   stats: null,
+  checkinStats: null,
   pagination: {
     currentPage: 1,
     totalPages: 1,
@@ -104,6 +117,10 @@ const loyaltySlice = createSlice({
       // Expire points
       .addCase(expirePoints.fulfilled, (state, action) => {
         // Refresh the transactions list after expiring points
+      })
+      // Fetch checkin stats
+      .addCase(fetchCheckinStats.fulfilled, (state, action) => {
+        state.checkinStats = action.payload.data
       })
   },
 })

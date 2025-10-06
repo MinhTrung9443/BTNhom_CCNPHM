@@ -17,8 +17,7 @@ import ReturnRefundRequestsPage from './pages/orders/ReturnRefundRequestsPage'
 import VouchersPage from './pages/vouchers/VouchersPage'
 import VoucherFormPage from './pages/vouchers/VoucherFormPage'
 import CategoriesPage from './pages/categories/CategoriesPage'
-import LoyaltyPointsPage from './pages/loyalty/LoyaltyPointsPage'
-import SettingsPage from './pages/SettingsPage'
+import DeliveriesPage from './pages/deliveries/DeliveriesPage'
 import Notifications from './pages/Notifications'
 import ChatPage from './pages/ChatPage'
 
@@ -29,7 +28,7 @@ const ProtectedRoute = ({ children }) => {
 
   useEffect(() => {
     if (isAuthenticated && user?.role === 'admin') {
-      dispatch(fetchCategories({ limit: 100 })); // Fetch all categories
+      dispatch(fetchCategories({ limit: 10 })); // Fetch all categories
     }
   }, [isAuthenticated, user, dispatch]);
   
@@ -79,10 +78,9 @@ function App() {
                   <Route path="/vouchers/create" element={<VoucherFormPage />} />
                   <Route path="/vouchers/edit/:id" element={<VoucherFormPage />} />
                   <Route path="/categories" element={<CategoriesPage />} />
-                  <Route path="/loyalty-points" element={<LoyaltyPointsPage />} />
+                  <Route path="/deliveries" element={<DeliveriesPage />} />
                   <Route path="/notifications" element={<Notifications />} />
                   <Route path="/chat" element={<ChatPage />} />
-                  <Route path="/settings" element={<SettingsPage />} />
                   <Route path="*" element={<Navigate to="/dashboard" replace />} />
                 </Routes>
               </Layout>

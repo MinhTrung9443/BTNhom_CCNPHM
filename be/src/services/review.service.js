@@ -1,4 +1,4 @@
-import { Review, Product, Voucher, Order } from "../models/index.js";
+import { Review, Product, Voucher, UserVoucher, Order } from "../models/index.js";
 import { AppError } from "../utils/AppError.js";
 
 const generateReviewVoucher = async (userId, reviewId) => {
@@ -15,6 +15,15 @@ const generateReviewVoucher = async (userId, reviewId) => {
     sourceId: reviewId,
   });
   await voucher.save();
+
+  // Tạo record trong UserVoucher để gán quyền sở hữu cho user
+  const userVoucher = new UserVoucher({
+    userId,
+    voucherId: voucher._id,
+    isUsed: false,
+  });
+  await userVoucher.save();
+
   return voucher;
 };
 

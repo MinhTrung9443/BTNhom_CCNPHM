@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import socketService from "../services/socketService";
 import { toast } from "react-toastify";
 
@@ -20,8 +20,19 @@ export const ChatProvider = ({ children }) => {
   // Initialize chat listeners once when provider mounts
   useEffect(() => {
     if (!isInitialized) {
-      setupChatListeners();
-      setIsInitialized(true);
+      // Wait for socket to be connected before setting up listeners
+      const initWhenReady = () => {
+        if (socketService.isConnected) {
+          console.log("[ChatContext] Socket connected, setting up chat listeners...");
+          setupChatListeners();
+          setIsInitialized(true);
+        } else {
+          console.log("[ChatContext] Waiting for socket connection...");
+          setTimeout(initWhenReady, 300);
+        }
+      };
+      
+      initWhenReady();
     }
   }, [isInitialized]);
 
@@ -36,11 +47,24 @@ export const ChatProvider = ({ children }) => {
     socketService.setOnActiveRoomsCallback((rooms) => {
       console.log("Received active rooms:", rooms);
       setActiveRooms(rooms);
+      
+      // Auto-join all active rooms so admin can receive messages
+      if (Array.isArray(rooms) && rooms.length > 0) {
+        rooms.forEach((room) => {
+          socketService.joinRoom(room);
+          console.log(`Admin auto-joined room: ${room}`);
+        });
+      }
     });
 
     // Listen for new room
     socketService.setOnNewRoomCallback(({ room, userId }) => {
       console.log("New chat room created:", room);
+      
+      // Auto-join the new room immediately
+      socketService.joinRoom(room);
+      console.log(`Admin auto-joined new room: ${room}`);
+      
       setActiveRooms((prev) => {
         if (!prev.includes(room)) {
           // Show notification for new chat room
@@ -76,9 +100,9 @@ export const ChatProvider = ({ children }) => {
 
     // Listen for new messages globally
     socketService.setOnMessageCallback((msg) => {
-      console.log("Global message received:", msg);
+      console.log("Global message received in ChatContext:", msg);
 
-      // Only count as unread if not currently on chat page or not in the specific room
+      // Snly count as unread if not currently on chat page or not in the specific room
       const isOnChatPage = window.location.pathname === "/chat";
       const currentRoom = sessionStorage.getItem("currentChatRoom");
 
@@ -107,33 +131,50 @@ export const ChatProvider = ({ children }) => {
       }
     });
 
-    // Delay fetching active rooms to ensure socket is connected
-    setTimeout(() => {
-      console.log("Fetching initial active rooms...");
-      socketService.getActiveRooms();
-    }, 1000);
+    // Fetch active rooms when socket is connected
+    const fetchRoomsWhenReady = () => {
+      if (socketService.isConnected) {
+        console.log("Socket connected, fetching initial active rooms...");
+        socketService.getActiveRooms();
+      } else {
+        console.log("Socket not connected yet, retrying in 500ms...");
+        setTimeout(fetchRoomsWhenReady, 500);
+      }
+    };
+    
+    // Start fetching after a short delay
+    setTimeout(fetchRoomsWhenReady, 500);
   };
 
-  const markRoomAsRead = (room) => {
+  const markRoomAsRead = useCallback((room) => {
     setUnreadMessages((prev) => {
       const updated = { ...prev };
       delete updated[room];
       localStorage.setItem("chatUnreadCounts", JSON.stringify(updated));
       return updated;
     });
-  };
+  }, []); // Empty deps - uses functional update
 
-  const getTotalUnreadCount = () => {
+  const getTotalUnreadCount = useCallback(() => {
     return Object.values(unreadMessages).reduce(
       (total, count) => total + count,
       0
     );
-  };
+  }, [unreadMessages]); // Depends on unreadMessages
 
-  const refreshActiveRooms = () => {
+  const refreshActiveRooms = useCallback(() => {
     console.log("Manually refreshing active rooms...");
-    socketService.getActiveRooms();
-  };
+    
+    const tryRefresh = () => {
+      const success = socketService.getActiveRooms();
+      if (!success) {
+        console.log("Socket not ready, retrying in 500ms...");
+        setTimeout(tryRefresh, 500);
+      }
+    };
+    
+    tryRefresh();
+  }, []); // Empty deps - function doesn't depend on any state
 
   const value = {
     activeRooms,

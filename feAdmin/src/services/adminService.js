@@ -46,6 +46,15 @@ const adminService = {
   getLoyaltyStats: () => {
     return api.get('/admin/loyalty-points/stats')
   },
+
+  // Daily Check-in Management
+  getCheckinStats: (params = {}) => {
+    return api.get('/admin/checkin-stats', { params })
+  },
+
+  getUserCheckinHistory: (userId, params = {}) => {
+    return api.get(`/admin/users/${userId}/checkin-history`, { params })
+  },
 }
 
 export default adminService

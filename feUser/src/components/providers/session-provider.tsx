@@ -10,5 +10,10 @@ interface Props {
 }
 
 export default function SessionProvider({ children, session }: Props) {
-  return <NextAuthSessionProvider session={session}>{children}</NextAuthSessionProvider>;
+  return <NextAuthSessionProvider
+
+    // Tắt tính năng refetch khi focus vào cửa sổ
+    refetchOnWindowFocus={false}
+
+    session={session}>{children}</NextAuthSessionProvider>;
 }

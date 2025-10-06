@@ -131,6 +131,47 @@ class UserService {
       cache: "no-store", // Không cache điểm để luôn cập nhật
     });
   }
+
+  async dailyCheckin(accessToken: string): Promise<ApiResponse<{
+    points: number;
+    totalPoints: number;
+    expiryDate: string;
+    nextCheckinDate: string;
+  }>> {
+    if (!accessToken) {
+      return {
+        success: false,
+        message: "Yêu cầu xác thực.",
+        data: { points: 0, totalPoints: 0, expiryDate: '', nextCheckinDate: '' },
+      };
+    }
+    return await apiFetch("/users/daily-checkin", accessToken, {
+      method: "POST",
+      cache: "no-store",
+    });
+  }
+
+  /**
+   * Lấy trạng thái điểm danh của người dùng.
+   * @param accessToken - Bắt buộc, vì đây là endpoint cần xác thực.
+   */
+  async getCheckinStatus(accessToken: string): Promise<ApiResponse<{
+    canCheckin: boolean;
+    lastCheckinDate: string | null;
+    nextCheckinDate: string;
+  }>> {
+    if (!accessToken) {
+      return {
+        success: false,
+        message: "Yêu cầu xác thực.",
+        data: { canCheckin: false, lastCheckinDate: null, nextCheckinDate: '' },
+      };
+    }
+    return await apiFetch("/users/checkin-status", accessToken, {
+      method: "GET",
+      cache: "no-store",
+    });
+  }
 }
 
 export const userService = new UserService();

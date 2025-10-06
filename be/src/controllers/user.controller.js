@@ -115,4 +115,43 @@ const getCurrentLoyaltyPoints = async (req, res, next) => {
   });
 };
 
-export { getMe, updateMe, getFavorites, toggleFavorite, getRecentlyViewed, getUserLoyaltyPoints, redeemPoints, getPointsHistory, getCurrentLoyaltyPoints };
+const dailyCheckin = async (req, res, next) => {
+  const userId = req.user._id;
+
+  const result = await loyaltyPointsService.dailyCheckin(userId);
+
+  const dayOfWeek = new Date().getDay();
+  const message = `Điểm danh thành công! Bạn nhận được ${result.points} xu`;
+
+  res.json({
+    success: true,
+    message,
+    data: result
+  });
+};
+
+const getCheckinStatus = async (req, res, next) => {
+  const userId = req.user._id;
+
+  const status = await loyaltyPointsService.getCheckinStatus(userId);
+
+  res.json({
+    success: true,
+    message: 'Lấy trạng thái điểm danh thành công',
+    data: status
+  });
+};
+
+export { 
+  getMe, 
+  updateMe, 
+  getFavorites, 
+  toggleFavorite, 
+  getRecentlyViewed, 
+  getUserLoyaltyPoints, 
+  redeemPoints, 
+  getPointsHistory, 
+  getCurrentLoyaltyPoints,
+  dailyCheckin,
+  getCheckinStatus
+};

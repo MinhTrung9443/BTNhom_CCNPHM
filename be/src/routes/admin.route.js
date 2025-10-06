@@ -10,11 +10,13 @@ import {
 } from "../controllers/notification.controller.js";
 import { categoryController } from "../controllers/category.controller.js";
 import { voucherController } from "../controllers/voucher.controller.js";
+import { deliveryController } from "../controllers/delivery.controller.js";
 import upload from "../middlewares/upload.js";
 import { protect, restrictTo } from "../middlewares/auth.js";
 import { validate } from "../middlewares/validate.js";
 import { getOrderById, updateOrderStatus } from "../schemas/order.schema.js";
 import { adminGetVouchersSchema, adminVoucherIdParamsSchema, adminCreateVoucherSchema, adminUpdateVoucherSchema } from "../schemas/voucher.schema.js";
+import { getDeliveriesSchema, createDeliverySchema, updateDeliverySchema, deleteDeliverySchema } from "../schemas/delivery.schema.js";
 import { approveReturn } from "../services/order.service.js";
 
 const router = express.Router();
@@ -79,6 +81,12 @@ router.get("/categories", categoryController.getCategories);
 router.post("/categories", categoryController.createCategory);
 router.put("/categories/:id", categoryController.updateCategory);
 router.delete("/categories/:id", categoryController.deleteCategory);
+
+// === DELIVERY MANAGEMENT ROUTES ===
+router.get("/deliveries", validate(getDeliveriesSchema), deliveryController.getDeliveries);
+router.post("/deliveries", validate(createDeliverySchema), deliveryController.createDelivery);
+router.put("/deliveries/:id", validate(updateDeliverySchema), deliveryController.updateDelivery);
+router.delete("/deliveries/:id", validate(deleteDeliverySchema), deliveryController.deleteDelivery);
 
 // === LOYALTY POINTS MANAGEMENT ROUTES ===
 

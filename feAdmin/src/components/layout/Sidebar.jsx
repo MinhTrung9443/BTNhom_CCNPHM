@@ -12,11 +12,10 @@ const Sidebar = () => {
     { path: "/users", icon: "bi-people", label: "Quản lý người dùng" },
     { path: "/products", icon: "bi-box-seam", label: "Quản lý sản phẩm" },
     { path: "/categories", icon: "bi-tags", label: "Quản lý danh mục" },
+    { path: "/deliveries", icon: "bi-truck", label: "Phương thức vận chuyển" },
     { path: "/orders", icon: "bi-cart-check", label: "Quản lý đơn hàng" },
     { path: "/notifications", icon: "bi-bell", label: "Thông báo" },
     { path: "/vouchers", icon: "bi-ticket-perforated", label: "Quản lý voucher" },
-    { path: "/loyalty-points", icon: "bi-star", label: "Điểm thưởng" },
-    { path: "/settings", icon: "bi-gear", label: "Cài đặt" },
     { path: "/chat", icon: "bi-chat-dots", label: "Chat hỗ trợ" },
   ];
 

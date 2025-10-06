@@ -74,9 +74,9 @@ export async function apiFetch<T = unknown>(endpoint: string, accessToken: strin
     const errorData: ApiErrorResponse = body?.message
       ? body
       : {
-          success: false,
-          message: body?.message || `Request failed with status ${response.status}`,
-        };
+        success: false,
+        message: body?.message || `Request failed with status ${response.status}`,
+      };
 
     throw new HttpError(response.status, errorData, errorData.message);
   }

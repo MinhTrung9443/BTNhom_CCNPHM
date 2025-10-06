@@ -12,6 +12,7 @@ const Layout = ({ children }) => {
   useEffect(() => {
     if (isAuthenticated && token) {
       // Connect to WebSocket when admin is authenticated
+      // Socket will auto-join 'admin' room on connection
       socketService.connect(token);
     } else {
       // Disconnect when not authenticated

@@ -52,8 +52,10 @@ const ChatPage = () => {
     };
   }, [selectedRoom]);
 
-  // Listen for individual messages (separate from global context listener)
+  // Listen for individual messages in the selected room
   useEffect(() => {
+    if (!selectedRoom) return;
+
     const handleMessage = (msg) => {
       console.log(
         "ChatPage received message:",
@@ -61,21 +63,24 @@ const ChatPage = () => {
         "selectedRoom:",
         selectedRoom
       );
-      if (selectedRoom && msg.room === selectedRoom) {
-        setMessages((prev) => [...prev, msg]);
+      if (msg.room === selectedRoom) {
+        setMessages((prev) => {
+          // Avoid duplicates
+          const exists = prev.some(
+            (m) => m.timestamp === msg.timestamp && m.message === msg.message
+          );
+          if (exists) return prev;
+          return [...prev, msg];
+        });
       }
     };
 
-    // Add our specific listener
-    if (window.location.pathname === "/chat") {
-      socketService.socket?.off("message");
-      socketService.socket?.on("message", handleMessage);
-    }
+    // Use the socket service's callback system instead of directly accessing socket
+    const originalCallback = socketService.socket?.listeners("message")[0];
+    socketService.socket?.on("message", handleMessage);
 
     return () => {
-      if (window.location.pathname === "/chat") {
-        socketService.socket?.off("message", handleMessage);
-      }
+      socketService.socket?.off("message", handleMessage);
     };
   }, [selectedRoom]);
 

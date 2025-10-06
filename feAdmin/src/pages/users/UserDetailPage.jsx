@@ -6,7 +6,7 @@ import moment from 'moment'
 import adminService from '../../services/adminService'
 import { Skeleton, SkeletonText, SkeletonOrderRow } from '../../components/common/Skeleton'
 import Pagination from '../../components/common/Pagination'
-import LoadingSpinner from '../../../../fe/src/components/common/LoadingSpinner'
+import LoadingSpinner from '../../components/common/LoadingSpinner'
 
 const UserDetailPage = () => {
   const { id } = useParams()

@@ -8,6 +8,7 @@ import loyaltySlice from './slices/loyaltySlice'
 import dashboardSlice from './slices/dashboardSlice'
 import notificationsSlice from './slices/notificationsSlice'
 import categoriesSlice from './slices/categoriesSlice'
+import deliveriesSlice from './slices/deliveriesSlice'
 
 export const store = configureStore({
   reducer: {
@@ -20,6 +21,7 @@ export const store = configureStore({
     dashboard: dashboardSlice,
     notifications: notificationsSlice,
     categories: categoriesSlice,
+    deliveries: deliveriesSlice,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
