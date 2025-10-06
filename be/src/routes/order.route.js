@@ -14,6 +14,7 @@ router.post("/preview", restrictTo("user"), validate(previewOrder), OrderControl
 router.post("/", restrictTo("user"), validate(placeOrder), OrderController.placeOrder);
 router.post("/create-order-momo", restrictTo("user"), validate(placeOrder), OrderController.placeMomoOrder);
 router.post("/momo-return", restrictTo("user"), OrderController.handleMomoReturn);
+router.post("/my/:orderId/retry-momo", restrictTo("user"), OrderController.retryMomoPayment);
 router.get("/my", restrictTo("user"), validate(getUserOrders), OrderController.getUserOrders);
 router.get("/my/stats", restrictTo("user"), OrderController.getUserOrderStats);
 router.get("/:orderId", restrictTo("user"), OrderController.getOrderDetail);

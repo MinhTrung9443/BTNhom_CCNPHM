@@ -516,6 +516,51 @@ export const placeMomoOrder = async (userId, { previewOrder: clientPreview }) =>
   };
 };
 
+// Retry MoMo payment for existing order
+export const retryMomoPayment = async (userId, orderId) => {
+  // Find the order
+  const order = await Order.findOne({ _id: orderId, userId });
+  if (!order) {
+    throw new AppError("Không tìm thấy đơn hàng hoặc bạn không có quyền truy cập.", 404);
+  }
+
+  // Check if order is eligible for retry payment
+  if (order.payment.paymentMethod !== "MOMO") {
+    throw new AppError("Chỉ có thể thanh toán lại đơn hàng MoMo.", 400);
+  }
+
+  if (!["pending", "failed"].includes(order.payment.status)) {
+    throw new AppError("Đơn hàng này không thể thanh toán lại.", 400);
+  }
+
+  if (["cancelled", "completed", "return_refund"].includes(order.status)) {
+    throw new AppError("Không thể thanh toán lại đơn hàng đã hoàn tất hoặc bị hủy.", 400);
+  }
+
+  // Update payment status to pending (in case it was failed)
+  order.payment.status = "pending";
+  order.payment.updatedAt = new Date();
+
+  // Add timeline entry
+  order.timeline.push({
+    status: DETAILED_ORDER_STATUS.NEW,
+    description: "Khách hàng yêu cầu thanh toán lại đơn hàng.",
+    performedBy: "user",
+  });
+
+  await order.save();
+
+  // Create new MoMo payment URL
+  const payUrl = await createMomoPaymentUrl(order);
+
+  logger.info(`Retry MoMo payment for order ${orderId} by user ${userId}`);
+
+  return {
+    order,
+    payUrl,
+  };
+};
+
 export const getOrderStats = async (userId = null) => {
   const filter = userId ? { userId } : {};
   console.log("Order Stats Filter:", userId);
@@ -559,9 +604,11 @@ export const getOrderByIdForAdmin = async (orderId) => {
 export const autoConfirmOrders = async () => {
   const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
 
+  // Auto confirm COD orders after 30 minutes
   const ordersToConfirm = await Order.find({
     status: ORDER_STATUS.PENDING,
     createdAt: { $lte: thirtyMinutesAgo },
+    "payment.paymentMethod": "COD",
   });
 
   let confirmedCount = 0;
@@ -570,11 +617,29 @@ export const autoConfirmOrders = async () => {
     confirmedCount++;
   }
 
-  if (confirmedCount > 0) {
-    logger.info(`Đã tự động xác nhận ${confirmedCount} đơn hàng`);
+  // Auto cancel unpaid MoMo orders after 30 minutes
+  const ordersToCancel = await Order.find({
+    status: ORDER_STATUS.PENDING,
+    createdAt: { $lte: thirtyMinutesAgo },
+    "payment.paymentMethod": "MOMO",
+    "payment.status": "pending",
+  });
+
+  let cancelledCount = 0;
+  for (const order of ordersToCancel) {
+    await autoCancelUnpaidMomoOrder(order._id);
+    cancelledCount++;
   }
 
-  return confirmedCount;
+  if (confirmedCount > 0) {
+    logger.info(`Đã tự động xác nhận ${confirmedCount} đơn hàng COD`);
+  }
+
+  if (cancelledCount > 0) {
+    logger.info(`Đã tự động hủy ${cancelledCount} đơn hàng MoMo chưa thanh toán`);
+  }
+
+  return { confirmedCount, cancelledCount };
 };
 
 // cron
@@ -602,6 +667,48 @@ export const markOrderComfirmed = async (orderId) => {
     "userId",
     "name email phone"
   );
+  return updatedOrder;
+};
+
+// Auto cancel unpaid MoMo orders
+export const autoCancelUnpaidMomoOrder = async (orderId) => {
+  const order = await Order.findById(orderId);
+  if (!order) {
+    throw new Error("Không tìm thấy đơn hàng");
+  }
+
+  // Double check conditions
+  if (order.payment.paymentMethod !== "MOMO" || order.payment.status !== "pending") {
+    logger.warn(`Order ${orderId} is not eligible for auto cancellation`);
+    return order;
+  }
+
+  const updateFields = {
+    status: ORDER_STATUS.CANCELLED,
+    cancelledAt: new Date(),
+    cancelledBy: "system",
+    cancelledReason: "Đơn hàng bị hủy tự động do quá thời hạn thanh toán (30 phút)",
+  };
+
+  // Update payment status
+  updateFields["payment.status"] = "failed";
+  updateFields["payment.updatedAt"] = new Date();
+
+  // Tạo timeline entry
+  const timelineEntry = createTimelineEntry(DETAILED_ORDER_STATUS.PAYMENT_OVERDUE, "system", {
+    reason: "Quá thời hạn thanh toán MoMo (30 phút)",
+  });
+  updateFields.$push = { timeline: timelineEntry };
+
+  const updatedOrder = await Order.findByIdAndUpdate(orderId, updateFields, {
+    new: true,
+    runValidators: true,
+  }).populate("userId", "name email phone");
+
+  // Revert order side effects (stock, voucher, points)
+  await _revertOrderSideEffects(updatedOrder);
+
+  logger.info(`Auto cancelled unpaid MoMo order: ${orderId}`);
   return updatedOrder;
 };
 
@@ -1176,6 +1283,9 @@ export const updateMomoPaymentFromReturn = async (orderId, userId, paymentData) 
     order.payment.status = "completed";
     order.payment.transactionId = transactionId;
     order.payment.updatedAt = new Date();
+
+    order.status = ORDER_STATUS.PROCESSING;
+    order.confirmedAt = new Date();
 
     order.timeline.push({
       status: DETAILED_ORDER_STATUS.CONFIRMED,
