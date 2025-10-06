@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
-import { Container, Row, Col, Card, Table, Button, Form, Badge, InputGroup, Modal } from 'react-bootstrap'
+import { Container, Row, Col, Card, Table, Button, Form, Badge, InputGroup, Modal, Tabs, Tab } from 'react-bootstrap'
 import { useDispatch, useSelector } from 'react-redux'
-import { fetchLoyaltyPoints, adjustUserPoints, fetchLoyaltyStats, expirePoints } from '../../redux/slices/loyaltySlice'
+import { fetchLoyaltyPoints, adjustUserPoints, fetchLoyaltyStats, expirePoints, fetchCheckinStats } from '../../redux/slices/loyaltySlice'
 import LoadingSpinner from '../../components/common/LoadingSpinner'
 import Pagination from '../../components/common/Pagination'
 import ConfirmModal from '../../components/common/ConfirmModal'
@@ -10,7 +10,8 @@ import moment from 'moment'
 
 const LoyaltyPointsPage = () => {
   const dispatch = useDispatch()
-  const { transactions, stats, pagination, loading } = useSelector((state) => state.loyalty)
+  const { transactions, stats, checkinStats, pagination, loading } = useSelector((state) => state.loyalty)
+  const [activeTab, setActiveTab] = useState('transactions')
 
   const [filters, setFilters] = useState({
     page: 1,
@@ -32,6 +33,7 @@ const LoyaltyPointsPage = () => {
   useEffect(() => {
     dispatch(fetchLoyaltyPoints(filters))
     dispatch(fetchLoyaltyStats())
+    dispatch(fetchCheckinStats())
   }, [dispatch, filters])
 
   const handleFilterChange = (key, value) => {
@@ -179,52 +181,55 @@ const LoyaltyPointsPage = () => {
         </Row>
       )}
 
-      {/* Filters */}
-      <Card className="border-0 shadow-sm mb-4">
-        <Card.Body>
-          <Row>
-            <Col md={4}>
-              <InputGroup>
-                <InputGroup.Text>
-                  <i className="bi bi-search"></i>
-                </InputGroup.Text>
-                <Form.Control
-                  type="text"
-                  placeholder="Tìm theo User ID..."
-                  value={filters.userId}
-                  onChange={(e) => handleFilterChange('userId', e.target.value)}
-                />
-              </InputGroup>
-            </Col>
-            <Col md={4}>
-              <Form.Select
-                value={filters.type}
-                onChange={(e) => handleFilterChange('type', e.target.value)}
-              >
-                <option value="">Tất cả loại giao dịch</option>
-                <option value="earned">Kiếm được</option>
-                <option value="redeemed">Đã sử dụng</option>
-                <option value="expired">Hết hạn</option>
-                <option value="bonus">Thưởng</option>
-                <option value="refund">Hoàn trả</option>
-              </Form.Select>
-            </Col>
-            <Col md={4}>
-              <Form.Select
-                value={filters.limit}
-                onChange={(e) => handleFilterChange('limit', parseInt(e.target.value))}
-              >
-                <option value={10}>10 / trang</option>
-                <option value={25}>25 / trang</option>
-                <option value={50}>50 / trang</option>
-              </Form.Select>
-            </Col>
-          </Row>
-        </Card.Body>
-      </Card>
+      {/* Tabs */}
+      <Tabs activeKey={activeTab} onSelect={(k) => setActiveTab(k)} className="mb-4">
+        <Tab eventKey="transactions" title={<><i className="bi bi-list-ul me-2"></i>Giao dịch điểm</>}>
+          {/* Filters */}
+          <Card className="border-0 shadow-sm mb-4">
+            <Card.Body>
+              <Row>
+                <Col md={4}>
+                  <InputGroup>
+                    <InputGroup.Text>
+                      <i className="bi bi-search"></i>
+                    </InputGroup.Text>
+                    <Form.Control
+                      type="text"
+                      placeholder="Tìm theo User ID..."
+                      value={filters.userId}
+                      onChange={(e) => handleFilterChange('userId', e.target.value)}
+                    />
+                  </InputGroup>
+                </Col>
+                <Col md={4}>
+                  <Form.Select
+                    value={filters.type}
+                    onChange={(e) => handleFilterChange('type', e.target.value)}
+                  >
+                    <option value="">Tất cả loại giao dịch</option>
+                    <option value="earned">Kiếm được</option>
+                    <option value="redeemed">Đã sử dụng</option>
+                    <option value="expired">Hết hạn</option>
+                    <option value="bonus">Thưởng</option>
+                    <option value="refund">Hoàn trả</option>
+                  </Form.Select>
+                </Col>
+                <Col md={4}>
+                  <Form.Select
+                    value={filters.limit}
+                    onChange={(e) => handleFilterChange('limit', parseInt(e.target.value))}
+                  >
+                    <option value={10}>10 / trang</option>
+                    <option value={25}>25 / trang</option>
+                    <option value={50}>50 / trang</option>
+                  </Form.Select>
+                </Col>
+              </Row>
+            </Card.Body>
+          </Card>
 
-      {/* Transactions Table */}
-      <Card className="border-0 shadow-sm">
+          {/* Transactions Table */}
+          <Card className="border-0 shadow-sm">
         <Card.Body className="p-0">
           {loading ? (
             <LoadingSpinner />
@@ -317,6 +322,8 @@ const LoyaltyPointsPage = () => {
           )}
         </Card.Body>
       </Card>
+        </Tab>
+      </Tabs>
 
       {/* Adjust Points Modal */}
       <Modal show={showAdjustModal} onHide={() => setShowAdjustModal(false)}>

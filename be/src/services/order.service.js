@@ -10,6 +10,7 @@ import AppError from "../utils/AppError.js";
 import logger from "../utils/logger.js";
 import Order, { ORDER_STATUS, DETAILED_ORDER_STATUS, STATUS_MAP } from "../models/Order.js";
 import { createMomoPaymentUrl } from "./momo.service.js";
+import { addLoyaltyPoints } from "./loyaltyService.js";
 import mongoose from "mongoose";
 
 const calculateShippingFee = async (shippingMethod) => {
@@ -1115,16 +1116,36 @@ export const confirmOrderReceived = async (userId, orderId) => {
   order.status = ORDER_STATUS.COMPLETED;
   order.timeline.push(createTimelineEntry(DETAILED_ORDER_STATUS.COMPLETED, "user", {}));
 
-  // Award loyalty points (1% of totalAmount)
-  const pointsToAward = Math.floor(order.totalAmount * 0.01);
-  if (pointsToAward > 0) {
-    await User.findByIdAndUpdate(userId, {
-      $inc: { loyaltyPoints: pointsToAward },
-    });
-    logger.info(`Awarded ${pointsToAward} loyalty points to user ${userId} for order ${orderId}`);
-  }
-
   await order.save();
+
+  // Cộng điểm tích lũy khi khách bấm "Đã nhận hàng"
+  try {
+    const orderAmount = order.subtotal; // Giá trị đơn hàng trước khuyến mãi
+    const orderNumber = order._id.toString().slice(-8).toUpperCase();
+    
+    const loyaltyResult = await addLoyaltyPoints(userId, orderAmount, orderId, orderNumber);
+    
+    if (loyaltyResult.earnedPoints > 0) {
+      logger.info(`Added ${loyaltyResult.earnedPoints} loyalty points to user ${userId} for order ${orderId}`);
+      
+      // Gửi thông báo về xu nhận được
+      await Notification.create({
+        title: "Nhận điểm tích lũy",
+        message: `Bạn đã nhận ${loyaltyResult.earnedPoints} điểm từ đơn hàng #${orderNumber}. Xu sẽ hết hạn vào ${new Date(loyaltyResult.expiresAt).toLocaleDateString("vi-VN")}.`,
+        type: "loyalty",
+        referenceId: orderId,
+        recipient: "user",
+        userId: userId,
+        metadata: {
+          earnedPoints: loyaltyResult.earnedPoints,
+          expiresAt: loyaltyResult.expiresAt,
+        },
+      });
+    }
+  } catch (error) {
+    logger.error(`Failed to add loyalty points for order ${orderId}:`, error);
+    // Không throw lỗi để không ảnh hưởng đến việc xác nhận nhận hàng
+  }
 
   return order;
 };

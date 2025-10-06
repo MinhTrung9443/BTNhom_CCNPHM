@@ -1,5 +1,6 @@
 import express from 'express';
 import * as userController from '../controllers/user.controller.js';
+import * as loyaltyController from '../controllers/loyalty.controller.js';
 import { protect } from '../middlewares/auth.js';
 import upload from '../middlewares/upload.js';
 
@@ -17,5 +18,11 @@ router.get('/recently-viewed', userController.getRecentlyViewed);
 // Loyalty points routes
 router.get('/loyalty-points', userController.getUserLoyaltyPoints);
 router.get('/points-history', userController.getPointsHistory);
+router.get('/loyalty-transactions', loyaltyController.getLoyaltyTransactions);
+router.get('/expiring-points', loyaltyController.getExpiringPoints);
+
+// Daily check-in routes
+router.post('/daily-checkin', userController.dailyCheckin);
+router.get('/checkin-status', userController.getCheckinStatus);
 
 export default router;

@@ -237,5 +237,116 @@ export const loyaltyPointsService = {
     ];
 
     return options.filter(option => option.points <= availablePoints);
+  },
+
+  // Daily check-in functionality
+  dailyCheckin: async (userId) => {
+    try {
+      const User = (await import('../models/User.js')).default;
+      const user = await User.findById(userId);
+
+      if (!user) {
+        throw new AppError('Không tìm thấy người dùng', 404);
+      }
+
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+      // Check if user already checked in today
+      if (user.lastCheckinDate) {
+        const lastCheckin = new Date(user.lastCheckinDate);
+        const lastCheckinDay = new Date(lastCheckin.getFullYear(), lastCheckin.getMonth(), lastCheckin.getDate());
+
+        if (lastCheckinDay.getTime() === today.getTime()) {
+          throw new AppError('Bạn đã điểm danh hôm nay rồi', 400);
+        }
+      }
+
+      // Calculate points based on day of week (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
+      const dayOfWeek = now.getDay();
+      const pointsToAward = dayOfWeek === 0 ? 200 : 100;
+
+      // Calculate expiry date (last day of next month)
+      const expiryDate = new Date(now.getFullYear(), now.getMonth() + 2, 0, 23, 59, 59, 999);
+
+      // Check consecutive days
+      let consecutiveDays = 1;
+      if (user.lastCheckinDate) {
+        const lastCheckin = new Date(user.lastCheckinDate);
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        const lastCheckinDay = new Date(lastCheckin.getFullYear(), lastCheckin.getMonth(), lastCheckin.getDate());
+      }
+
+      // Create loyalty points transaction
+      const transaction = await LoyaltyPoints.create({
+        userId,
+        points: pointsToAward,
+        transactionType: 'bonus',
+        description: `Điểm danh ngày ${now.toLocaleDateString('vi-VN')} - ${dayOfWeek === 0 ? 'Chủ nhật' : 'Thứ ' + (dayOfWeek + 1)}`,
+        expiryDate,
+        metadata: {
+          checkin: true,
+          dayOfWeek,
+          consecutiveDays
+        }
+      });
+
+      // Update user
+      user.lastCheckinDate = now;
+      user.loyaltyPoints = (user.loyaltyPoints || 0) + pointsToAward;
+      await user.save();
+
+      const totalPoints = await loyaltyPointsService.getUserAvailablePoints(userId);
+
+      logger.info(`User ${userId} checked in and received ${pointsToAward} points`);
+
+      return {
+        points: pointsToAward,
+        totalPoints,
+        expiryDate,
+        consecutiveDays,
+        nextCheckinDate: new Date(today.getTime() + 24 * 60 * 60 * 1000)
+      };
+    } catch (error) {
+      logger.error(`Lỗi daily checkin: ${error.message}`);
+      throw error;
+    }
+  },
+
+  // Get check-in status
+  getCheckinStatus: async (userId) => {
+    try {
+      const User = (await import('../models/User.js')).default;
+      const user = await User.findById(userId);
+
+      if (!user) {
+        throw new AppError('Không tìm thấy người dùng', 404);
+      }
+
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      let canCheckin = true;
+
+      if (user.lastCheckinDate) {
+        const lastCheckin = new Date(user.lastCheckinDate);
+        const lastCheckinDay = new Date(lastCheckin.getFullYear(), lastCheckin.getMonth(), lastCheckin.getDate());
+
+        if (lastCheckinDay.getTime() === today.getTime()) {
+          canCheckin = false;
+        }
+      }
+
+      const nextCheckinDate = new Date(today.getTime() + 24 * 60 * 60 * 1000);
+
+      return {
+        canCheckin,
+        lastCheckinDate: user.lastCheckinDate,
+        nextCheckinDate,
+      };
+    } catch (error) {
+      logger.error(`Lỗi get checkin status: ${error.message}`);
+      throw error;
+    }
   }
 };

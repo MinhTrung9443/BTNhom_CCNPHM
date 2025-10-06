@@ -17,6 +17,7 @@ import ReturnRefundRequestsPage from './pages/orders/ReturnRefundRequestsPage'
 import VouchersPage from './pages/vouchers/VouchersPage'
 import VoucherFormPage from './pages/vouchers/VoucherFormPage'
 import CategoriesPage from './pages/categories/CategoriesPage'
+import DeliveriesPage from './pages/deliveries/DeliveriesPage'
 import LoyaltyPointsPage from './pages/loyalty/LoyaltyPointsPage'
 import SettingsPage from './pages/SettingsPage'
 import Notifications from './pages/Notifications'
@@ -79,6 +80,7 @@ function App() {
                   <Route path="/vouchers/create" element={<VoucherFormPage />} />
                   <Route path="/vouchers/edit/:id" element={<VoucherFormPage />} />
                   <Route path="/categories" element={<CategoriesPage />} />
+                  <Route path="/deliveries" element={<DeliveriesPage />} />
                   <Route path="/loyalty-points" element={<LoyaltyPointsPage />} />
                   <Route path="/notifications" element={<Notifications />} />
                   <Route path="/chat" element={<ChatPage />} />
