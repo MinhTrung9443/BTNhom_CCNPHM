@@ -34,3 +34,4 @@ feUser/.env.local
 feAdmin/.env
 be/.env
 
+feUser/.env.local
