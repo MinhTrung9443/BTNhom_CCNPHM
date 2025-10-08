@@ -180,64 +180,73 @@ export default function ViewHistoryPage() {
           <>
             {/* Products Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
-              {viewHistory.map((item) => (
-                <Card key={item._id} className="group hover:shadow-lg transition-shadow duration-300">
-                  <CardContent className="p-4">
-                    <div className="relative">
+              {viewHistory.map((item) => {
+                // Null check cho item và productId
+                if (!item || !item.productId || !item.productId._id) {
+                  return null;
+                }
+
+                return (
+                  <Card key={item._id} className="group hover:shadow-lg transition-shadow duration-300">
+                    <CardContent className="p-4">
+                      <div className="relative">
+                        <Link href={`/chi-tiet-san-pham/${item.productId.slug}`}>
+                          <div className="relative aspect-square mb-4 bg-gray-100 rounded-lg overflow-hidden">
+                            <Image
+                              src={item.productId.images?.[0] || "/placeholder.png"}
+                              alt={item.productId.name}
+                              fill
+                              className="object-cover group-hover:scale-105 transition-transform duration-300"
+                            />
+                            {item.productId.discount && item.productId.discount > 0 && (
+                              <div className="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded">-{item.productId.discount}%</div>
+                            )}
+                          </div>
+                        </Link>
+
+                        <Button
+                          onClick={() => handleRemoveItem(item._id)}
+                          variant="ghost"
+                          size="sm"
+                          className="absolute top-2 right-2 bg-white/80 hover:bg-white text-gray-600 hover:text-red-600"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+
                       <Link href={`/chi-tiet-san-pham/${item.productId.slug}`}>
-                        <div className="relative aspect-square mb-4 bg-gray-100 rounded-lg overflow-hidden">
-                          <Image
-                            src={item.productId.images?.[0] || "/placeholder.png"}
-                            alt={item.productId.name}
-                            fill
-                            className="object-cover group-hover:scale-105 transition-transform duration-300"
-                          />
-                          {item.productId.discount && item.productId.discount > 0 && (
-                            <div className="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded">-{item.productId.discount}%</div>
-                          )}
-                        </div>
+                        <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2 hover:text-green-600 transition-colors">
+                          {item.productId.name}
+                        </h3>
                       </Link>
 
-                      <Button
-                        onClick={() => handleRemoveItem(item._id)}
-                        variant="ghost"
-                        size="sm"
-                        className="absolute top-2 right-2 bg-white/80 hover:bg-white text-gray-600 hover:text-red-600"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-
-                    <Link href={`/chi-tiet-san-pham/${item.productId.slug}`}>
-                      <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2 hover:text-green-600 transition-colors">{item.productId.name}</h3>
-                    </Link>
-
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex flex-col">
-                        <span className="text-lg font-bold text-green-600">
-                          {new Intl.NumberFormat("vi-VN", {
-                            style: "currency",
-                            currency: "VND",
-                          }).format(item.productId.price * (1 - (item.productId.discount || 0) / 100))}
-                        </span>
-                        {item.productId.discount && item.productId.discount > 0 && (
-                          <span className="text-sm text-gray-500 line-through">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex flex-col">
+                          <span className="text-lg font-bold text-green-600">
                             {new Intl.NumberFormat("vi-VN", {
                               style: "currency",
                               currency: "VND",
-                            }).format(item.productId.price)}
+                            }).format(item.productId.price * (1 - (item.productId.discount || 0) / 100))}
                           </span>
-                        )}
+                          {item.productId.discount && item.productId.discount > 0 && (
+                            <span className="text-sm text-gray-500 line-through">
+                              {new Intl.NumberFormat("vi-VN", {
+                                style: "currency",
+                                currency: "VND",
+                              }).format(item.productId.price)}
+                            </span>
+                          )}
+                        </div>
                       </div>
-                    </div>
 
-                    <div className="flex items-center text-xs text-gray-500">
-                      <Clock className="w-3 h-3 mr-1" />
-                      {formatDate(item.viewedAt)}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                      <div className="flex items-center text-xs text-gray-500">
+                        <Clock className="w-3 h-3 mr-1" />
+                        {formatDate(item.viewedAt)}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
 
             {/* Pagination */}
