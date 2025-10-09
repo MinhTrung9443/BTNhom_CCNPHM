@@ -10,11 +10,13 @@ import { toast } from "sonner";
 import Link from "next/link";
 import { orderService } from "@/services/orderService";
 import { useSession } from "next-auth/react";
+import { useCart } from "@/contexts/cart-context";
 
 export default function MomoReturnPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { data: session } = useSession();
+  const { refreshCartCount } = useCart();
   const [status, setStatus] = useState<"loading" | "success" | "failed">("loading");
   const [orderInfo, setOrderInfo] = useState<{
     orderId?: string;
@@ -56,6 +58,9 @@ export default function MomoReturnPage() {
               transId: transId || undefined,
               message: message || undefined,
             });
+
+            // Refresh cart count sau khi thanh toán thành công
+            await refreshCartCount();
 
             toast.success("Thanh toán thành công!", {
               description: "Đơn hàng của bạn đã được xác nhận.",

@@ -127,5 +127,22 @@ export const cartService = {
     // Tính tổng số lượng sản phẩm
     const totalCount = cart.items.length;
     return totalCount;
+  },
+
+  async removeOrderedItemsFromCart(userId, productIds) {
+    // Xóa các sản phẩm đã đặt hàng khỏi giỏ hàng
+    const cart = await Cart.findOne({ userId });
+    
+    if (!cart) {
+      return null;
+    }
+
+    // Lọc bỏ các sản phẩm đã đặt hàng
+    cart.items = cart.items.filter(
+      item => !productIds.some(pid => pid.toString() === item.productId.toString())
+    );
+
+    await cart.save();
+    return cart;
   }
 };

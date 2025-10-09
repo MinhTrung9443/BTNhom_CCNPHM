@@ -20,6 +20,7 @@ import { orderService } from "@/services/orderService";
 import { deliveryService } from "@/services/deliveryService";
 import { voucherService } from "@/services/voucherService";
 import { userService } from "@/services/userService";
+import { useCart } from "@/contexts/cart-context";
 
 interface PreviewClientProps {
   accessToken: string;
@@ -139,6 +140,7 @@ function previewReducer(state: PreviewState, action: PreviewAction): PreviewStat
 export default function PreviewClient({ accessToken }: PreviewClientProps) {
   const router = useRouter();
   const [state, dispatch] = useReducer(previewReducer, initialState);
+  const { refreshCartCount } = useCart();
 
   // Fetch delivery methods và user points
   useEffect(() => {
@@ -215,7 +217,7 @@ export default function PreviewClient({ accessToken }: PreviewClientProps) {
     try {
       const response = await orderService.previewOrder(accessToken, requestData);
       if (response.success && response.data.previewOrder) {
-        
+
         dispatch({ type: "SET_PREVIEW_DATA", payload: response.data.previewOrder });
       } else {
         throw new Error(response.message);
@@ -319,6 +321,8 @@ export default function PreviewClient({ accessToken }: PreviewClientProps) {
         if (response.success && response.data.payUrl) {
           toast.success("Thành công", { description: "Đang chuyển hướng đến MoMo để thanh toán..." });
           localStorage.removeItem("selectedCartItems");
+          // Refresh cart count
+          await refreshCartCount();
           // Chuyển hướng đến trang thanh toán MoMo
           window.location.href = response.data.payUrl;
         } else {
@@ -330,6 +334,8 @@ export default function PreviewClient({ accessToken }: PreviewClientProps) {
         if (response.success) {
           toast.success("Thành công", { description: "Đơn hàng của bạn đã được tạo." });
           localStorage.removeItem("selectedCartItems");
+          // Refresh cart count
+          await refreshCartCount();
           router.push(`/don-hang/${response.data._id}`);
         } else {
           throw new Error(response.message);
