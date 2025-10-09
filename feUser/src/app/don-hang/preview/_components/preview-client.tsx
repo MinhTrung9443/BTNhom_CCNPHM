@@ -396,20 +396,44 @@ export default function PreviewClient({ accessToken }: PreviewClientProps) {
               <CardTitle>Sản phẩm đã chọn</CardTitle>
             </CardHeader>
             <CardContent>
-              {selectedItems.map((item) => (
-                <div key={item.productId._id} className="flex items-center gap-4 py-4 border-b last:border-b-0">
-                  <div className="w-20 h-20 bg-gray-200 rounded-lg relative overflow-hidden">
-                    <Image src={item.productId.images[0]} alt={item.productId.name} fill unoptimized sizes="80px" style={{ objectFit: "cover" }} />
+              {selectedItems.map((item) => {
+                const finalPrice = item.productId.discount > 0 
+                  ? item.productId.price * (1 - item.productId.discount / 100)
+                  : item.productId.price;
+                const totalItemPrice = finalPrice * item.quantity;
+                
+                return (
+                  <div key={item.productId._id} className="flex items-center gap-4 py-4 border-b last:border-b-0">
+                    <div className="w-20 h-20 bg-gray-200 rounded-lg relative overflow-hidden">
+                      <Image src={item.productId.images[0]} alt={item.productId.name} fill unoptimized sizes="80px" style={{ objectFit: "cover" }} />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold">{item.productId.name}</h3>
+                      <p className="text-sm text-gray-500">Số lượng: {item.quantity}</p>
+                      {item.productId.discount > 0 && (
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-sm text-gray-400 line-through">
+                            {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(item.productId.price)}
+                          </span>
+                          <span className="bg-red-100 text-red-600 text-xs font-semibold px-2 py-0.5 rounded">
+                            -{item.productId.discount}%
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-right">
+                      <div className="font-semibold text-green-600">
+                        {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(totalItemPrice)}
+                      </div>
+                      {item.productId.discount > 0 && (
+                        <div className="text-xs text-gray-400 line-through">
+                          {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(item.productId.price * item.quantity)}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <h3 className="font-semibold">{item.productId.name}</h3>
-                    <p className="text-sm text-gray-500">Số lượng: {item.quantity}</p>
-                  </div>
-                  <div className="font-semibold">
-                    {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(item.productId.price * item.quantity)}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </CardContent>
           </Card>
 

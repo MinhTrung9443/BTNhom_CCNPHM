@@ -49,11 +49,17 @@ export const cartService = {
     }
 
     await cart.save();
-    return cart.populate('items.productId');
+    return cart.populate({
+      path: 'items.productId',
+      select: 'name slug price discount images stock isActive categoryId averageRating totalReviews soldCount'
+    });
   },
 
   async getCart(userId) {
-    const cart = await Cart.findOne({ userId }).populate('items.productId');
+    const cart = await Cart.findOne({ userId }).populate({
+      path: 'items.productId',
+      select: 'name slug price discount images stock isActive categoryId averageRating totalReviews soldCount'
+    });
     if (!cart) {
       return { userId, items: [] };
     }
@@ -88,7 +94,10 @@ export const cartService = {
       cart.items[itemIndex].quantity = quantity;
     }
     await cart.save();
-    return cart.populate('items.productId');
+    return cart.populate({
+      path: 'items.productId',
+      select: 'name slug price discount images stock isActive categoryId averageRating totalReviews soldCount'
+    });
   },
 
   async removeItemFromCart(userId, productId) {
@@ -111,7 +120,7 @@ export const cartService = {
       { new: true }
     ).populate({
       path: 'items.productId',
-      select: 'name price images discount',
+      select: 'name slug price discount images stock isActive categoryId averageRating totalReviews soldCount',
     });
 
     return updatedCart;

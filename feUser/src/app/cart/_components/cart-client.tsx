@@ -106,7 +106,7 @@ export default function CartClient({ cart: initialCart }: CartClientProps) {
     } else {
       setIsAllSelected(false);
     }
-  }, [selectedItems, cart.items]);
+  }, [selectedItems, cart.items, activeItems]);
 
   const handleSelectItem = (item: CartItem) => {
     setSelectedItems(prev => {
@@ -131,7 +131,12 @@ export default function CartClient({ cart: initialCart }: CartClientProps) {
   };
 
   const totalQuantity = selectedItems.reduce((sum, item) => sum + item.quantity, 0);
-  const totalPrice = selectedItems.reduce((sum, item) => sum + item.productId.price * item.quantity, 0);
+  const totalPrice = selectedItems.reduce((sum, item) => {
+    const finalPrice = item.productId.discount > 0
+      ? item.productId.price * (1 - item.productId.discount / 100)
+      : item.productId.price;
+    return sum + finalPrice * item.quantity;
+  }, 0);
 
   const handleRemoveItem = async (productId: string) => {
     if (!session?.user?.accessToken) return;
@@ -345,9 +350,27 @@ export default function CartClient({ cart: initialCart }: CartClientProps) {
               <Link href={`/chi-tiet-san-pham/${item.productId.slug}`} className="hover:text-green-600 transition-colors cursor-pointer">
                 <h3 className="font-semibold mb-2">{item.productId.name}</h3>
               </Link>
-              <p className="text-green-600 font-bold mb-2">
-                {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.productId.price)}
-              </p>
+              <div className="mb-2">
+                {item.productId.discount > 0 ? (
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <p className="text-green-600 font-bold text-lg">
+                      {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(
+                        item.productId.price * (1 - item.productId.discount / 100)
+                      )}
+                    </p>
+                    <p className="text-gray-400 line-through text-sm">
+                      {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.productId.price)}
+                    </p>
+                    <span className="bg-red-100 text-red-600 text-xs font-semibold px-2 py-1 rounded">
+                      -{item.productId.discount}%
+                    </span>
+                  </div>
+                ) : (
+                  <p className="text-green-600 font-bold text-lg">
+                    {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.productId.price)}
+                  </p>
+                )}
+              </div>
 
               {/* Cảnh báo */}
               {hasWarning && (
