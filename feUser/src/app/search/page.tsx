@@ -18,7 +18,7 @@ export default async function SearchPage() {
   const initialFilters: SearchFilters = { 
     page: 1, 
     limit: 12,
-    sortBy: 'createdAt',
+    sortBy: 'relevance',
     sortOrder: 'desc'
   };
   

@@ -49,11 +49,17 @@ export const cartService = {
     }
 
     await cart.save();
-    return cart.populate('items.productId');
+    return cart.populate({
+      path: 'items.productId',
+      select: 'name slug price discount images stock isActive categoryId averageRating totalReviews soldCount'
+    });
   },
 
   async getCart(userId) {
-    const cart = await Cart.findOne({ userId }).populate('items.productId');
+    const cart = await Cart.findOne({ userId }).populate({
+      path: 'items.productId',
+      select: 'name slug price discount images stock isActive categoryId averageRating totalReviews soldCount'
+    });
     if (!cart) {
       return { userId, items: [] };
     }
@@ -88,7 +94,10 @@ export const cartService = {
       cart.items[itemIndex].quantity = quantity;
     }
     await cart.save();
-    return cart.populate('items.productId');
+    return cart.populate({
+      path: 'items.productId',
+      select: 'name slug price discount images stock isActive categoryId averageRating totalReviews soldCount'
+    });
   },
 
   async removeItemFromCart(userId, productId) {
@@ -111,7 +120,7 @@ export const cartService = {
       { new: true }
     ).populate({
       path: 'items.productId',
-      select: 'name price images discount',
+      select: 'name slug price discount images stock isActive categoryId averageRating totalReviews soldCount',
     });
 
     return updatedCart;
@@ -127,5 +136,22 @@ export const cartService = {
     // Tính tổng số lượng sản phẩm
     const totalCount = cart.items.length;
     return totalCount;
+  },
+
+  async removeOrderedItemsFromCart(userId, productIds) {
+    // Xóa các sản phẩm đã đặt hàng khỏi giỏ hàng
+    const cart = await Cart.findOne({ userId });
+    
+    if (!cart) {
+      return null;
+    }
+
+    // Lọc bỏ các sản phẩm đã đặt hàng
+    cart.items = cart.items.filter(
+      item => !productIds.some(pid => pid.toString() === item.productId.toString())
+    );
+
+    await cart.save();
+    return cart;
   }
 };

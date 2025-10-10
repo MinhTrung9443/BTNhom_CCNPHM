@@ -1,4 +1,4 @@
-import { Product, Order, ProductView, Review, Favorite } from "../models/index.js";
+import { Product, Order, ViewHistory, Review, Favorite } from "../models/index.js";
 import { AppError } from "../utils/AppError.js";
 
 export const productService = {
@@ -88,7 +88,7 @@ export const productService = {
   async getMostViewedProducts(page = 1, limit = 4) {
     const skip = (page - 1) * limit;
 
-    const mostViewed = await ProductView.aggregate([
+    const mostViewed = await ViewHistory.aggregate([
       {
         $group: {
           _id: "$productId",
@@ -105,7 +105,7 @@ export const productService = {
       .populate('categoryId', 'name')
       .select('name slug description price discount images categoryId createdAt stock');
 
-    const totalViewed = await ProductView.aggregate([
+    const totalViewed = await ViewHistory.aggregate([
       {
         $group: {
           _id: "$productId",
@@ -248,19 +248,18 @@ export const productService = {
       throw new AppError("Không tìm thấy sản phẩm", 404);
     }
 
-    if (userId) {
-      await ProductView.findOneAndUpdate(
-        { userId, productId: id },
-        { $inc: { viewCount: 1 }, lastViewedAt: new Date() },
-        { upsert: true, new: true }
-      );
-    } else {
-      await ProductView.findOneAndUpdate(
-        { userId: null, productId: id },
-        { $inc: { viewCount: 1 }, lastViewedAt: new Date() },
-        { upsert: true, new: true }
-      );
-    }
+    // Ghi nhận lượt xem vào ViewHistory và tăng viewCount trong Product
+    await Promise.all([
+      ViewHistory.findOneAndUpdate(
+        { userId: userId || null, productId: id },
+        {
+          $inc: { viewCount: 1 },
+          $set: { viewedAt: new Date() }
+        },
+        { upsert: true, new: true, setDefaultsOnInsert: true }
+      ),
+      Product.findByIdAndUpdate(id, { $inc: { viewCount: 1 } })
+    ]);
 
     return {
       ...product.toObject(),
@@ -303,19 +302,18 @@ export const productService = {
       isSavedPromise
     ]);
 
-    if (userId) {
-      await ProductView.findOneAndUpdate(
-        { userId, productId: id },
-        { $inc: { viewCount: 1 }, lastViewedAt: new Date() },
-        { upsert: true, new: true }
-      );
-    } else {
-      await ProductView.findOneAndUpdate(
-        { userId: null, productId: id },
-        { $inc: { viewCount: 1 }, lastViewedAt: new Date() },
-        { upsert: true, new: true }
-      );
-    }
+    // Ghi nhận lượt xem vào ViewHistory và tăng viewCount trong Product
+    await Promise.all([
+      ViewHistory.findOneAndUpdate(
+        { userId: userId || null, productId: id },
+        {
+          $inc: { viewCount: 1 },
+          $set: { viewedAt: new Date() }
+        },
+        { upsert: true, new: true, setDefaultsOnInsert: true }
+      ),
+      Product.findByIdAndUpdate(id, { $inc: { viewCount: 1 } })
+    ]);
 
     return {
       ...product.toObject(),
@@ -338,14 +336,6 @@ export const productService = {
       .limit(4)
       .populate('categoryId', 'name')
       .select('name slug price discount images categoryId stock');
-  },
-
-  async recordProductView(productId, userId) {
-    await ProductView.findOneAndUpdate(
-      { userId, productId },
-      { $inc: { viewCount: 1 }, lastViewedAt: new Date() },
-      { upsert: true, new: true }
-    );
   },
 
   async getProductById(id) {
@@ -376,7 +366,7 @@ export const productService = {
     return Product.find({ '_id': { $in: ids } })
       .select('name slug price discount images stock');
   }
-,
+  ,
   async updateProduct(id, updateData) {
     const product = await Product.findByIdAndUpdate(id, updateData, {
       new: true,
@@ -435,24 +425,44 @@ export const productService = {
     ];
     const filter = [];
 
-    // Text search với fuzzy matching
+    // Text search với fuzzy + ưu tiên cụm dính nhau
     if (keyword && keyword.trim()) {
+      const trimmed = keyword.trim();
+
       must.push({
-        text: {
-          query: keyword.trim(),
-          path: ['name', 'description'],
-          fuzzy: { maxEdits: 2 }
+        compound: {
+          should: [
+            // Ưu tiên cụm dính nhau (phrase match, boost cao hơn)
+            {
+              phrase: {
+                query: trimmed,
+                path: ['name'],
+                slop: 1, // cho phép cách nhau tối đa 1 từ
+                score: { boost: { value: 5 } } // tăng trọng số
+              }
+            },
+            // Fuzzy matching (độ sai lệch nhỏ)
+            {
+              text: {
+                query: trimmed,
+                path: ['name'],
+                fuzzy: { maxEdits: 1 },
+                score: { boost: { value: 1 } }
+              }
+            }
+          ]
         }
       });
     }
 
+
     // Filter theo category
     if (categoryId) {
-      filter.push({ 
-        equals: { 
-          path: 'categoryId', 
-          value: new Product.base.Types.ObjectId(categoryId) 
-        } 
+      filter.push({
+        equals: {
+          path: 'categoryId',
+          value: new Product.base.Types.ObjectId(categoryId)
+        }
       });
     }
 
@@ -469,11 +479,11 @@ export const productService = {
 
     // Filter theo rating tối thiểu
     if (minRating !== null) {
-      filter.push({ 
-        range: { 
-          path: 'averageRating', 
-          gte: minRating 
-        } 
+      filter.push({
+        range: {
+          path: 'averageRating',
+          gte: minRating
+        }
       });
     }
 
@@ -494,11 +504,24 @@ export const productService = {
 
     // 2️⃣ Sort stage
     const sortStage = {};
-    sortStage[sortBy] = sortOrder === 'asc' ? 1 : -1;
-    if (sortBy !== 'createdAt') {
-      sortStage.createdAt = -1;
+
+    // Nếu sắp xếp theo độ liên quan (relevance), dùng searchScore
+    if (sortBy === 'relevance') {
+      // Chỉ sắp xếp theo relevance khi có keyword tìm kiếm
+      if (keyword && keyword.trim()) {
+        sortStage.score = { $meta: 'searchScore' };
+      } else {
+        // Nếu không có keyword, fallback về sắp xếp theo createdAt
+        sortStage.createdAt = -1;
+      }
+    } else {
+      sortStage[sortBy] = sortOrder === 'asc' ? 1 : -1;
+      if (sortBy !== 'createdAt') {
+        sortStage.createdAt = -1;
+      }
+      pipeline.push({ $sort: sortStage });
     }
-    pipeline.push({ $sort: sortStage });
+
 
     // 3️⃣ Pagination
     pipeline.push({ $skip: (page - 1) * limit });

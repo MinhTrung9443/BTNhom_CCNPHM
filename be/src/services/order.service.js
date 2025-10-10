@@ -9,8 +9,10 @@ import { User, Product, Review, Voucher, UserVoucher, Delivery, Notification } f
 import AppError from "../utils/AppError.js";
 import logger from "../utils/logger.js";
 import Order, { ORDER_STATUS, DETAILED_ORDER_STATUS, STATUS_MAP } from "../models/Order.js";
+import LoyaltyPoints from "../models/LoyaltyPoints.js";
 import { createMomoPaymentUrl } from "./momo.service.js";
 import { addLoyaltyPoints } from "./loyaltyService.js";
+import { cartService } from "./cart.service.js";
 import mongoose from "mongoose";
 
 const calculateShippingFee = async (shippingMethod) => {
@@ -151,6 +153,16 @@ export const previewOrder = async (userId, { orderLines, shippingAddress, vouche
     throw new AppError("Vui lòng chọn sản phẩm để xem trước", 400);
   }
 
+  // Validate phương thức vận chuyển hỏa tốc chỉ áp dụng cho Sóc Trăng
+  if (shippingMethod === "express" && shippingAddress) {
+    const province = shippingAddress.province?.trim().toLowerCase();
+    const socTrangVariants = ["sóc trăng", "soc trang", "tỉnh sóc trăng", "tinh soc trang"];
+    
+    if (!province || !socTrangVariants.some(variant => province.includes(variant))) {
+      throw new AppError("Phương thức giao hỏa tốc chỉ áp dụng cho địa chỉ tại tỉnh Sóc Trăng", 400);
+    }
+  }
+
   let subtotal = 0;
   const unavailableItems = [];
   const processedOrderLines = [];
@@ -244,10 +256,31 @@ export const previewOrder = async (userId, { orderLines, shippingAddress, vouche
 
       if (userVoucher) {
         if (subtotal >= voucher.minPurchaseAmount) {
-          discount = voucher.discountValue; // Giả sử giảm giá cố định
+          // Tính giảm giá dựa trên loại voucher
+          if (voucher.discountType === "percentage") {
+            // Giảm theo phần trăm
+            discount = Math.floor((subtotal * voucher.discountValue) / 100);
+            // Áp dụng giới hạn giảm giá tối đa
+            if (discount > voucher.maxDiscountAmount) {
+              discount = voucher.maxDiscountAmount;
+            }
+          } else {
+            // Giảm giá cố định
+            discount = voucher.discountValue;
+            // Đảm bảo không vượt quá maxDiscountAmount
+            if (discount > voucher.maxDiscountAmount) {
+              discount = voucher.maxDiscountAmount;
+            }
+          }
+          
+          // Đảm bảo discount không vượt quá subtotal
+          if (discount > subtotal) {
+            discount = subtotal;
+          }
+          
           appliedVoucherCode = voucher.code;
         } else {
-          throw new AppError(`Đơn hàng tối thiểu để áp dụng voucher này là ${voucher.minPurchaseAmount}`, 400);
+          throw new AppError(`Đơn hàng tối thiểu để áp dụng voucher này là ${voucher.minPurchaseAmount.toLocaleString('vi-VN')} VNĐ`, 400);
         }
       } else {
         throw new AppError("Bạn không có quyền sử dụng voucher này hoặc đã sử dụng rồi", 400);
@@ -380,12 +413,24 @@ const _executePostOrderActions = async (order) => {
     }
   }
 
-  // 3. Deduct loyalty points
+  // 3. Deduct loyalty points and create transaction
   if (order.pointsApplied > 0) {
     await User.findByIdAndUpdate(order.userId, {
       $inc: { loyaltyPoints: -order.pointsApplied },
     });
-    logger.info(`Deducted ${order.pointsApplied} points from user ${order.userId}`);
+    
+    // Tạo giao dịch điểm tích lũy (redeemed)
+    await LoyaltyPoints.create({
+      userId: order.userId,
+      points: -order.pointsApplied, // Số âm để thể hiện điểm bị trừ
+      transactionType: "redeemed",
+      description: `Sử dụng ${order.pointsApplied} điểm cho đơn hàng #${order._id}`,
+      orderId: order._id,
+      pointsValue: order.pointsApplied, // Giá trị quy đổi (1 điểm = 1 VNĐ)
+      expiryDate: null, // Giao dịch sử dụng điểm không có ngày hết hạn
+    });
+    
+    logger.info(`Deducted ${order.pointsApplied} points from user ${order.userId} and created redeemed transaction`);
   }
 };
 
@@ -412,10 +457,22 @@ const _revertOrderSideEffects = async (order) => {
       }
     }
 
-    // 3. Revert loyalty points
+    // 3. Revert loyalty points and create refund transaction
     if (order.pointsApplied > 0) {
       await User.findByIdAndUpdate(order.userId, { $inc: { loyaltyPoints: order.pointsApplied } }, { session });
-      logger.info(`Reverted ${order.pointsApplied} points for user ${order.userId}`);
+      
+      // Tạo giao dịch hoàn điểm (refund)
+      await LoyaltyPoints.create([{
+        userId: order.userId,
+        points: order.pointsApplied, // Số dương để thể hiện điểm được hoàn lại
+        transactionType: "refund",
+        description: `Hoàn ${order.pointsApplied} điểm từ đơn hàng bị hủy #${order._id}`,
+        orderId: order._id,
+        pointsValue: order.pointsApplied,
+        expiryDate: null, // Điểm hoàn lại không hết hạn (hoặc có thể set expiry date nếu cần)
+      }], { session });
+      
+      logger.info(`Reverted ${order.pointsApplied} points for user ${order.userId} and created refund transaction`);
     }
 
     await session.commitTransaction();
@@ -457,6 +514,11 @@ export const placeOrder = async (userId, { previewOrder: clientPreview }) => {
 
   // Step 3: Execute all post-creation side effects (stock, vouchers, points).
   await _executePostOrderActions(newOrder);
+
+  // Step 4: Remove ordered items from cart
+  const orderedProductIds = newOrder.orderLines.map(line => line.productId);
+  await cartService.removeOrderedItemsFromCart(userId, orderedProductIds);
+  logger.info(`Removed ${orderedProductIds.length} items from cart for user ${userId}`);
 
   // Create persistent notification for admin
   const user = await User.findById(userId).select("name").lean();
@@ -520,6 +582,11 @@ export const placeMomoOrder = async (userId, { previewOrder: clientPreview }) =>
 
   // Step 3: Execute all post-creation side effects (stock, vouchers, points).
   await _executePostOrderActions(newOrder);
+
+  // Step 4: Remove ordered items from cart
+  const orderedProductIds = newOrder.orderLines.map(line => line.productId);
+  await cartService.removeOrderedItemsFromCart(userId, orderedProductIds);
+  logger.info(`Removed ${orderedProductIds.length} items from cart for user ${userId}`);
 
   const payUrl = await createMomoPaymentUrl(newOrder);
 

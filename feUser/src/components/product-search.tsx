@@ -32,7 +32,7 @@ export function ProductSearch({ onSearch, initialFilters = {} }: ProductSearchPr
     maxPrice: initialFilters.maxPrice || (searchParams.get("maxPrice") ? Number(searchParams.get("maxPrice")) : undefined),
     minRating: initialFilters.minRating || (searchParams.get("minRating") ? Number(searchParams.get("minRating")) : undefined),
     inStock: initialFilters.inStock ?? (searchParams.get("inStock") ? searchParams.get("inStock") === "true" : undefined),
-    sortBy: (initialFilters.sortBy || searchParams.get("sortBy") || "createdAt") as SearchFilters["sortBy"],
+    sortBy: (initialFilters.sortBy || searchParams.get("sortBy") || "relevance") as SearchFilters["sortBy"],
     sortOrder: (initialFilters.sortOrder || searchParams.get("sortOrder") || "desc") as SearchFilters["sortOrder"],
     page: 1,
     limit: 12,
@@ -62,6 +62,10 @@ export function ProductSearch({ onSearch, initialFilters = {} }: ProductSearchPr
       minPrice: priceRange[0] > 0 ? priceRange[0] : undefined,
       maxPrice: priceRange[1] < 1000000 ? priceRange[1] : undefined,
       page: 1, // Reset về trang đầu khi search mới
+      // Tự động chuyển sang sắp xếp theo độ liên quan khi có keyword
+      sortBy: filters.keyword && filters.keyword.trim() && filters.sortBy === 'relevance' 
+        ? 'relevance' 
+        : filters.sortBy,
     };
 
     onSearch(searchFilters);
@@ -85,7 +89,7 @@ export function ProductSearch({ onSearch, initialFilters = {} }: ProductSearchPr
       maxPrice: undefined,
       minRating: undefined,
       inStock: undefined,
-      sortBy: "createdAt",
+      sortBy: "relevance",
       sortOrder: "desc",
       page: 1,
       limit: 12,
@@ -236,6 +240,7 @@ function FilterContent({ filters, setFilters, priceRange, setPriceRange, onSearc
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="relevance">🎯 Liên quan nhất</SelectItem>
                   <SelectItem value="createdAt">📅 Mới nhất</SelectItem>
                   <SelectItem value="name">🔤 Tên</SelectItem>
                   <SelectItem value="price">💰 Giá</SelectItem>

@@ -10,17 +10,26 @@ const addViewHistory = async (userId, productId) => {
     throw new AppError("Sản phẩm không tồn tại", 404);
   }
 
-  // Tạo record mới trong lịch sử xem
-  const viewHistory = await ViewHistory.create({
-    userId,
-    productId,
-    viewedAt: new Date(),
-  });
-
-  return await ViewHistory.findById(viewHistory._id).populate({
+  // Tìm và cập nhật hoặc tạo mới (upsert)
+  // Nếu đã tồn tại: tăng viewCount và cập nhật viewedAt
+  // Nếu chưa tồn tại: tạo mới với viewCount = 1
+  const viewHistory = await ViewHistory.findOneAndUpdate(
+    { userId, productId },
+    {
+      $inc: { viewCount: 1 },
+      $set: { viewedAt: new Date() }
+    },
+    {
+      upsert: true,
+      new: true,
+      setDefaultsOnInsert: true
+    }
+  ).populate({
     path: "productId",
     select: "slug name price images discount",
   });
+
+  return viewHistory;
 };
 
 // Lấy lịch sử xem của user với phân trang
@@ -78,18 +87,11 @@ const getRecentlyViewedProducts = async (userId, limit = 10) => {
   const pipeline = [
     { $match: { userId: userId } },
     { $sort: { viewedAt: -1 } },
-    {
-      $group: {
-        _id: "$productId",
-        lastViewed: { $first: "$viewedAt" },
-      },
-    },
-    { $sort: { lastViewed: -1 } },
     { $limit: limit },
     {
       $lookup: {
         from: "products",
-        localField: "_id",
+        localField: "productId",
         foreignField: "_id",
         as: "product",
       },
@@ -103,7 +105,8 @@ const getRecentlyViewedProducts = async (userId, limit = 10) => {
         price: "$product.price",
         images: "$product.images",
         discount: "$product.discount",
-        lastViewed: 1,
+        viewCount: 1,
+        lastViewed: "$viewedAt",
       },
     },
   ];

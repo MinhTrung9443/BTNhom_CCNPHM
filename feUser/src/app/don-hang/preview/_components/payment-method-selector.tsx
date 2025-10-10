@@ -23,13 +23,7 @@ const paymentMethods = [
     label: "Ví MoMo",
     description: "Thanh toán qua ví điện tử MoMo",
     icon: CreditCard,
-  },
-  {
-    value: "BANK" as PaymentMethod,
-    label: "Chuyển khoản ngân hàng",
-    description: "Chuyển khoản qua ngân hàng",
-    icon: Building2,
-  },
+  }
 ];
 
 export function PaymentMethodSelector({ selectedMethod, onMethodChange }: PaymentMethodSelectorProps) {

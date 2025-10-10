@@ -20,6 +20,7 @@ import { orderService } from "@/services/orderService";
 import { deliveryService } from "@/services/deliveryService";
 import { voucherService } from "@/services/voucherService";
 import { userService } from "@/services/userService";
+import { useCart } from "@/contexts/cart-context";
 
 interface PreviewClientProps {
   accessToken: string;
@@ -57,7 +58,7 @@ type PreviewAction =
   | { type: "SET_SELECTED_ITEMS"; payload: CartItem[] }
   | { type: "SET_PREVIEW_DATA"; payload: OrderPreview }
   | { type: "SET_DELIVERY_METHODS"; payload: DeliveryMethod[] }
-  | { type: "SET_DELIVERY_METHOD"; payload: string }
+  | { type: "SET_DELIVERY_METHOD"; payload: string | null }
   | { type: "SET_PAYMENT_METHOD"; payload: PaymentMethod }
   | { type: "SET_VOUCHERS"; payload: Voucher[] }
   | { type: "SET_VOUCHER"; payload: string | null }
@@ -139,6 +140,7 @@ function previewReducer(state: PreviewState, action: PreviewAction): PreviewStat
 export default function PreviewClient({ accessToken }: PreviewClientProps) {
   const router = useRouter();
   const [state, dispatch] = useReducer(previewReducer, initialState);
+  const { refreshCartCount } = useCart();
 
   // Fetch delivery methods và user points
   useEffect(() => {
@@ -152,9 +154,13 @@ export default function PreviewClient({ accessToken }: PreviewClientProps) {
 
         if (deliveryRes.success && deliveryRes.data) {
           dispatch({ type: "SET_DELIVERY_METHODS", payload: deliveryRes.data });
-          if (deliveryRes.data.length > 0) {
-            dispatch({ type: "SET_DELIVERY_METHOD", payload: deliveryRes.data[0].type });
+          // Chỉ mặc định chọn "Giao tiêu chuẩn" (standard) nếu có và active
+          // KHÔNG chọn express làm mặc định vì express yêu cầu địa chỉ Sóc Trăng
+          const activeStandardMethod = deliveryRes.data.find(m => m.type === 'standard' && m.isActive);
+          if (activeStandardMethod) {
+            dispatch({ type: "SET_DELIVERY_METHOD", payload: 'standard' });
           }
+          // Nếu không có standard active → để null, user phải chọn thủ công
         }
 
         if (pointsRes.success && pointsRes.data) {
@@ -207,7 +213,7 @@ export default function PreviewClient({ accessToken }: PreviewClientProps) {
         productId: item.productId._id,
         quantity: item.quantity,
       })),
-      shippingMethod: state.selectedDeliveryMethod as "express" | "regular" | "standard" | undefined,
+      shippingMethod: state.selectedDeliveryMethod as "express" | "standard" | undefined,
       voucherCode: state.selectedVoucher || undefined,
       pointsToApply: state.pointsApplied,
     };
@@ -215,7 +221,7 @@ export default function PreviewClient({ accessToken }: PreviewClientProps) {
     try {
       const response = await orderService.previewOrder(accessToken, requestData);
       if (response.success && response.data.previewOrder) {
-        
+
         dispatch({ type: "SET_PREVIEW_DATA", payload: response.data.previewOrder });
       } else {
         throw new Error(response.message);
@@ -257,6 +263,30 @@ export default function PreviewClient({ accessToken }: PreviewClientProps) {
 
   const handleFieldChange = (field: string, value: string) => {
     dispatch({ type: "SET_RECIPIENT_FIELD", payload: { field: field as keyof PreviewState, value } });
+
+    // Nếu thay đổi province và đang chọn express, kiểm tra lại
+    if (field === 'province' && state.selectedDeliveryMethod === 'express') {
+      const normalized = value.trim().toLowerCase();
+      const socTrangVariants = ["sóc trăng", "soc trang", "tỉnh sóc trăng", "tinh soc trang"];
+      const isSocTrang = socTrangVariants.some(variant => normalized.includes(variant));
+
+      if (!isSocTrang) {
+        // Tự động chuyển sang "Giao tiêu chuẩn" nếu có và active
+        const standardMethod = state.deliveryMethods.find(m => m.type === 'standard' && m.isActive);
+        if (standardMethod) {
+          dispatch({ type: "SET_DELIVERY_METHOD", payload: 'standard' });
+          toast.info("Thông báo", {
+            description: "Phương thức vận chuyển đã được chuyển sang Giao tiêu chuẩn do địa chỉ không thuộc tỉnh Sóc Trăng."
+          });
+        } else {
+          // Nếu không có standard active, reset về null
+          dispatch({ type: "SET_DELIVERY_METHOD", payload: null });
+          toast.warning("Thông báo", {
+            description: "Phương thức giao hỏa tốc chỉ áp dụng cho tỉnh Sóc Trăng. Vui lòng chọn phương thức vận chuyển khác."
+          });
+        }
+      }
+    }
   };
 
   const handleResetFields = (fields: ("district" | "ward")[]) => {
@@ -264,6 +294,26 @@ export default function PreviewClient({ accessToken }: PreviewClientProps) {
   };
 
   const handleDeliveryMethodChange = (methodType: string) => {
+    // Tìm phương thức được chọn
+    const selectedMethod = state.deliveryMethods.find(m => m.type === methodType);
+
+    // Kiểm tra phương thức có active không
+    if (selectedMethod && !selectedMethod.isActive) {
+      toast.error("Lỗi", { description: "Phương thức vận chuyển này hiện đang tạm ngưng" });
+      return;
+    }
+
+    // Kiểm tra nếu chọn express mà không phải Sóc Trăng thì không cho phép
+    if (methodType === 'express') {
+      const normalized = state.province.trim().toLowerCase();
+      const socTrangVariants = ["sóc trăng", "soc trang", "tỉnh sóc trăng", "tinh soc trang"];
+      const isSocTrang = socTrangVariants.some(variant => normalized.includes(variant));
+
+      if (!isSocTrang) {
+        toast.error("Lỗi", { description: "Phương thức giao hỏa tốc chỉ áp dụng cho địa chỉ tại tỉnh Sóc Trăng" });
+        return;
+      }
+    }
     dispatch({ type: "SET_DELIVERY_METHOD", payload: methodType });
   };
 
@@ -282,6 +332,12 @@ export default function PreviewClient({ accessToken }: PreviewClientProps) {
   };
 
   const handleCreateOrder = async () => {
+    // Validate phương thức vận chuyển
+    if (!state.selectedDeliveryMethod) {
+      toast.error("Lỗi", { description: "Vui lòng chọn phương thức vận chuyển" });
+      return;
+    }
+
     if (!state.previewData || !state.selectedPaymentMethod) {
       toast.error("Lỗi", { description: "Vui lòng chọn phương thức thanh toán" });
       return;
@@ -319,6 +375,8 @@ export default function PreviewClient({ accessToken }: PreviewClientProps) {
         if (response.success && response.data.payUrl) {
           toast.success("Thành công", { description: "Đang chuyển hướng đến MoMo để thanh toán..." });
           localStorage.removeItem("selectedCartItems");
+          // Refresh cart count
+          await refreshCartCount();
           // Chuyển hướng đến trang thanh toán MoMo
           window.location.href = response.data.payUrl;
         } else {
@@ -330,6 +388,8 @@ export default function PreviewClient({ accessToken }: PreviewClientProps) {
         if (response.success) {
           toast.success("Thành công", { description: "Đơn hàng của bạn đã được tạo." });
           localStorage.removeItem("selectedCartItems");
+          // Refresh cart count
+          await refreshCartCount();
           router.push(`/don-hang/${response.data._id}`);
         } else {
           throw new Error(response.message);
@@ -390,20 +450,44 @@ export default function PreviewClient({ accessToken }: PreviewClientProps) {
               <CardTitle>Sản phẩm đã chọn</CardTitle>
             </CardHeader>
             <CardContent>
-              {selectedItems.map((item) => (
-                <div key={item.productId._id} className="flex items-center gap-4 py-4 border-b last:border-b-0">
-                  <div className="w-20 h-20 bg-gray-200 rounded-lg relative overflow-hidden">
-                    <Image src={item.productId.images[0]} alt={item.productId.name} fill unoptimized sizes="80px" style={{ objectFit: "cover" }} />
+              {selectedItems.map((item) => {
+                const finalPrice = item.productId.discount > 0
+                  ? item.productId.price * (1 - item.productId.discount / 100)
+                  : item.productId.price;
+                const totalItemPrice = finalPrice * item.quantity;
+
+                return (
+                  <div key={item.productId._id} className="flex items-center gap-4 py-4 border-b last:border-b-0">
+                    <div className="w-20 h-20 bg-gray-200 rounded-lg relative overflow-hidden">
+                      <Image src={item.productId.images[0]} alt={item.productId.name} fill unoptimized sizes="80px" style={{ objectFit: "cover" }} />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold">{item.productId.name}</h3>
+                      <p className="text-sm text-gray-500">Số lượng: {item.quantity}</p>
+                      {item.productId.discount > 0 && (
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-sm text-gray-400 line-through">
+                            {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(item.productId.price)}
+                          </span>
+                          <span className="bg-red-100 text-red-600 text-xs font-semibold px-2 py-0.5 rounded">
+                            -{item.productId.discount}%
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-right">
+                      <div className="font-semibold text-green-600">
+                        {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(totalItemPrice)}
+                      </div>
+                      {item.productId.discount > 0 && (
+                        <div className="text-xs text-gray-400 line-through">
+                          {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(item.productId.price * item.quantity)}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <h3 className="font-semibold">{item.productId.name}</h3>
-                    <p className="text-sm text-gray-500">Số lượng: {item.quantity}</p>
-                  </div>
-                  <div className="font-semibold">
-                    {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(item.productId.price * item.quantity)}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </CardContent>
           </Card>
 
@@ -418,7 +502,14 @@ export default function PreviewClient({ accessToken }: PreviewClientProps) {
             deliveryMethods={deliveryMethods}
             selectedMethod={selectedDeliveryMethod}
             onMethodChange={handleDeliveryMethodChange}
+            province={province}
           />
+
+          {!selectedDeliveryMethod && (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-amber-800 text-sm">
+              ⚠️ Vui lòng chọn phương thức vận chuyển để tiếp tục đặt hàng
+            </div>
+          )}
 
           <PointsSelector
             availablePoints={state.availablePoints}
@@ -478,12 +569,18 @@ export default function PreviewClient({ accessToken }: PreviewClientProps) {
                   </span>
                 </div>
               </div>
-              <Button onClick={handleCreateOrder} className="w-full bg-green-600 hover:bg-green-700" disabled={isCreatingOrder}>
+              <Button 
+                onClick={handleCreateOrder} 
+                className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 disabled:cursor-not-allowed" 
+                disabled={isCreatingOrder || !selectedDeliveryMethod}
+              >
                 {isCreatingOrder ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                     {selectedPaymentMethod === "MOMO" ? "Đang tạo liên kết MoMo..." : "Đang xử lý..."}
                   </>
+                ) : !selectedDeliveryMethod ? (
+                  "Vui lòng chọn phương thức vận chuyển"
                 ) : selectedPaymentMethod === "MOMO" ? (
                   "Thanh toán qua MoMo"
                 ) : (

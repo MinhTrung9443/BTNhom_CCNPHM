@@ -23,14 +23,12 @@ import moment from "moment";
 
 const DELIVERY_TYPES = [
   { value: "express", label: "Giao hỏa tốc" },
-  { value: "regular", label: "Giao thường" },
-  { value: "standard", label: "Giao chuẩn" },
+  { value: "standard", label: "Giao tiêu chuẩn" },
 ];
 
 const DELIVERY_DESCRIPTIONS = {
-  express: "Giao hàng trong vòng 24 giờ.",
-  regular: "Giao hàng trong 3-5 ngày làm việc.",
-  standard: "Giao hàng trong 5-7 ngày làm việc.",
+  express: "Giao hàng trong vòng 24 giờ (chỉ áp dụng cho tỉnh Sóc Trăng).",
+  standard: "Giao hàng trong 3-5 ngày làm việc.",
 };
 
 const DeliveriesPage = () => {
@@ -41,12 +39,11 @@ const DeliveriesPage = () => {
   const [showModal, setShowModal] = useState(false);
   const [selectedDelivery, setSelectedDelivery] = useState(null);
   const [formState, setFormState] = useState({
-    type: "regular",
-    name: "Giao thường",
+    type: "standard",
+    name: "Giao tiêu chuẩn",
     price: 0,
     description: "Giao hàng trong 3-5 ngày làm việc.",
     estimatedDays: 3,
-    isActive: true,
   });
 
   useEffect(() => {
@@ -69,7 +66,6 @@ const DeliveriesPage = () => {
       price: delivery.price,
       description: delivery.description,
       estimatedDays: delivery.estimatedDays,
-      isActive: delivery.isActive,
     });
     setShowModal(true);
   };
@@ -81,7 +77,7 @@ const DeliveriesPage = () => {
 
   const handleFormChange = (e) => {
     const { name, value, type, checked } = e.target;
-    
+
     if (name === "type") {
       const selectedType = DELIVERY_TYPES.find((t) => t.value === value);
       setFormState((prev) => ({
@@ -139,11 +135,9 @@ const DeliveriesPage = () => {
                 <thead className="bg-light">
                   <tr>
                     <th>Loại</th>
-                    <th>Tên</th>
-                    <th>Giá</th>
+                    <th>Giá (VNĐ)</th>
                     <th>Mô tả</th>
-                    <th>Thời gian dự kiến</th>
-                    <th>Trạng thái</th>
+                    <th>Thời gian dự kiến (ngày)</th>
                     <th>Ngày tạo</th>
                     <th>Hành động</th>
                   </tr>
@@ -152,17 +146,13 @@ const DeliveriesPage = () => {
                   {deliveries.map((delivery) => (
                     <tr key={delivery._id}>
                       <td>
-                        <Badge bg="info">{delivery.type}</Badge>
-                      </td>
-                      <td className="fw-semibold">{delivery.name}</td>
-                      <td>{formatPrice(delivery.price)}</td>
-                      <td>{delivery.description}</td>
-                      <td>{delivery.estimatedDays} ngày</td>
-                      <td>
-                        <Badge bg={delivery.isActive ? "success" : "secondary"}>
-                          {delivery.isActive ? "Hoạt động" : "Không hoạt động"}
+                        <Badge bg={delivery.type === "express" ? "danger" : "info"}>
+                          {delivery.type === "express" ? "Hỏa tốc" : "Tiêu chuẩn"}
                         </Badge>
                       </td>
+                      <td className="fw-semibold">{formatPrice(delivery.price)}</td>
+                      <td style={{ maxWidth: "300px" }}>{delivery.description}</td>
+                      <td className="text-center">{delivery.estimatedDays}</td>
                       <td>{moment(delivery.createdAt).format("DD/MM/YYYY")}</td>
                       <td>
                         <Button
@@ -193,42 +183,17 @@ const DeliveriesPage = () => {
       {/* Edit Modal */}
       <Modal show={showModal} onHide={handleCloseModal}>
         <Modal.Header closeButton>
-          <Modal.Title>Chỉnh sửa phương thức vận chuyển</Modal.Title>
+          <Modal.Title>
+            Chỉnh sửa phương thức vận chuyển - {" "}
+            <Badge bg={formState.type === "express" ? "danger" : "info"}>
+              {formState.type === "express" ? "Hỏa tốc" : "Tiêu chuẩn"}
+            </Badge>
+          </Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <Form>
             <Form.Group className="mb-3">
-              <Form.Label>Loại vận chuyển</Form.Label>
-              <Form.Select
-                name="type"
-                value={formState.type}
-                onChange={handleFormChange}
-                disabled
-              >
-                {DELIVERY_TYPES.map((type) => (
-                  <option key={type.value} value={type.value}>
-                    {type.label}
-                  </option>
-                ))}
-              </Form.Select>
-              <Form.Text className="text-muted">
-                Không thể thay đổi loại vận chuyển
-              </Form.Text>
-            </Form.Group>
-
-            <Form.Group className="mb-3">
-              <Form.Label>Tên</Form.Label>
-              <Form.Control
-                type="text"
-                name="name"
-                value={formState.name}
-                onChange={handleFormChange}
-                readOnly
-              />
-            </Form.Group>
-
-            <Form.Group className="mb-3">
-              <Form.Label>Giá (VNĐ)</Form.Label>
+              <Form.Label>Giá (VNĐ) <span className="text-danger">*</span></Form.Label>
               <Form.Control
                 type="number"
                 name="price"
@@ -236,42 +201,44 @@ const DeliveriesPage = () => {
                 onChange={handleFormChange}
                 min="0"
                 required
+                placeholder="Nhập giá vận chuyển"
               />
+              <Form.Text className="text-muted">
+                Giá hiện tại: {formatPrice(formState.price)}
+              </Form.Text>
             </Form.Group>
 
             <Form.Group className="mb-3">
-              <Form.Label>Mô tả</Form.Label>
+              <Form.Label>Mô tả <span className="text-danger">*</span></Form.Label>
               <Form.Control
                 as="textarea"
-                rows={2}
+                rows={3}
                 name="description"
                 value={formState.description}
                 onChange={handleFormChange}
-                readOnly
+                required
+                placeholder="Nhập mô tả phương thức vận chuyển"
               />
+              <Form.Text className="text-muted">
+                Mô tả sẽ hiển thị cho khách hàng khi chọn phương thức vận chuyển
+              </Form.Text>
             </Form.Group>
 
             <Form.Group className="mb-3">
-              <Form.Label>Thời gian dự kiến (ngày)</Form.Label>
+              <Form.Label>Thời gian dự kiến (ngày) <span className="text-danger">*</span></Form.Label>
               <Form.Control
                 type="number"
                 name="estimatedDays"
                 value={formState.estimatedDays}
                 onChange={handleFormChange}
                 min="1"
+                max="30"
                 required
+                placeholder="Nhập số ngày dự kiến"
               />
-            </Form.Group>
-
-            <Form.Group>
-              <Form.Check
-                type="switch"
-                id="delivery-is-active"
-                label="Hoạt động"
-                name="isActive"
-                checked={formState.isActive}
-                onChange={handleFormChange}
-              />
+              <Form.Text className="text-muted">
+                Thời gian giao hàng dự kiến (từ 1-30 ngày)
+              </Form.Text>
             </Form.Group>
           </Form>
         </Modal.Body>
@@ -280,7 +247,8 @@ const DeliveriesPage = () => {
             Hủy
           </Button>
           <Button variant="primary" onClick={handleSubmit}>
-            Lưu
+            <i className="bi bi-check-circle me-1"></i>
+            Lưu thay đổi
           </Button>
         </Modal.Footer>
       </Modal>

@@ -140,7 +140,7 @@ export interface OrderPreviewRequest {
   }[];
   shippingAddress?: Partial<ShippingAddress>;
   voucherCode?: string;
-  shippingMethod?: "express" | "regular" | "standard";
+  shippingMethod?: "express" | "standard";
   pointsToApply?: number;
 }
 

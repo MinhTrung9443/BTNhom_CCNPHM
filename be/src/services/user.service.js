@@ -1,6 +1,6 @@
 import User from "../models/User.js";
 import Product from "../models/Product.js";
-import ProductView from "../models/ProductView.js";
+import ViewHistory from "../models/ViewHistory.js";
 import Favorite from "../models/Favorite.js";
 import { AppError } from "../utils/AppError.js";
 import mongoose from "mongoose";
@@ -143,9 +143,9 @@ const getFavorites = async (userId, page = 1, limit = 5, search = null) => {
 };
 
 const getRecentlyViewed = async (userId) => {
-  const views = await ProductView.find({ userId }).sort({ lastViewedAt: -1 }).limit(10).populate({
+  const views = await ViewHistory.find({ userId }).sort({ viewedAt: -1 }).limit(10).populate({
     path: "productId",
-    select: "name price images discount",
+    select: "name price images discount slug",
     model: "Product",
   });
 
