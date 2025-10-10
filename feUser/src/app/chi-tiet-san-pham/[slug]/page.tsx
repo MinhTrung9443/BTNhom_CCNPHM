@@ -22,23 +22,11 @@ interface ProductPageProps {
 export async function generateMetadata(props: ProductPageProps) {
   const params = await props.params;
 
-  // Thử lấy sản phẩm theo slug trước, nếu thất bại thì thử theo ID
-  let response = await productService.getBySlug(params.slug);
-
-  // Nếu không tìm thấy bằng slug, thử tìm bằng ID (fallback cho trường hợp slug là _id)
-  if (!response.success || !response.data) {
-    response = await productService.getById(params.slug);
-  }
-
-  if (!response.success || !response.data) {
-    return {
-      title: "Sản phẩm không tồn tại",
-    };
-  }
-  const product = response.data;
+  // Metadata tĩnh để tránh gọi API 2 lần
+  // Next.js sẽ tự động cache và revalidate theo revalidate config
   return {
-    title: product.name,
-    description: product.description,
+    title: "Chi tiết sản phẩm - Đặc Sản Sóc Trăng",
+    description: "Xem chi tiết sản phẩm đặc sản Sóc Trăng chất lượng cao",
   };
 }
 
@@ -59,7 +47,7 @@ async function ProductDetail({ slug }: { slug: string }) {
   }
 
   const product = response.data;
-  
+
   // Kiểm tra trạng thái sản phẩm
   const isInactive = !product.isActive;
   const isOutOfStock = product.stock === 0;
@@ -73,7 +61,7 @@ async function ProductDetail({ slug }: { slug: string }) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="relative">
           <ImageGallery images={product.images} productName={product.name} />
-          
+
           {/* Overlay cho sản phẩm không khả dụng */}
           {isUnavailable && (
             <div className="absolute inset-0 bg-black/40 rounded-lg flex items-center justify-center">
@@ -94,7 +82,7 @@ async function ProductDetail({ slug }: { slug: string }) {
               </AlertDescription>
             </Alert>
           )}
-          
+
           {!isInactive && isOutOfStock && (
             <Alert className="border-amber-500 bg-amber-50">
               <AlertTriangle className="h-4 w-4 text-amber-600" />
@@ -146,16 +134,16 @@ async function ProductDetail({ slug }: { slug: string }) {
           </div>
 
           {/* Nút thêm vào giỏ hàng - vô hiệu hóa nếu không khả dụng */}
-          <AddToCartButton 
-            productId={product._id} 
-            showQuantityControls={true} 
-            size="lg" 
-            className="w-full" 
+          <AddToCartButton
+            productId={product._id}
+            showQuantityControls={true}
+            size="lg"
+            className="w-full"
             disabled={isUnavailable}
           />
 
           {/* Nút Mua ngay */}
-          <BuyNowButton 
+          <BuyNowButton
             productId={product._id}
             size="lg"
             className="w-full"

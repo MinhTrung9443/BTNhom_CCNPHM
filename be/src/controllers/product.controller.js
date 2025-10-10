@@ -43,8 +43,10 @@ export const productController = {
   },
 
   async getProductBySlug(req, res, next) {
+    console.log("goi lan")
     const { slug } = req.params;
     const userId = req.user?._id; // Lấy userId nếu user đã đăng nhập
+    console.log({ slug, userId })
     const data = await productService.getProductDetailBySlug(slug, userId);
     res.status(200).json({ success: true, data });
   },
@@ -53,13 +55,6 @@ export const productController = {
     const { id } = req.params;
     const data = await productService.getRelatedProducts(id);
     res.status(200).json({ success: true, data });
-  },
-
-  async recordProductView(req, res, next) {
-    const { id: productId } = req.params;
-    const userId = req.user.id;
-    await productService.recordProductView(productId, userId);
-    res.status(200).json({ message: 'Đã ghi nhận lượt xem' });
   },
 
   async getProductById(req, res, next) {

@@ -17,5 +17,4 @@ router.post("/by-ids", productController.getProductsByIds);
 router.get("/slug/:slug", optionalAuth, productController.getProductBySlug); // Route slug phải đặt trước /:id
 router.get("/:id/related", productController.getRelatedProducts);
 router.get("/:id", optionalAuth, productController.getProductDetail);
-// router.post('/:id/view', protect, productController.recordProductView);
 export default router;
