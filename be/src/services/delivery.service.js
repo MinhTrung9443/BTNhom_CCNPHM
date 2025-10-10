@@ -3,7 +3,7 @@ import { NotFoundError, BadRequestError } from "../utils/AppError.js";
 
 export const deliveryService = {
   async getDeliveries(queryParams) {
-    const { page = 1, limit = 10, search, isActive } = queryParams;
+    const { page = 1, limit = 10, search } = queryParams;
     const skip = (page - 1) * limit;
 
     const filter = {};
@@ -14,10 +14,6 @@ export const deliveryService = {
         { description: { $regex: search, $options: "i" } },
         { type: { $regex: search, $options: "i" } },
       ];
-    }
-
-    if (isActive !== undefined) {
-      filter.isActive = isActive;
     }
 
     const [deliveries, total] = await Promise.all([
@@ -52,20 +48,19 @@ export const deliveryService = {
   },
 
   async updateDelivery(deliveryId, updateData) {
-    // Nếu cập nhật type, kiểm tra trùng lặp
-    if (updateData.type) {
-      const existingDelivery = await Delivery.findOne({
-        type: updateData.type,
-        _id: { $ne: deliveryId },
-      });
-      if (existingDelivery) {
-        throw new BadRequestError(`Phương thức vận chuyển với loại "${updateData.type}" đã tồn tại`);
+    // Không cho phép thay đổi type và name
+    const allowedFields = ['price', 'description', 'estimatedDays'];
+    const filteredData = {};
+    
+    allowedFields.forEach(field => {
+      if (updateData[field] !== undefined) {
+        filteredData[field] = updateData[field];
       }
-    }
+    });
 
     const delivery = await Delivery.findByIdAndUpdate(
       deliveryId,
-      updateData,
+      filteredData,
       { new: true, runValidators: true }
     );
 

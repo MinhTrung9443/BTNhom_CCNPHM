@@ -155,6 +155,16 @@ export const previewOrder = async (userId, { orderLines, shippingAddress, vouche
     throw new AppError("Vui lòng chọn sản phẩm để xem trước", 400);
   }
 
+  // Validate phương thức vận chuyển hỏa tốc chỉ áp dụng cho Sóc Trăng
+  if (shippingMethod === "express" && shippingAddress) {
+    const province = shippingAddress.province?.trim().toLowerCase();
+    const socTrangVariants = ["sóc trăng", "soc trang", "tỉnh sóc trăng", "tinh soc trang"];
+    
+    if (!province || !socTrangVariants.some(variant => province.includes(variant))) {
+      throw new AppError("Phương thức giao hỏa tốc chỉ áp dụng cho địa chỉ tại tỉnh Sóc Trăng", 400);
+    }
+  }
+
   let subtotal = 0;
   const unavailableItems = [];
   const processedOrderLines = [];

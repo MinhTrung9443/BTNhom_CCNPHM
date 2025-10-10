@@ -104,22 +104,22 @@ const voucherService = {
       };
 
       if (!voucher || !voucher.isActive) {
-        result.reason = "Voucher is not active.";
+        result.reason = "Voucher bị vô hiệu hóa";
         results.push(result);
         continue;
       }
       if (voucher.startDate > currentDate) {
-        result.reason = `Voucher becomes active on ${voucher.startDate.toLocaleDateString("vi-VN")}.`;
+        result.reason = `Voucher sẽ bắt đầu sau ${voucher.startDate.toLocaleDateString("vi-VN")}.`;
         results.push(result);
         continue;
       }
       if (voucher.endDate < currentDate) {
-        result.reason = "Voucher has expired.";
+        result.reason = "Voucher đã hết hạn.";
         results.push(result);
         continue;
       }
       if (subtotal < voucher.minPurchaseAmount) {
-        result.reason = `Requires minimum order value of ${voucher.minPurchaseAmount.toLocaleString("vi-VN")} VND.`;
+        result.reason = `Yêu cầu đơn hàng tối thiểu ${voucher.minPurchaseAmount.toLocaleString("vi-VN")} VND.`;
         results.push(result);
         continue;
       }
@@ -131,7 +131,7 @@ const voucherService = {
         const isProductApplicable = voucherProductIds.some((voucherProductId) => cartProductIdsSet.has(voucherProductId));
 
         if (!isProductApplicable) {
-          result.reason = "Voucher does not apply to items in the cart.";
+          result.reason = "Voucher không áp dụng cho 1 vài sản phẩm trong đơn hàng";
           results.push(result);
           continue;
         }
@@ -200,19 +200,19 @@ const voucherService = {
 
     const usageAggregates = voucherIds.length
       ? await UserVoucher.aggregate([
-          { $match: { voucherId: { $in: voucherIds } } },
-          {
-            $group: {
-              _id: "$voucherId",
-              totalAssigned: { $sum: 1 },
-              totalUsed: {
-                $sum: {
-                  $cond: [{ $eq: ["$isUsed", true] }, 1, 0],
-                },
+        { $match: { voucherId: { $in: voucherIds } } },
+        {
+          $group: {
+            _id: "$voucherId",
+            totalAssigned: { $sum: 1 },
+            totalUsed: {
+              $sum: {
+                $cond: [{ $eq: ["$isUsed", true] }, 1, 0],
               },
             },
           },
-        ])
+        },
+      ])
       : [];
 
     const usageStatsMap = new Map();
@@ -420,15 +420,15 @@ const voucherService = {
     const usageStats =
       voucher.type === "public"
         ? {
-            totalUsed: voucher.currentUsage ?? totalUsed,
-            totalAssigned: voucher.globalUsageLimit ?? null,
-            remainingUses: voucher.globalUsageLimit == null ? null : Math.max(voucher.globalUsageLimit - (voucher.currentUsage ?? totalUsed), 0),
-          }
+          totalUsed: voucher.currentUsage ?? totalUsed,
+          totalAssigned: voucher.globalUsageLimit ?? null,
+          remainingUses: voucher.globalUsageLimit == null ? null : Math.max(voucher.globalUsageLimit - (voucher.currentUsage ?? totalUsed), 0),
+        }
         : {
-            totalUsed,
-            totalAssigned,
-            remainingUses: Math.max(totalAssigned - totalUsed, 0),
-          };
+          totalUsed,
+          totalAssigned,
+          remainingUses: Math.max(totalAssigned - totalUsed, 0),
+        };
 
     return { voucher, usageStats };
   },
