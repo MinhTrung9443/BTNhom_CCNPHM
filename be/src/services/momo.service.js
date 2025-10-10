@@ -11,7 +11,11 @@ export const createMomoPaymentUrl = async (order) => {
   var ipnUrl = baseUrl + "/api/momo/callback";
   var requestType = "payWithMethod";
   var amount = order.totalAmount.toString();
-  var orderId = order._id.toString();
+
+  // ✅ Tạo orderId với timestamp để tránh trùng lặp
+  var originalOrderId = order._id.toString();
+  var timestamp = Date.now();
+  var orderId = `${originalOrderId}_${timestamp}`;
   var requestId = orderId;
   var extraData = "";
   var paymentCode =

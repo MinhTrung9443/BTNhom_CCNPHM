@@ -18,15 +18,6 @@ export const placeOrder = async (req, res) => {
   });
 };
 
-export const handleMomoCallback = async (req, res) => {
-  try {
-    const orderId = req.body.orderId;
-    const result = await OrderService.handleMomoCallback(orderId);
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
 
 export const retryMomoPayment = async (req, res) => {
   try {

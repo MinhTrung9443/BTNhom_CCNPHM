@@ -35,12 +35,10 @@ export const getUserOrders = async (userId, page = 1, limit = 10, status = null,
   // check valid ObjectId if search is _id
   if (search && mongoose.isValidObjectId(search)) {
     filter._id = new mongoose.Types.ObjectId(search);
+  } else if (search) {
+    const searchRegex = new RegExp(search, "i");
+    filter.$or = [{ "orderLines.productName": searchRegex }, { recipientName: searchRegex }, { phoneNumber: searchRegex }];
   }
-  else
-    if (search) {
-      const searchRegex = new RegExp(search, "i");
-      filter.$or = [{ "orderLines.productName": searchRegex }, { recipientName: searchRegex }, { phoneNumber: searchRegex }];
-    }
 
   const skip = (page - 1) * limit;
 
@@ -100,7 +98,7 @@ export const getAllOrders = async (page = 1, limit = 10, status = null, search =
 export const getLatestOrderAddress = async (userId) => {
   // Tìm đơn hàng gần nhất của user (đã hoàn thành hoặc đang xử lý)
   const latestOrder = await Order.findOne({
-    userId
+    userId,
   })
     .sort({ createdAt: -1 })
     .select("shippingAddress")
@@ -178,14 +176,14 @@ export const previewOrder = async (userId, { orderLines, shippingAddress, vouche
     const lineTotal = productActualPrice * line.quantity;
 
     subtotal += lineTotal;
-    
+
     // Lấy thông tin category nếu có
     let categoryName = null;
     if (product.categoryId) {
-      const category = await mongoose.model('Category').findById(product.categoryId).select('name').lean();
+      const category = await mongoose.model("Category").findById(product.categoryId).select("name").lean();
       categoryName = category?.name || null;
     }
-    
+
     processedOrderLines.push({
       productId: product._id,
       productCode: product.code,
@@ -215,7 +213,7 @@ export const previewOrder = async (userId, { orderLines, shippingAddress, vouche
         viewCount: product.viewCount || 0,
         capturedAt: new Date(),
       },
-    })
+    });
   }
 
   if (unavailableItems.length > 0) {
@@ -1232,7 +1230,9 @@ export const approveReturn = async (orderId) => {
   // Notify user that their return request was approved and refunded
   await Notification.create({
     title: "Yêu cầu trả hàng đã được chấp thuận",
-    message: `Yêu cầu trả hàng cho đơn #${orderId} đã được chấp thuận. Số tiền ${order.totalAmount.toLocaleString("vi-VN")} VNĐ sẽ được hoàn lại cho bạn.`,
+    message: `Yêu cầu trả hàng cho đơn #${orderId} đã được chấp thuận. Số tiền ${order.totalAmount.toLocaleString(
+      "vi-VN"
+    )} VNĐ sẽ được hoàn lại cho bạn.`,
     type: "order",
     referenceId: orderId,
     recipient: "user",
@@ -1288,7 +1288,9 @@ export const confirmOrderReceived = async (userId, orderId) => {
       // Gửi thông báo về xu nhận được
       await Notification.create({
         title: "Nhận điểm tích lũy",
-        message: `Bạn đã nhận ${loyaltyResult.earnedPoints} điểm từ đơn hàng #${orderNumber}. Xu sẽ hết hạn vào ${new Date(loyaltyResult.expiresAt).toLocaleDateString("vi-VN")}.`,
+        message: `Bạn đã nhận ${loyaltyResult.earnedPoints} điểm từ đơn hàng #${orderNumber}. Xu sẽ hết hạn vào ${new Date(
+          loyaltyResult.expiresAt
+        ).toLocaleDateString("vi-VN")}.`,
         type: "loyalty",
         referenceId: orderId,
         recipient: "user",
@@ -1311,10 +1313,13 @@ export const confirmOrderReceived = async (userId, orderId) => {
 export const updateMomoPaymentFromReturn = async (orderId, userId, paymentData) => {
   const { resultCode, transactionId, amount, message } = paymentData;
 
-  logger.info(`Updating MoMo payment from return for order ${orderId}: resultCode=${resultCode}`);
+  // ✅ Extract orderId gốc từ orderId có timestamp (format: originalOrderId_timestamp)
+  const originalOrderId = orderId.split("_")[0];
+
+  logger.info(`Updating MoMo payment from return for order ${orderId} (original: ${originalOrderId}): resultCode=${resultCode}`);
 
   const order = await Order.findOne({
-    _id: orderId,
+    _id: originalOrderId,
     userId: userId,
   });
 

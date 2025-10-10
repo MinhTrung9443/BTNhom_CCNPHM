@@ -18,6 +18,7 @@ export default function MomoReturnPage() {
   const [status, setStatus] = useState<"loading" | "success" | "failed">("loading");
   const [orderInfo, setOrderInfo] = useState<{
     orderId?: string;
+    displayOrderId?: string;
     amount?: string;
     resultCode?: string;
     message?: string;
@@ -33,8 +34,12 @@ export default function MomoReturnPage() {
       const message = searchParams.get("message");
       const transId = searchParams.get("transId");
 
+      // ✅ Extract orderId gốc để hiển thị cho user (bỏ timestamp)
+      const displayOrderId = orderId ? orderId.split("_")[0] : undefined;
+
       const orderData = {
-        orderId: orderId || undefined,
+        orderId: orderId || undefined, // orderId đầy đủ để gửi API
+        displayOrderId: displayOrderId, // orderId gốc để hiển thị
         amount: amount || undefined,
         resultCode: resultCode || undefined,
         message: message || undefined,
@@ -51,7 +56,7 @@ export default function MomoReturnPage() {
             console.log("Calling MoMo return API...");
             await orderService.momoReturn(session.user.accessToken, {
               orderId,
-              resultCode,
+              resultCode: resultCode || "",
               amount: amount || undefined,
               transId: transId || undefined,
               message: message || undefined,
@@ -77,7 +82,7 @@ export default function MomoReturnPage() {
           try {
             await orderService.momoReturn(session.user.accessToken, {
               orderId,
-              resultCode,
+              resultCode: resultCode || "",
               amount: amount || undefined,
               transId: transId || undefined,
               message: message || undefined,
@@ -131,10 +136,10 @@ export default function MomoReturnPage() {
             {status === "success" ? (
               <div className="space-y-3">
                 <p className="text-gray-600">Cảm ơn bạn đã thanh toán! Đơn hàng của bạn đã được xử lý thành công.</p>
-                {orderInfo.orderId && (
+                {orderInfo.displayOrderId && (
                   <div className="bg-green-50 p-4 rounded-lg">
                     <p className="text-sm text-green-800">
-                      <span className="font-medium">Mã đơn hàng:</span> #{orderInfo.orderId}
+                      <span className="font-medium">Mã đơn hàng:</span> #{orderInfo.displayOrderId}
                     </p>
                     {orderInfo.amount && (
                       <p className="text-sm text-green-800 mt-1">
@@ -160,8 +165,8 @@ export default function MomoReturnPage() {
             )}
 
             <div className="flex flex-col sm:flex-row gap-3 justify-center mt-8">
-              {status === "success" && orderInfo.orderId ? (
-                <Link href={`/don-hang/${orderInfo.orderId}`}>
+              {status === "success" && orderInfo.displayOrderId ? (
+                <Link href={`/don-hang/${orderInfo.displayOrderId}`}>
                   <Button className="w-full sm:w-auto">
                     <Receipt className="w-4 h-4 mr-2" />
                     Xem đơn hàng
