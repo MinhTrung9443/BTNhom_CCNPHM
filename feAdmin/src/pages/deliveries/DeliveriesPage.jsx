@@ -77,7 +77,7 @@ const DeliveriesPage = () => {
 
   const handleFormChange = (e) => {
     const { name, value, type, checked } = e.target;
-    
+
     if (name === "type") {
       const selectedType = DELIVERY_TYPES.find((t) => t.value === value);
       setFormState((prev) => ({

@@ -71,7 +71,7 @@ export interface SearchFilters {
   inStock?: boolean;
   page?: number;
   limit?: number;
-  sortBy?: "name" | "price" | "createdAt" | "averageRating" | "soldCount" | "viewCount";
+  sortBy?: "name" | "price" | "createdAt" | "averageRating" | "soldCount" | "viewCount" | "relevance";
   sortOrder?: "asc" | "desc";
 }
 

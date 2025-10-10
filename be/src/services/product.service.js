@@ -376,7 +376,7 @@ export const productService = {
     return Product.find({ '_id': { $in: ids } })
       .select('name slug price discount images stock');
   }
-,
+  ,
   async updateProduct(id, updateData) {
     const product = await Product.findByIdAndUpdate(id, updateData, {
       new: true,
@@ -435,24 +435,44 @@ export const productService = {
     ];
     const filter = [];
 
-    // Text search với fuzzy matching
+    // Text search với fuzzy + ưu tiên cụm dính nhau
     if (keyword && keyword.trim()) {
+      const trimmed = keyword.trim();
+
       must.push({
-        text: {
-          query: keyword.trim(),
-          path: ['name', 'description'],
-          fuzzy: { maxEdits: 2 }
+        compound: {
+          should: [
+            // Ưu tiên cụm dính nhau (phrase match, boost cao hơn)
+            {
+              phrase: {
+                query: trimmed,
+                path: ['name'],
+                slop: 1, // cho phép cách nhau tối đa 1 từ
+                score: { boost: { value: 5 } } // tăng trọng số
+              }
+            },
+            // Fuzzy matching (độ sai lệch nhỏ)
+            {
+              text: {
+                query: trimmed,
+                path: ['name'],
+                fuzzy: { maxEdits: 1 },
+                score: { boost: { value: 1 } }
+              }
+            }
+          ]
         }
       });
     }
 
+
     // Filter theo category
     if (categoryId) {
-      filter.push({ 
-        equals: { 
-          path: 'categoryId', 
-          value: new Product.base.Types.ObjectId(categoryId) 
-        } 
+      filter.push({
+        equals: {
+          path: 'categoryId',
+          value: new Product.base.Types.ObjectId(categoryId)
+        }
       });
     }
 
@@ -469,11 +489,11 @@ export const productService = {
 
     // Filter theo rating tối thiểu
     if (minRating !== null) {
-      filter.push({ 
-        range: { 
-          path: 'averageRating', 
-          gte: minRating 
-        } 
+      filter.push({
+        range: {
+          path: 'averageRating',
+          gte: minRating
+        }
       });
     }
 
@@ -494,11 +514,24 @@ export const productService = {
 
     // 2️⃣ Sort stage
     const sortStage = {};
-    sortStage[sortBy] = sortOrder === 'asc' ? 1 : -1;
-    if (sortBy !== 'createdAt') {
-      sortStage.createdAt = -1;
+    
+    // Nếu sắp xếp theo độ liên quan (relevance), dùng searchScore
+    if (sortBy === 'relevance') {
+      // Chỉ sắp xếp theo relevance khi có keyword tìm kiếm
+      if (keyword && keyword.trim()) {
+        sortStage.score = { $meta: 'searchScore' };
+      } else {
+        // Nếu không có keyword, fallback về sắp xếp theo createdAt
+        sortStage.createdAt = -1;
+      }
+    } else {
+      sortStage[sortBy] = sortOrder === 'asc' ? 1 : -1;
+      if (sortBy !== 'createdAt') {
+        sortStage.createdAt = -1;
+      }
+      pipeline.push({ $sort: sortStage });
     }
-    pipeline.push({ $sort: sortStage });
+    
 
     // 3️⃣ Pagination
     pipeline.push({ $skip: (page - 1) * limit });

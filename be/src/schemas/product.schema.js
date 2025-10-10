@@ -35,10 +35,10 @@ const searchProductsSchema = {
       'number.max': 'Số lượng sản phẩm trên trang không được vượt quá 100.'
     }),
     sortBy: Joi.string().valid(
-      'name', 'price', 'createdAt', 'averageRating', 'soldCount', 'viewCount'
+      'name', 'price', 'createdAt', 'averageRating', 'soldCount', 'viewCount', 'relevance'
     ).default('createdAt').messages({
       'string.base': 'Trường sắp xếp phải là một chuỗi ký tự.',
-      'any.only': 'Trường sắp xếp không hợp lệ. Chỉ cho phép: name, price, createdAt, averageRating, soldCount, viewCount.'
+      'any.only': 'Trường sắp xếp không hợp lệ. Chỉ cho phép: name, price, createdAt, averageRating, soldCount, viewCount, relevance.'
     }),
     sortOrder: Joi.string().valid('asc', 'desc').default('desc').messages({
       'string.base': 'Thứ tự sắp xếp phải là một chuỗi ký tự.',
