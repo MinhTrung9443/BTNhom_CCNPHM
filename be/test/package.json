@@ -1,0 +1,33 @@
+{
+  "name": "coupon-service-tests",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Branch coverage tests for coupon service",
+  "scripts": {
+    "test": "mocha test/*.test.js --timeout 10000 --require ./test/setup.js",
+    "test:coverage": "nyc mocha test/*.test.js --timeout 10000 --require ./test/setup.js",
+    "test:watch": "mocha test/*.test.js --timeout 10000 --require ./test/setup.js --watch",
+    "test:branch": "mocha test/couponService.branch.test.js --timeout 10000 --require ./test/setup.js"
+  },
+  "devDependencies": {
+    "mocha": "^10.2.0",
+    "chai": "^4.3.10",
+    "sinon": "^17.0.1",
+    "nyc": "^15.1.0",
+    "@babel/register": "^7.22.15"
+  },
+  "nyc": {
+    "reporter": [
+      "text",
+      "html",
+      "lcov"
+    ],
+    "exclude": [
+      "test/**",
+      "node_modules/**"
+    ],
+    "include": [
+      "src/services/coupon.service.js"
+    ]
+  }
+}

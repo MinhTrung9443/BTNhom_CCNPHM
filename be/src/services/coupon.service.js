@@ -35,8 +35,8 @@ export const couponService = {
         // Get categories for products in cart
         for (const item of cartItems) {
           const product = await Product.findById(item.productId);
-          if (product && product.category) {
-            categoryIds.push(product.category.toString());
+          if (product && product.categoryId) {
+            categoryIds.push(product.categoryId.toString());
           }
         }
 
@@ -107,7 +107,7 @@ export const couponService = {
         if (product) {
           products.push({
             productId: product._id,
-            category: product.category,
+            category: product.categoryId,
             price: product.price,
             quantity: item.quantity
           });

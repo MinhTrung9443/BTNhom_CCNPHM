@@ -1,0 +1,84 @@
+  getApplicableVouchers: async (userId, orderLines) => {
+    if (!orderLines [1] || orderLines.length === 0 [2]) {
+      throw new AppError("Please provide cart items.", 400); [3]
+    }
+
+    // 1. Calculate subtotal and get product IDs from the current cart
+    let subtotal = 0; [4]
+    const productIdsInCart = orderLines.map((line) => line.productId); [5]
+    const productsInCart = await Product.find({ _id: { $in: productIdsInCart } }).lean(); [6]
+
+    const productMap = productsInCart.reduce((map, product) => {
+      map[product._id.toString()] = product;
+      return map;
+    }, {}); [7]
+
+    for (const line of orderLines) [8]{
+      const product = productMap[line.productId]; [9]
+      if (product) [10]{
+        const actualPrice = product.price * (1 - (product.discount || 0) / 100); 
+        subtotal += actualPrice * line.quantity; [11]
+      }
+    }
+
+    // 2. Get all unused vouchers for the user
+    const userVouchers = await UserVoucher.find({
+      userId: new mongoose.Types.ObjectId(userId),
+      isUsed: false,
+    }).populate("voucherId"); [12]
+
+    const currentDate = new Date();
+    const results = []; [13]
+
+    // 3. Check each voucher for applicability
+    for (const userVoucher of userVouchers) [14]{
+      const voucher = userVoucher.voucherId;
+      const result = {
+        ...voucher.toObject(),
+        isApplicable: false,
+        reason: "",
+      }; [15]
+
+      if (!voucher [16]|| !voucher.isActive [17]) {
+        result.reason = "Voucher is not active.";
+        results.push(result);
+        continue; [18]
+      }
+      if (voucher.startDate > currentDate [18]) {
+        result.reason = `Voucher becomes active on ${voucher.startDate.toLocaleDateString("vi-VN")}.`;
+        results.push(result);
+        continue; [19]
+      }
+      if (voucher.endDate < currentDate [20]) {
+        result.reason = "Voucher has expired.";
+        results.push(result);
+        continue; [21]
+      }
+      if (subtotal < voucher.minPurchaseAmount [22]) {
+        result.reason = `Requires minimum order value of ${voucher.minPurchaseAmount.toLocaleString("vi-VN")} VND.`;
+        results.push(result);
+        continue; [23]
+      }
+
+      const appliesToAllProducts = !voucher.applicableProducts || voucher.applicableProducts.length === 0; [24]
+      if (!appliesToAllProducts) [25]{
+        const cartProductIdsSet = new Set(productIdsInCart); [26]
+        const voucherProductIds = voucher.applicableProducts.map((id) => id.toString()); [27]
+        const isProductApplicable = voucherProductIds.some((voucherProductId) => cartProductIdsSet.has(voucherProductId)); [28]
+
+        if (!isProductApplicable) [29]{
+          result.reason = "Voucher does not apply to items in the cart.";
+          results.push(result);
+          continue; [30]
+        }
+      }
+
+      // If all checks pass
+      result.isApplicable = true;
+      result.reason = "Applicable.";
+      results.push(result); [31]
+    }
+
+    return results; [32]
+  },
+

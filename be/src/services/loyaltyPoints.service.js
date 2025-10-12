@@ -3,31 +3,77 @@ import logger from '../utils/logger.js';
 import AppError from '../utils/AppError.js';
 
 export const loyaltyPointsService = {
-  // Calculate points to earn based on order amount
+  // Tính điểm thưởng dựa trên số tiền đơn hàng
   calculatePointsToEarn: (orderAmount, pointsRate = 0.01) => {
-    // Default: 1 point per 100 VNĐ spent
+    // Mặc định: 1 điểm cho mỗi 100 VNĐ
     return Math.floor(orderAmount * pointsRate);
   },
 
-  // Award points for completed order
+  // Thưởng điểm cho đơn hàng đã hoàn thành
   awardPointsForOrder: async (userId, orderId, orderAmount, description = null) => {
     try {
-      const pointsToEarn = loyaltyPointsService.calculatePointsToEarn(orderAmount);
-
-      if (pointsToEarn <= 0) {
-        logger.info(`No points to award for order ${orderId}`);
+      // if #1: Kiểm tra userId hợp lệ
+      if (!userId) {
+        logger.warn('Thiếu userId khi thưởng điểm.');
         return null;
       }
 
+      // if #2: Kiểm tra orderId hợp lệ
+      if (!orderId) {
+        logger.warn('Thiếu orderId khi thưởng điểm.');
+        return null;
+      }
+
+      // if #3: Kiểm tra orderAmount hợp lệ
+      if (orderAmount === null || orderAmount === undefined) {
+        logger.warn(`orderAmount không hợp lệ: ${orderAmount}`);
+        return null;
+      }
+
+      // Tính điểm
+      const pointsToEarn = loyaltyPointsService.calculatePointsToEarn(orderAmount);
+
+      // if #4: Nếu không có điểm để thưởng
+      if (pointsToEarn <= 0) {
+        logger.info(`Không có điểm để thưởng cho đơn hàng ${orderId}`);
+        return null;
+      } else {
+        logger.debug(`Số điểm sẽ thưởng: ${pointsToEarn}`);
+      }
+
+      // if #5: Xử lý description
+      let finalDescription;
+      if (description) {
+        finalDescription = description;
+      } else {
+        finalDescription = `Đặt hàng #${orderId} - ${orderAmount.toLocaleString('vi-VN')} VNĐ`;
+      }
+
+      // if #6: Log trước khi thưởng điểm
+      if (pointsToEarn > 0) {
+        logger.info(`Chuẩn bị thưởng ${pointsToEarn} điểm cho người dùng ${userId}`);
+      }
+
+      // Ghi nhận giao dịch thưởng điểm
       const transaction = await LoyaltyPoints.earnPoints(
         userId,
         pointsToEarn,
-        description || `Đặt hàng #${orderId} - ${orderAmount.toLocaleString('vi-VN')} VNĐ`,
+        finalDescription,
         orderId,
         { orderAmount }
       );
 
-      logger.info(`Awarded ${pointsToEarn} points to user ${userId} for order ${orderId}`);
+      // if #7: Kiểm tra kết quả trả về từ DB
+      if (!transaction) {
+        logger.error(`Không thể ghi nhận giao dịch thưởng điểm cho đơn hàng ${orderId}`);
+        return null;
+      }
+
+      // if #8: Log thành công
+      if (transaction) {
+        logger.info(`Đã thưởng ${pointsToEarn} điểm cho người dùng ${userId} cho đơn hàng ${orderId}`);
+      }
+
       return transaction;
     } catch (error) {
       logger.error(`Lỗi award points for order: ${error.message}`);
@@ -35,31 +81,7 @@ export const loyaltyPointsService = {
     }
   },
 
-  // Redeem points for discount
-  redeemPointsForDiscount: async (userId, pointsToRedeem, discountValue, couponId = null) => {
-    try {
-      const userTotalPoints = await LoyaltyPoints.getUserTotalPoints(userId);
 
-      if (userTotalPoints < pointsToRedeem) {
-        throw new AppError('Không đủ điểm để đổi', 400);
-      }
-
-      const transaction = await LoyaltyPoints.redeemPoints(
-        userId,
-        pointsToRedeem,
-        `Đổi ${pointsToRedeem} điểm thành ${discountValue.toLocaleString('vi-VN')} VNĐ`,
-        discountValue,
-        couponId,
-        { discountValue }
-      );
-
-      logger.info(`User ${userId} redeemed ${pointsToRedeem} points for ${discountValue} VNĐ`);
-      return transaction;
-    } catch (error) {
-      logger.error(`Lỗi redeem points: ${error.message}`);
-      throw error;
-    }
-  },
 
   // Get user's available points
   getUserAvailablePoints: async (userId) => {

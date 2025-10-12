@@ -138,28 +138,53 @@ export const getDashboardStats = async () => {
   };
 };
 export const getAllProductsForAdmin = async (queryParams) => {
-  const page = parseInt(queryParams.page) || 1;
-  const limit = parseInt(queryParams.limit) || 10;
-  const skip = (page - 1) * limit;
-  const { search, category, sortBy, isActive } = queryParams;
+  // Xử lý page và limit
+  let page = parseInt(queryParams.page);
+  if (!page || page <= 0) page = 1;
 
+  let limit = parseInt(queryParams.limit);
+  if (!limit || limit <= 0) limit = 10;
+
+  const skip = (page - 1) * limit;
+
+  // Lấy tham số lọc
+  const { search, category, sortBy, isActive } = queryParams;
   const filter = {};
+
+  // 1. Lọc theo search
   if (search) {
     filter.name = { $regex: search, $options: 'i' };
   }
+
+  // 2. Lọc theo category
   if (category) {
     filter.categoryId = category;
   }
+
+  // 3. Lọc theo trạng thái
   if (isActive !== undefined && isActive !== '') {
     filter.isActive = isActive === 'true';
   }
 
+  // 4. Xử lý sort mặc định
   let sort = { createdAt: -1 };
+
+  // 5. Nếu có sortBy
   if (sortBy) {
     const [sortField, sortOrder] = sortBy.split(':');
-    sort = { [sortField]: sortOrder === 'desc' ? -1 : 1 };
+
+    // 6. Nếu có field sắp xếp
+    if (sortField) {
+      // 7. Xác định chiều sắp xếp
+      if (sortOrder === 'desc') {
+        sort = { [sortField]: -1 };
+      } else {
+        sort = { [sortField]: 1 };
+      }
+    }
   }
 
+  // 8. Lấy dữ liệu từ DB
   const [products, total] = await Promise.all([
     Product.find(filter)
       .populate('categoryId', 'name')
@@ -179,6 +204,7 @@ export const getAllProductsForAdmin = async (queryParams) => {
     },
   };
 };
+
 export const getSalesChartData = async (period) => {
   let groupBy, fromDate;
   const now = new Date();
