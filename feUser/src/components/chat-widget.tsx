@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Send, X, MessageCircle, Minimize2 } from "lucide-react";
+import { Send, X, MessageCircle, Minimize2, Headphones, HelpCircle } from "lucide-react";
 import "@/styles/chat-widget.css";
 
 interface Message {
@@ -137,12 +137,15 @@ export default function ChatWidget() {
           <Button
             onClick={handleOpenChat}
             size="lg"
-            className={`rounded-full h-14 w-14 bg-green-600 hover:bg-green-700 shadow-lg relative transition-all duration-200 ${
+            className={`rounded-full h-14 w-14 bg-blue-600 hover:bg-blue-700 shadow-lg relative transition-all duration-200 ${
               hasNewMessage ? "chat-button-pulse" : ""
             }`}
             suppressHydrationWarning
           >
-            <MessageCircle className="h-6 w-6" />
+            <div className="relative">
+              <Headphones className="h-6 w-6" />
+              <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+            </div>
             {hasNewMessage && <div className="new-message-indicator"></div>}
           </Button>
         )}
