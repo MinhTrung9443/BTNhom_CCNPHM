@@ -15,7 +15,8 @@ import { ReturnOrderDialog } from "@/components/return-order-dialog";
 import { ConfirmReceivedDialog } from "@/components/confirm-received-dialog";
 import { RetryPaymentDialog } from "@/components/retry-payment-dialog";
 import type { Order } from "@/types/order";
-import { Package, ChevronRight, Clock } from "lucide-react";
+import { Package, ChevronRight, Clock, Timer, AlertTriangle } from "lucide-react";
+import { useState, useEffect } from "react";
 
 interface OrderCardProps {
   order: Order;
@@ -99,6 +100,46 @@ export function OrderCard({ order, onOrderUpdate }: OrderCardProps) {
     ["pending", "failed"].includes(order.payment.status) &&
     !["cancelled", "completed", "return_refund"].includes(order.status);
 
+  // Countdown timer cho thanh toán (30 phút từ khi tạo đơn)
+  const [timeLeft, setTimeLeft] = useState<number | null>(null);
+  const [isPaymentExpired, setIsPaymentExpired] = useState(false);
+
+  useEffect(() => {
+    if (!canRetryPayment) return;
+
+    const createdAt = new Date(order.createdAt).getTime();
+    const paymentDeadline = createdAt + 30 * 60 * 1000; // 30 phút
+    const now = Date.now();
+
+    if (now >= paymentDeadline) {
+      setIsPaymentExpired(true);
+      return;
+    }
+
+    const calculateTimeLeft = () => {
+      const now = Date.now();
+      const remaining = Math.max(0, paymentDeadline - now);
+
+      if (remaining === 0) {
+        setIsPaymentExpired(true);
+        return;
+      }
+
+      setTimeLeft(remaining);
+    };
+
+    calculateTimeLeft();
+    const interval = setInterval(calculateTimeLeft, 1000);
+
+    return () => clearInterval(interval);
+  }, [canRetryPayment, order.createdAt]);
+
+  const formatTimeLeft = (ms: number) => {
+    const minutes = Math.floor(ms / 60000);
+    const seconds = Math.floor((ms % 60000) / 1000);
+    return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+  };
+
   return (
     <Card className="hover:shadow-lg transition-all duration-200 overflow-hidden">
       {/* Header với trạng thái nổi bật */}
@@ -160,6 +201,31 @@ export function OrderCard({ order, onOrderUpdate }: OrderCardProps) {
           <span className="font-bold text-xl text-primary">{formatPrice(order.totalAmount)}</span>
         </div>
 
+        {/* Payment countdown timer */}
+        {canRetryPayment && !isPaymentExpired && timeLeft !== null && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 space-y-2">
+            <div className="flex items-center gap-2 text-yellow-800">
+              <Timer className="h-4 w-4" />
+              <span className="text-sm font-medium">Thời gian thanh toán còn lại</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-2xl font-bold text-yellow-700 font-mono">{formatTimeLeft(timeLeft)}</span>
+              <span className="text-xs text-yellow-600">Đơn hàng sẽ tự động hủy nếu không thanh toán</span>
+            </div>
+          </div>
+        )}
+
+        {/* Payment expired warning */}
+        {canRetryPayment && isPaymentExpired && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+            <div className="flex items-center gap-2 text-red-800">
+              <AlertTriangle className="h-4 w-4" />
+              <span className="text-sm font-medium">Thời gian thanh toán đã hết</span>
+            </div>
+            <p className="text-xs text-red-600 mt-1">Đơn hàng có thể bị hủy tự động. Vui lòng liên hệ hỗ trợ nếu cần thiết.</p>
+          </div>
+        )}
+
         {/* Actions - Buttons ở góc dưới bên phải */}
         <div className="flex justify-end gap-2">
           <Button asChild size="sm" className="font-semibold">
@@ -182,13 +248,19 @@ export function OrderCard({ order, onOrderUpdate }: OrderCardProps) {
 
           {canRequestReturn && <ReturnOrderDialog orderId={order._id} onSuccess={onOrderUpdate} variant="outline" className="h-9 px-3 text-sm" />}
 
-          {canRetryPayment && (
+          {canRetryPayment && !isPaymentExpired && (
             <RetryPaymentDialog
               orderId={order._id}
               onSuccess={onOrderUpdate}
               variant="default"
               className="h-9 px-3 text-sm bg-blue-600 hover:bg-blue-700"
             />
+          )}
+
+          {canRetryPayment && isPaymentExpired && (
+            <Button size="sm" variant="outline" disabled className="h-9 px-3 text-sm cursor-not-allowed opacity-50">
+              Hết hạn thanh toán
+            </Button>
           )}
         </div>
       </CardContent>

@@ -174,7 +174,7 @@ const orderSchema = new mongoose.Schema(
 
     // Thông tin hủy đơn
     cancelledAt: { type: Date },
-    cancelledBy: { type: String, enum: ["user", "admin"] },
+    cancelledBy: { type: String, enum: ["user", "admin", "system"] },
     cancelledReason: { type: String },
     cancellationRequestedAt: { type: Date },
     cancellationRequestReason: { type: String },
