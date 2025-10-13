@@ -30,9 +30,9 @@ router.get("/dashboard/stats", adminController.getDashboardStats);
 router.get("/dashboard/cash-flow", adminController.getCashFlowStats);
 router.get("/dashboard/sales-chart", adminController.getSalesChartData);
 router.get("/dashboard/top-products", adminController.getTopSellingProducts);
+router.get("/dashboard/delivered-orders", adminController.getDeliveredOrders);
 // Giữ lại route thống kê user cũ và bổ sung thêm nếu cần
 router.get("/users/stats", adminController.getUserStats);
-
 
 // === USER MANAGEMENT ROUTES ===
 
@@ -50,26 +50,11 @@ router.put("/products/:id", upload.array("images", 10), productController.update
 // // === COUPON MANAGEMENT ROUTES ===
 
 // === VOUCHER MANAGEMENT ROUTES ===
-router.post("/vouchers",
-  validate(adminCreateVoucherSchema),
-  voucherController.createVoucher
-);
-router.put("/vouchers/:id",
-  validate(adminUpdateVoucherSchema),
-  voucherController.updateVoucher
-);
-router.get("/vouchers",
-  validate(adminGetVouchersSchema),
-  voucherController.getAdminVouchers
-);
-router.get("/vouchers/:id",
-  validate(adminVoucherIdParamsSchema),
-  voucherController.getAdminVoucherById
-);
-router.delete("/vouchers/:id",
-  validate(adminVoucherIdParamsSchema),
-  voucherController.deactivateVoucher
-);
+router.post("/vouchers", validate(adminCreateVoucherSchema), voucherController.createVoucher);
+router.put("/vouchers/:id", validate(adminUpdateVoucherSchema), voucherController.updateVoucher);
+router.get("/vouchers", validate(adminGetVouchersSchema), voucherController.getAdminVouchers);
+router.get("/vouchers/:id", validate(adminVoucherIdParamsSchema), voucherController.getAdminVoucherById);
+router.delete("/vouchers/:id", validate(adminVoucherIdParamsSchema), voucherController.deactivateVoucher);
 // router.get('/coupons', adminController.getAllCoupons);
 // router.get('/coupons/stats', adminController.getCouponStats);
 // router.post('/coupons', adminController.createCoupon);
@@ -92,10 +77,7 @@ router.delete("/deliveries/:id", validate(deleteDeliverySchema), deliveryControl
 
 router.get("/loyalty-points", adminController.getAllLoyaltyPoints);
 router.get("/loyalty-points/stats", adminController.getLoyaltyStats);
-router.get(
-  "/loyalty-points/user/:userId",
-  adminController.getUserLoyaltyPoints
-);
+router.get("/loyalty-points/user/:userId", adminController.getUserLoyaltyPoints);
 router.post("/loyalty-points/adjust/:userId", adminController.adjustUserPoints);
 router.post("/loyalty-points/expire", adminController.expirePoints);
 
@@ -109,25 +91,16 @@ router.delete("/notifications/:id", deleteNotificationHandler);
 // === ORDER MANAGEMENT ROUTES ===
 router.get("/orders", orderController.getAllOrdersByAdmin);
 router.get("/orders/cancellation-requests", adminController.getOrdersWithCancellationRequests);
-router.get('/orders/pending-returns', orderController.getPendingReturns);
+router.get("/orders/pending-returns", orderController.getPendingReturns);
 
 router.get("/users/:userId/orders", orderController.getUserOrdersByAdmin);
-router.get(
-  "/orders/:orderId",
-  validate(getOrderById),
-  orderController.getOrderByAdmin
-);
+router.get("/orders/:orderId", validate(getOrderById), orderController.getOrderByAdmin);
 
 // === ORDER STATUS MANAGEMENT ===
-router.patch(
-  "/orders/:orderId/status",
-  validate(updateOrderStatus),
-  orderController.updateOrderStatusByAdmin
-);
+router.patch("/orders/:orderId/status", validate(updateOrderStatus), orderController.updateOrderStatusByAdmin);
 router.patch("/orders/:orderId/approve-cancellation", adminController.approveCancellationRequest);
 
 // === ADMIN ROUTES ===
-router.patch('/orders/:orderId/approve-return', orderController.approveReturn);
-
+router.patch("/orders/:orderId/approve-return", orderController.approveReturn);
 
 export default router;
