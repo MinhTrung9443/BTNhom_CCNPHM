@@ -1,39 +1,33 @@
-import { useEffect, useState } from 'react'
-import { Container, Row, Col, Card, Table, Button, Form, Badge, Modal } from 'react-bootstrap'
-import { useDispatch, useSelector } from 'react-redux'
-import { useParams, Link } from 'react-router-dom'
-import {
-  fetchOrderById,
-  updateOrderStatus,
-  addOrderNote,
-  approveCancellation,
-  clearOrder,
-} from "../../redux/slices/ordersSlice";
-import LoadingSpinner from '../../components/common/LoadingSpinner'
-import { toast } from 'react-toastify'
-import moment from 'moment'
-import React from 'react';
-import { getImageSrc, handleImageError } from '../../utils/imageUtils'
-import ProductSnapshotModal from '../../components/orders/ProductSnapshotModal'
+import { useEffect, useState } from "react";
+import { Container, Row, Col, Card, Table, Button, Form, Badge, Modal } from "react-bootstrap";
+import { useDispatch, useSelector } from "react-redux";
+import { useParams, Link } from "react-router-dom";
+import { fetchOrderById, updateOrderStatus, addOrderNote, approveCancellation, clearOrder } from "../../redux/slices/ordersSlice";
+import LoadingSpinner from "../../components/common/LoadingSpinner";
+import { toast } from "react-toastify";
+import moment from "moment";
+import React from "react";
+import { getImageSrc, handleImageError } from "../../utils/imageUtils";
+import ProductSnapshotModal from "../../components/orders/ProductSnapshotModal";
 
 const OrderDetailPage = () => {
-  const { orderId } = useParams()
-  const dispatch = useDispatch()
+  const { orderId } = useParams();
+  const dispatch = useDispatch();
   const { order, loading } = useSelector((state) => state.orders);
 
-  const [showStatusModal, setShowStatusModal] = useState(false)
-  const [showNoteModal, setShowNoteModal] = useState(false)
-  const [showCancellationModal, setShowCancellationModal] = useState(false)
-  const [showSnapshotModal, setShowSnapshotModal] = useState(false)
-  const [selectedOrderLine, setSelectedOrderLine] = useState(null)
+  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [showNoteModal, setShowNoteModal] = useState(false);
+  const [showCancellationModal, setShowCancellationModal] = useState(false);
+  const [showSnapshotModal, setShowSnapshotModal] = useState(false);
+  const [selectedOrderLine, setSelectedOrderLine] = useState(null);
   const [statusForm, setStatusForm] = useState({
-    status: '',
+    status: "",
     reason: "",
-  })
+  });
   const [noteForm, setNoteForm] = useState({
-    description: '',
-    metadata: {}
-  })
+    description: "",
+    metadata: {},
+  });
 
   useEffect(() => {
     if (orderId) {
@@ -47,11 +41,11 @@ const OrderDetailPage = () => {
   }, [dispatch, orderId]);
 
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND',
-    }).format(amount)
-  }
+    return new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
+    }).format(amount);
+  };
 
   const getStatusBadge = (status) => {
     const statusConfig = {
@@ -74,10 +68,10 @@ const OrderDetailPage = () => {
         bg: "warning",
       },
       refunded: { variant: "info", text: "Đã hoàn tiền" },
-    }
-    const config = statusConfig[status] || { variant: 'secondary', text: status }
-    return <Badge bg={config.variant}>{config.text}</Badge>
-  }
+    };
+    const config = statusConfig[status] || { variant: "secondary", text: status };
+    return <Badge bg={config.variant}>{config.text}</Badge>;
+  };
 
   const DETAILED_STATUS_TEXT = {
     preparing: "Chuẩn bị hàng",
@@ -93,11 +87,7 @@ const OrderDetailPage = () => {
       new: ["confirmed"],
       confirmed: ["preparing", "cancelled"],
       preparing: ["shipping_in_progress", "cancelled"],
-      shipping_in_progress: [
-        "delivered",
-        "delivery_failed",
-        "cancelled",
-      ],
+      shipping_in_progress: ["delivered", "delivery_failed", "cancelled"],
       cancellation_requested: ["cancelled"],
       delivery_failed: [], // Có thể cho phép giao lại?
       delivered: [], // Chỉ có user xác nhận completed
@@ -109,8 +99,8 @@ const OrderDetailPage = () => {
 
   const handleUpdateStatus = async () => {
     if (!statusForm.status) {
-      toast.error('Vui lòng chọn trạng thái')
-      return
+      toast.error("Vui lòng chọn trạng thái");
+      return;
     }
 
     try {
@@ -120,76 +110,77 @@ const OrderDetailPage = () => {
         metadata.reason = statusForm.reason.trim();
       }
 
-      await dispatch(updateOrderStatus({
-        orderId: order._id,
-        status: statusForm.status,
-        metadata,
-      })).unwrap()
-      toast.success('Cập nhật trạng thái thành công')
-      setShowStatusModal(false)
+      await dispatch(
+        updateOrderStatus({
+          orderId: order._id,
+          status: statusForm.status,
+          metadata,
+        })
+      ).unwrap();
+      toast.success("Cập nhật trạng thái thành công");
+      setShowStatusModal(false);
       setStatusForm({ status: "", reason: "" });
     } catch (error) {
-      toast.error(error || 'Có lỗi xảy ra')
+      toast.error(error || "Có lỗi xảy ra");
     }
-  }
+  };
 
   const handleApproveCancellation = async () => {
     try {
-      await dispatch(approveCancellation(order._id)).unwrap()
-      toast.success('Đã chấp nhận yêu cầu hủy đơn hàng thành công')
-      setShowCancellationModal(false)
+      await dispatch(approveCancellation(order._id)).unwrap();
+      toast.success("Đã chấp nhận yêu cầu hủy đơn hàng thành công");
+      setShowCancellationModal(false);
     } catch (error) {
-      toast.error(error || 'Có lỗi xảy ra khi chấp nhận yêu cầu hủy')
+      toast.error(error || "Có lỗi xảy ra khi chấp nhận yêu cầu hủy");
     }
-  }
-
+  };
 
   const getUserTypeText = (performedBy) => {
-    if (performedBy === 'system') {
-      return 'Hệ thống'
+    if (performedBy === "system") {
+      return "Hệ thống";
     }
-    if (performedBy === 'admin') {
-      return 'Quản trị viên'
+    if (performedBy === "admin") {
+      return "Quản trị viên";
     }
-    return 'Khách hàng'
-  }
+    return "Khách hàng";
+  };
 
   const isCancellationRequested = () => {
-    return order?.timeline?.some(item => item.status === 'cancellation_requested')
-  }
+    return order?.timeline?.some((item) => item.status === "cancellation_requested");
+  };
 
   const isCancellationApproved = () => {
     // Kiểm tra xem có yêu cầu hủy và đã được chấp nhận (status = cancelled)
-    return isCancellationRequested() && order?.status === 'cancelled'
-  }
+    return isCancellationRequested() && order?.status === "cancelled";
+  };
 
   const isPendingStatus = () => {
     // Kiểm tra xem trạng thái hiện tại có phải là pending không
     const lastStatus = order?.timeline?.[order.timeline.length - 1]?.status;
-    return lastStatus === 'new' || order?.status === 'pending'
-  }
+    return lastStatus === "new" || order?.status === "pending";
+  };
 
   const handleViewSnapshot = (orderLine) => {
-    setSelectedOrderLine(orderLine)
-    setShowSnapshotModal(true)
-  }
+    setSelectedOrderLine(orderLine);
+    setShowSnapshotModal(true);
+  };
 
   if (loading) {
-    return <LoadingSpinner />
+    return <LoadingSpinner />;
   }
 
   if (!order) {
     return (
       <Container fluid>
         <div className="text-center py-5">
-          <i className="bi bi-exclamation-triangle text-warning" style={{ fontSize: '3rem' }}></i>
+          <i className="bi bi-exclamation-triangle text-warning" style={{ fontSize: "3rem" }}></i>
           <h4 className="mt-3">Không tìm thấy đơn hàng</h4>
           <Link to="/orders" className="btn btn-primary mt-3">
             Quay lại danh sách đơn hàng
           </Link>
         </div>
       </Container>
-    )
+    );
   }
 
   return (
@@ -208,16 +199,12 @@ const OrderDetailPage = () => {
               onClick={() => setShowCancellationModal(true)}
               disabled={isCancellationApproved()}
             >
-              <i className={`bi ${isCancellationApproved() ? 'bi-check-circle-fill' : 'bi-check-lg'} me-2`}></i>
-              {isCancellationApproved() ? 'Đã chấp nhận yêu cầu hủy' : 'Chấp nhận yêu cầu hủy'}
+              <i className={`bi ${isCancellationApproved() ? "bi-check-circle-fill" : "bi-check-lg"} me-2`}></i>
+              {isCancellationApproved() ? "Đã chấp nhận yêu cầu hủy" : "Chấp nhận yêu cầu hủy"}
             </Button>
           )}
           {!isPendingStatus() && getStatusOptions(order.status).length > 0 && (
-            <Button
-              variant="primary"
-              onClick={() => setShowStatusModal(true)}
-              disabled={getStatusOptions().length === 0}
-            >
+            <Button variant="primary" onClick={() => setShowStatusModal(true)} disabled={getStatusOptions().length === 0}>
               <i className="bi bi-arrow-repeat me-2"></i>
               Cập nhật trạng thái
             </Button>
@@ -225,14 +212,25 @@ const OrderDetailPage = () => {
         </div>
       </div>
 
-      {isPendingStatus() && (
+      {isPendingStatus() && order.payment?.paymentMethod === "COD" && (
         <div className="alert alert-info d-flex align-items-center mb-4" role="alert">
-          <i className="bi bi-info-circle-fill me-2" style={{ fontSize: '1.5rem' }}></i>
+          <i className="bi bi-info-circle-fill me-2" style={{ fontSize: "1.5rem" }}></i>
           <div>
             <strong>Đơn hàng đang chờ xác nhận</strong>
             <p className="mb-0 small">
-              Đơn hàng này sẽ tự động được chuyển sang trạng thái "Đã xác nhận" sau 30 phút.
-              Admin không cần cập nhật thủ công.
+              Đơn hàng này sẽ tự động được chuyển sang trạng thái "Đã xác nhận" sau 30 phút. Admin không cần cập nhật thủ công.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {isPendingStatus() && order.payment?.paymentMethod === "MOMO" && (
+        <div className="alert alert-warning d-flex align-items-center mb-4" role="alert">
+          <i className="bi bi-exclamation-triangle-fill me-2" style={{ fontSize: "1.5rem" }}></i>
+          <div>
+            <strong>Người dùng chưa hoàn thành thanh toán</strong>
+            <p className="mb-0 small">
+              Đơn hàng MoMo này đang chờ khách hàng thanh toán. Nếu không thanh toán trong vòng 30 phút, đơn hàng sẽ tự động bị hủy.
             </p>
           </div>
         </div>
@@ -255,13 +253,11 @@ const OrderDetailPage = () => {
                     <strong>Trạng thái:</strong> {getStatusBadge(order.status)}
                   </div>
                   <div className="mb-3">
-                    <strong>Ngày tạo:</strong> {moment(order.createdAt).format('DD/MM/YYYY HH:mm')}
+                    <strong>Ngày tạo:</strong> {moment(order.createdAt).format("DD/MM/YYYY HH:mm")}
                   </div>
                   <div className="mb-3">
                     <strong>Tổng tiền:</strong>
-                    <span className="fw-bold text-primary ms-2">
-                      {formatCurrency(order.totalAmount)}
-                    </span>
+                    <span className="fw-bold text-primary ms-2">{formatCurrency(order.totalAmount)}</span>
                   </div>
                 </Col>
                 <Col md={6}>
@@ -272,7 +268,8 @@ const OrderDetailPage = () => {
                     <strong>Số điện thoại:</strong> {order.shippingAddress.phoneNumber}
                   </div>
                   <div className="mb-3">
-                    <strong>Địa chỉ:</strong> {`${order.shippingAddress.street}, ${order.shippingAddress.ward}, ${order.shippingAddress.district}, ${order.shippingAddress.province}`}
+                    <strong>Địa chỉ:</strong>{" "}
+                    {`${order.shippingAddress.street}, ${order.shippingAddress.ward}, ${order.shippingAddress.district}, ${order.shippingAddress.province}`}
                   </div>
                   {order.notes && (
                     <div className="mb-3">
@@ -287,7 +284,7 @@ const OrderDetailPage = () => {
                         <div className="mt-1">
                           <small className="text-success">
                             <i className="bi bi-check-circle-fill me-1"></i>
-                            Đã chấp nhận lúc {moment(order.cancelledAt).format('DD/MM/YYYY HH:mm')}
+                            Đã chấp nhận lúc {moment(order.cancelledAt).format("DD/MM/YYYY HH:mm")}
                           </small>
                         </div>
                       )}
@@ -323,7 +320,7 @@ const OrderDetailPage = () => {
                             src={getImageSrc(item.productImage, 50, 50)}
                             alt={item.productName}
                             className="rounded me-3"
-                            style={{ width: '50px', height: '50px', objectFit: 'cover' }}
+                            style={{ width: "50px", height: "50px", objectFit: "cover" }}
                             onError={(e) => handleImageError(e, 50, 50)}
                           />
                           <div>
@@ -333,9 +330,7 @@ const OrderDetailPage = () => {
                       </td>
                       <td>{formatCurrency(item.productPrice)}</td>
                       <td>{item.quantity}</td>
-                      <td className="fw-semibold">
-                        {formatCurrency(item.productPrice * item.quantity)}
-                      </td>
+                      <td className="fw-semibold">{formatCurrency(item.productPrice * item.quantity)}</td>
                       <td className="text-center">
                         {item.productSnapshot && (
                           <Button
@@ -354,10 +349,10 @@ const OrderDetailPage = () => {
                 </tbody>
                 <tfoot className="bg-light">
                   <tr>
-                    <th colSpan="3" className="text-end">Tổng cộng:</th>
-                    <th className="fw-bold text-primary">
-                      {formatCurrency(order.totalAmount)}
+                    <th colSpan="3" className="text-end">
+                      Tổng cộng:
                     </th>
+                    <th className="fw-bold text-primary">{formatCurrency(order.totalAmount)}</th>
                   </tr>
                 </tfoot>
               </Table>
@@ -386,32 +381,25 @@ const OrderDetailPage = () => {
                           <div className="d-flex justify-content-between align-items-start mb-1">
                             <div>
                               {getStatusBadge(item.status)}
-                              <small className="text-muted ms-2">
-                                {getUserTypeText(item.performedBy)}
-                              </small>
+                              <small className="text-muted ms-2">{getUserTypeText(item.performedBy)}</small>
                             </div>
-                            <small className="text-muted">
-                              {moment(item.timestamp).format('DD/MM HH:mm')}
-                            </small>
+                            <small className="text-muted">{moment(item.timestamp).format("DD/MM HH:mm")}</small>
                           </div>
                           <p className="mb-0 small">{item.description}</p>
                           {item.metadata?.reason && (
                             <p className="mb-0 small text-muted fst-italic">
-                              <i className="bi bi-chat-quote me-1"></i>
-                              "{item.metadata.reason}"
+                              <i className="bi bi-chat-quote me-1"></i>"{item.metadata.reason}"
                             </p>
                           )}
                         </div>
                       </div>
-                      {index < order.timeline.length - 1 && (
-                        <div className="timeline-line ms-3"></div>
-                      )}
+                      {index < order.timeline.length - 1 && <div className="timeline-line ms-3"></div>}
                     </div>
                   ))}
                 </div>
               ) : (
                 <div className="text-center py-3 text-muted">
-                  <i className="bi bi-clock-history" style={{ fontSize: '2rem' }}></i>
+                  <i className="bi bi-clock-history" style={{ fontSize: "2rem" }}></i>
                   <p className="mt-2 mb-0">Chưa có lịch sử</p>
                 </div>
               )}
@@ -429,10 +417,7 @@ const OrderDetailPage = () => {
           <Form>
             <Form.Group className="mb-3">
               <Form.Label>Trạng thái mới</Form.Label>
-              <Form.Select
-                value={statusForm.status}
-                onChange={(e) => setStatusForm(prev => ({ ...prev, status: e.target.value }))}
-              >
+              <Form.Select value={statusForm.status} onChange={(e) => setStatusForm((prev) => ({ ...prev, status: e.target.value }))}>
                 <option value="">Chọn trạng thái</option>
                 {getStatusOptions().map((status) => (
                   <option key={status} value={status}>
@@ -442,14 +427,14 @@ const OrderDetailPage = () => {
               </Form.Select>
             </Form.Group>
             <Form.Group className="mb-3">
-              <Form.Label>Mô tả <small className="text-muted">(tùy chọn)</small></Form.Label>
+              <Form.Label>
+                Mô tả <small className="text-muted">(tùy chọn)</small>
+              </Form.Label>
               <Form.Control
                 as="textarea"
                 rows={3}
                 value={statusForm.reason}
-                onChange={(e) =>
-                  setStatusForm((prev) => ({ ...prev, reason: e.target.value }))
-                }
+                onChange={(e) => setStatusForm((prev) => ({ ...prev, reason: e.target.value }))}
                 placeholder="Nhập lý do cập nhật (tùy chọn)"
               />
             </Form.Group>
@@ -488,9 +473,7 @@ const OrderDetailPage = () => {
               )}
             </div>
             <div className="mt-3">
-              <small className="text-muted">
-                Sau khi chấp nhận, đơn hàng sẽ được chuyển sang trạng thái "Đã hủy" và không thể hoàn tác.
-              </small>
+              <small className="text-muted">Sau khi chấp nhận, đơn hàng sẽ được chuyển sang trạng thái "Đã hủy" và không thể hoàn tác.</small>
             </div>
           </div>
         </Modal.Body>
@@ -506,13 +489,9 @@ const OrderDetailPage = () => {
       </Modal>
 
       {/* Product Snapshot Modal */}
-      <ProductSnapshotModal
-        show={showSnapshotModal}
-        onHide={() => setShowSnapshotModal(false)}
-        orderLine={selectedOrderLine}
-      />
+      <ProductSnapshotModal show={showSnapshotModal} onHide={() => setShowSnapshotModal(false)} orderLine={selectedOrderLine} />
     </Container>
-  )
-}
+  );
+};
 
-export default OrderDetailPage
+export default OrderDetailPage;
