@@ -193,16 +193,12 @@ export default function MyVouchersPage() {
                 const statusInfo = getStatusInfo(userVoucher.status);
 
                 return (
-                  <Card key={userVoucher._id} className="hover:shadow-md transition-shadow relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-green-500 to-green-600 rounded-bl-full flex items-start justify-end p-2">
-                      <Gift className="w-4 h-4 text-white" />
-                    </div>
-
+                  <Card key={userVoucher._id} className="hover:shadow-md transition-shadow border-l-4 border-l-green-500">
                     <CardContent className="p-6">
                       <div className="flex gap-6">
                         {/* Voucher Code & Discount */}
                         <div className="flex-shrink-0 text-center">
-                          <div className="w-20 h-20 bg-green-100 rounded-lg flex flex-col items-center justify-center mb-2">
+                          <div className="w-20 h-20 bg-gradient-to-br from-green-100 to-green-200 rounded-lg flex flex-col items-center justify-center mb-2 shadow-sm">
                             {userVoucher.voucher.discountType === "percentage" ? (
                               <Percent className="w-6 h-6 text-green-600" />
                             ) : (
@@ -214,9 +210,14 @@ export default function MyVouchersPage() {
 
                         {/* Voucher Details */}
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between mb-2">
-                            <h3 className="font-bold text-lg text-gray-900">{userVoucher.voucher.code}</h3>
-                            <Badge className={`${statusInfo.color} flex items-center gap-1`}>
+                          <div className="flex items-start justify-between gap-3 mb-3">
+                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                              <div className="bg-green-100 p-1.5 rounded-full flex-shrink-0">
+                                <Gift className="w-4 h-4 text-green-600" />
+                              </div>
+                              <h3 className="font-bold text-lg text-gray-900 truncate">{userVoucher.voucher.code}</h3>
+                            </div>
+                            <Badge className={`${statusInfo.color} flex items-center gap-1 flex-shrink-0`}>
                               {statusInfo.icon}
                               {statusInfo.label}
                             </Badge>

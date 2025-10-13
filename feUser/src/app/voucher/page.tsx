@@ -136,30 +136,31 @@ export default function VoucherPage() {
   };
 
   const VoucherCard = ({ voucher, isUpcoming = false }: { voucher: PublicVoucher; isUpcoming?: boolean }) => (
-    <Card className="hover:shadow-lg transition-shadow duration-300 relative overflow-hidden">
-      <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-green-500 to-green-600 rounded-bl-full flex items-start justify-end p-2">
-        <Gift className="w-4 h-4 text-white" />
-      </div>
-
+    <Card className="hover:shadow-lg transition-shadow duration-300 relative overflow-hidden border-l-4 border-l-green-500">
       <CardHeader className="pb-3">
-        <div className="flex justify-between items-start">
-          <div>
-            <h3 className="font-bold text-lg text-green-600">{voucher.code}</h3>
-            <div className="flex items-center gap-2 mt-1">
-              {voucher.discountType === "percentage" ? (
-                <Percent className="w-4 h-4 text-gray-500" />
-              ) : (
-                <DollarSign className="w-4 h-4 text-gray-500" />
-              )}
-              <span className="text-2xl font-bold text-gray-900">{formatDiscount(voucher)}</span>
+        <div className="space-y-3">
+          <div className="flex justify-between items-start gap-3">
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <div className="bg-green-100 p-2 rounded-full flex-shrink-0">
+                <Gift className="w-4 h-4 text-green-600" />
+              </div>
+              <h3 className="font-bold text-lg text-green-600 truncate">{voucher.code}</h3>
             </div>
+            {!isUpcoming && voucher.availableSlots !== null && (
+              <Badge variant="outline" className="bg-blue-50 border-blue-200 text-blue-700 whitespace-nowrap flex-shrink-0">
+                <Users className="w-3 h-3 mr-1" />
+                Còn {voucher.availableSlots}
+              </Badge>
+            )}
           </div>
-          {!isUpcoming && voucher.availableSlots !== null && (
-            <Badge variant="outline" className="ml-2">
-              <Users className="w-3 h-3 mr-1" />
-              Còn {voucher.availableSlots}
-            </Badge>
-          )}
+          <div className="flex items-center justify-center gap-2 bg-gradient-to-r from-green-50 to-green-100 rounded-lg py-3">
+            {voucher.discountType === "percentage" ? (
+              <Percent className="w-5 h-5 text-green-600" />
+            ) : (
+              <DollarSign className="w-5 h-5 text-green-600" />
+            )}
+            <span className="text-3xl font-bold text-green-700">{formatDiscount(voucher)}</span>
+          </div>
         </div>
       </CardHeader>
 
