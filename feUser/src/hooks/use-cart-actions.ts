@@ -22,19 +22,17 @@ export function useCartActions() {
                 productId,
                 quantity,
             });
-            console.log('response', response.message);
-            // Cập nhật cart count optimistically
-            incrementCartCount(quantity);
+            
             toast.success(response.message || 'Đã thêm sản phẩm vào giỏ hàng');
 
-            // Refresh để đảm bảo chính xác (optional, có thể bỏ nếu muốn tối ưu)
+            // Refresh cart count từ API để đảm bảo chính xác
             await refreshCartCount();
 
             return true;
 
         } catch (error) {
             console.error('Add to cart error:', error);
-            toast.error(error.response.data.message || 'Có lỗi xảy ra khi thêm sản phẩm vào giỏ hàng');
+            toast.error(error.response?.data?.message || 'Có lỗi xảy ra khi thêm sản phẩm vào giỏ hàng');
             return false;
         }
     };

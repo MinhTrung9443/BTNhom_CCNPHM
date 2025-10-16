@@ -25,5 +25,5 @@ digest.txt
 /feAdmin/node_modules
 /feAdmin/dist
 /feAdmin/.env
-
-feUser/.github/copilot-instructions.md
+feUser/.github
+feUser/.env.local

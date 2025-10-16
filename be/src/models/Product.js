@@ -81,13 +81,26 @@ productSchema.pre("save", async function (next) {
   try {
     // Sinh code tự động nếu là document mới và chưa có code
     if (this.isNew && !this.code) {
-      const lastProduct = await this.constructor.findOne({}, {}, { sort: { 'code': -1 } });
-      let nextId = 1;
+      // Sử dụng timestamp để đảm bảo tính duy nhất
+      const timestamp = Date.now();
+      const randomSuffix = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+      
+      // Lấy số thứ tự từ database
+      const lastProduct = await this.constructor.findOne({}, { code: 1 }, { sort: { createdAt: -1 } }).lean();
+      let sequenceNumber = 1;
+      
       if (lastProduct && lastProduct.code) {
-        const lastId = parseInt(lastProduct.code.split('-')[1], 10);
-        nextId = lastId + 1;
+        // Parse số thứ tự từ code cũ (format: PRD-XXXXX hoặc PRD-XXXXX-timestamp)
+        const codeParts = lastProduct.code.split('-');
+        const oldSequence = parseInt(codeParts[1], 10);
+        if (!isNaN(oldSequence)) {
+          sequenceNumber = oldSequence + 1;
+        }
       }
-      this.code = `PRD-${String(nextId).padStart(5, "0")}`;
+      
+      // Format: PRD-{sequence 5 digits}-{timestamp last 6 digits}{random 3 digits}
+      const timestampPart = timestamp.toString().slice(-6);
+      this.code = `PRD-${String(sequenceNumber).padStart(5, "0")}-${timestampPart}${randomSuffix}`;
     }
 
     // Sinh slug tự động nếu chưa có hoặc tên bị thay đổi

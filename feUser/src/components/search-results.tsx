@@ -8,7 +8,7 @@ import { SearchProduct, SearchResponse } from '@/types/product';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { cartService } from '@/services/cartService';
+import { useCartActions } from '@/hooks/use-cart-actions';
 import { toast } from 'sonner';
 import { useSession } from 'next-auth/react';
 
@@ -172,6 +172,7 @@ interface SearchProductCardProps {
 function SearchProductCard({ product }: SearchProductCardProps) {
   const { data: session } = useSession();
   const [isLoading, setIsLoading] = useState(false);
+  const { addToCart } = useCartActions();
 
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -184,19 +185,7 @@ function SearchProductCard({ product }: SearchProductCardProps) {
 
     setIsLoading(true);
     try {
-      const response = await cartService.addItem(session.user.accessToken, {
-        productId: product._id,
-        quantity: 1,
-      });
-
-      if (response.success) {
-        toast.success(`Đã thêm "${product.name}" vào giỏ hàng.`);
-      } else {
-        toast.error(response.message || 'Không thể thêm sản phẩm.');
-      }
-    } catch (error) {
-      console.error('Failed to add to cart:', error);
-      toast.error('Không thể thêm sản phẩm. Vui lòng thử lại.');
+      await addToCart(product._id, 1);
     } finally {
       setIsLoading(false);
     }
@@ -249,7 +238,7 @@ function SearchProductCard({ product }: SearchProductCardProps) {
           <div className="space-y-2">
             {/* Category */}
             <div className="text-xs text-green-600 font-medium uppercase tracking-wide">
-              {product.category.name}
+              {product.category?.name || "Chưa phân loại"}
             </div>
 
             {/* Product Name */}

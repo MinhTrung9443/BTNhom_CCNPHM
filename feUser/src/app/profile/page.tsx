@@ -130,6 +130,18 @@ export default function ProfilePage() {
       return;
     }
 
+    // Validate phone number
+    if (formData.phone && !/^\d+$/.test(formData.phone)) {
+      setError("Số điện thoại chỉ được chứa số");
+      return;
+    }
+
+    // Validate phone number length (10-11 digits for Vietnam)
+    if (formData.phone && (formData.phone.length < 10 || formData.phone.length > 11)) {
+      setError("Số điện thoại phải có 10-11 chữ số");
+      return;
+    }
+
     setSaving(true);
     setError("");
     setSuccess("");

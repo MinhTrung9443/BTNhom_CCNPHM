@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Product } from '@/types/product';
-import { cartService } from '@/services/cartService';
+import { useCartActions } from '@/hooks/use-cart-actions';
 import { FavoriteButton } from './favorite-button';
 
 // Kiểu dữ liệu linh hoạt cho ProductCard, chỉ yêu cầu các trường cần thiết
@@ -23,8 +23,9 @@ interface ProductCardProps {
 
 export default function ProductCard({ product, isFavorited }: ProductCardProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const { data: session, status } = useSession();
+  const { status } = useSession();
   const router = useRouter();
+  const { addToCart } = useCartActions();
 
   const handleAddToCart = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault(); // Ngăn Link bao ngoài điều hướng
@@ -38,19 +39,7 @@ export default function ProductCard({ product, isFavorited }: ProductCardProps) 
 
     setIsLoading(true);
     try {
-      const response = await cartService.addItem(session.user.accessToken, {
-        productId: product._id,
-        quantity: 1,
-      });
-
-      if (response.success) {
-        toast.success(`Đã thêm "${product.name || 'sản phẩm'}" vào giỏ hàng.`);
-      } else {
-        toast.error(response.message || 'Không thể thêm sản phẩm.');
-      }
-    } catch (error) {
-      console.error('Failed to add to cart:', error);
-      toast.error('Không thể thêm sản phẩm. Vui lòng thử lại.');
+      await addToCart(product._id, 1);
     } finally {
       setIsLoading(false);
     }

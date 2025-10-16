@@ -35,7 +35,7 @@ export const cartService = {
         if (quantity > product.stock) {
           throw new AppError(`Số lượng sản phẩm vượt quá tồn kho. Tồn kho hiện tại: ${product.stock}`, 400);
         }
-        cart.items.push({ productId, quantity, price: product.price });
+        cart.items.push({ productId, quantity });
       }
     } else {
       // Kiểm tra tồn kho khi tạo giỏ hàng mới
@@ -44,20 +44,50 @@ export const cartService = {
       }
       cart = new Cart({
         userId,
-        items: [{ productId, quantity, price: product.price }]
+        items: [{ productId, quantity }]
       });
     }
 
     await cart.save();
-    return cart.populate('items.productId');
+
+    // Trả về cart với giá đã tính discount
+    return this.getCart(userId);
   },
 
   async getCart(userId) {
-    const cart = await Cart.findOne({ userId }).populate('items.productId');
+    const cart = await Cart.findOne({ userId }).populate({
+      path: 'items.productId',
+      select: 'name price discount images stock isActive code slug categoryId'
+    }).lean();
+
     if (!cart) {
       return { userId, items: [] };
     }
-    return cart;
+
+    // Tính giá sau discount cho mỗi sản phẩm
+    const cartWithDiscountedPrice = {
+      ...cart,
+      items: cart.items.map(item => {
+        const product = item.productId;
+        if (!product) return item;
+
+        const originalPrice = product.price;
+        const discountPercent = product.discount || 0;
+        const discountedPrice = originalPrice * (1 - discountPercent / 100);
+
+        return {
+          ...item,
+          productId: {
+            ...product,
+            originalPrice,
+            discountedPrice: Math.round(discountedPrice),
+            discountPercent
+          }
+        };
+      })
+    };
+
+    return cartWithDiscountedPrice;
   },
 
   async updateCartItemQuantity(userId, productId, quantity) {
@@ -88,7 +118,9 @@ export const cartService = {
       cart.items[itemIndex].quantity = quantity;
     }
     await cart.save();
-    return cart.populate('items.productId');
+
+    // Trả về cart với giá đã tính discount
+    return this.getCart(userId);
   },
 
   async removeItemFromCart(userId, productId) {
@@ -105,27 +137,25 @@ export const cartService = {
     }
 
     // Xóa sản phẩm khỏi giỏ hàng
-    const updatedCart = await Cart.findOneAndUpdate(
+    await Cart.findOneAndUpdate(
       { userId },
       { $pull: { items: { productId: productId } } },
       { new: true }
-    ).populate({
-      path: 'items.productId',
-      select: 'name price images discount',
-    });
+    );
 
-    return updatedCart;
+    // Trả về cart với giá đã tính discount
+    return this.getCart(userId);
   },
 
   async getCartItemCount(userId) {
     const cart = await Cart.findOne({ userId }).lean();
-    
+
     if (!cart || !cart.items || cart.items.length === 0) {
       return 0;
     }
 
-    // Tính tổng số lượng sản phẩm
-    const totalCount = cart.items.length;
+    // Tính tổng số lượng sản phẩm (sum của quantity)
+    const totalCount = cart.items.reduce((sum, item) => sum + item.quantity, 0);
     return totalCount;
   }
 };

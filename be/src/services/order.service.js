@@ -226,7 +226,18 @@ export const previewOrder = async (
 
       if (userVoucher) {
         if (subtotal >= voucher.minPurchaseAmount) {
-          discount = voucher.discountValue; // Giả sử giảm giá cố định
+          // Tính discount dựa trên discountType
+          if (voucher.discountType === 'percentage') {
+            // Giảm theo phần trăm
+            discount = subtotal * (voucher.discountValue / 100);
+            // Áp dụng giới hạn giảm tối đa nếu có
+            if (voucher.maxDiscountAmount > 0) {
+              discount = Math.min(discount, voucher.maxDiscountAmount);
+            }
+          } else {
+            // Giảm cố định (fixed)
+            discount = voucher.discountValue;
+          }
           appliedVoucherCode = voucher.code;
         } else {
           throw new AppError(

@@ -30,7 +30,11 @@ export interface Product {
   buyerCount: number;
   reviewerCount: number;
   isSaved: boolean;
-  // Helper properties
+  // Helper properties từ backend khi populate cart
+  originalPrice?: number; // Giá gốc (giống price)
+  discountedPrice?: number; // Giá sau khi tính discount
+  discountPercent?: number; // Phần trăm giảm giá (giống discount)
+  // Helper properties tính toán
   finalPrice?: number; // Giá sau khi giảm giá
   discountAmount?: number; // Số tiền giảm
   // Giữ lại các trường cũ có thể vẫn đang được dùng ở đâu đó, đánh dấu là optional
@@ -41,7 +45,6 @@ export interface Product {
     rate: number;
     count: number;
   };
-  originalPrice?: number;
   isNew?: boolean;
   isBestseller?: boolean;
   inStock?: boolean;

@@ -46,7 +46,35 @@ const ProductEditPage = () => {
   };
 
   const handleImageChange = (e) => {
-    setNewImageFiles([...e.target.files]);
+    const files = [...e.target.files];
+    const validFiles = [];
+    const invalidFiles = [];
+
+    files.forEach(file => {
+      const fileType = file.type.toLowerCase();
+      const fileName = file.name.toLowerCase();
+      
+      // Kiểm tra MIME type và extension
+      if (
+        (fileType === 'image/jpeg' || fileType === 'image/jpg' || fileType === 'image/png') &&
+        (fileName.endsWith('.jpg') || fileName.endsWith('.jpeg') || fileName.endsWith('.png'))
+      ) {
+        validFiles.push(file);
+      } else {
+        invalidFiles.push(file.name);
+      }
+    });
+
+    if (invalidFiles.length > 0) {
+      toast.error(`Chỉ hỗ trợ tệp JPG, PNG. Các tệp không hợp lệ: ${invalidFiles.join(', ')}`);
+    }
+
+    if (validFiles.length > 0) {
+      setNewImageFiles(prev => [...prev, ...validFiles]);
+    }
+
+    // Reset input để có thể chọn lại cùng file nếu cần
+    e.target.value = '';
   };
 
   const handleRemoveExistingImage = (imgUrl) => {
@@ -210,7 +238,16 @@ const ProductEditPage = () => {
 
                 <Form.Group className="mb-3">
                   <Form.Label>Tải lên hình ảnh mới</Form.Label>
-                  <Form.Control type="file" multiple onChange={handleImageChange} accept="image/*" disabled={saveLoading} />
+                  <Form.Control 
+                    type="file" 
+                    multiple 
+                    onChange={handleImageChange} 
+                    accept=".jpg,.jpeg,.png,image/jpeg,image/png" 
+                    disabled={saveLoading} 
+                  />
+                  <Form.Text className="text-muted">
+                    Chỉ hỗ trợ tệp JPG, PNG
+                  </Form.Text>
                   <div className="d-flex flex-wrap gap-2 mt-2">
                     {newImageFiles.map((file, index) => (
                       <div key={index} className="position-relative">

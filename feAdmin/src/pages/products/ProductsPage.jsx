@@ -32,6 +32,7 @@ const ProductsPage = () => {
   const [saveLoading, setSaveLoading] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [newImageFiles, setNewImageFiles] = useState([]);
+  const [formErrors, setFormErrors] = useState({});
 
   const [productForm, setProductForm] = useState({
     name: '',
@@ -72,6 +73,7 @@ const ProductsPage = () => {
       isActive: true, // Default to active
     })
     setNewImageFiles([]);
+    setFormErrors({});
     setIsEditing(false)
     setShowProductModal(true)
   }
@@ -90,18 +92,64 @@ const ProductsPage = () => {
       ...prev,
       [key]: value
     }))
+    // Clear error for this field when user starts typing
+    if (formErrors[key]) {
+      setFormErrors(prev => ({
+        ...prev,
+        [key]: ''
+      }))
+    }
   }
 
+  const validateForm = () => {
+    const errors = {};
+
+    // Validate required fields
+    if (!productForm.name || !productForm.name.trim()) {
+      errors.name = 'Trường Tên sản phẩm là bắt buộc.';
+    }
+
+    if (!productForm.categoryId) {
+      errors.categoryId = 'Trường Danh mục là bắt buộc.';
+    }
+
+    if (!productForm.price || productForm.price <= 0) {
+      errors.price = 'Trường Giá là bắt buộc và phải lớn hơn 0.';
+    }
+
+    if (productForm.stock === '' || productForm.stock < 0) {
+      errors.stock = 'Trường Tồn kho là bắt buộc và không được âm.';
+    }
+
+    if (productForm.discount && (productForm.discount < 0 || productForm.discount > 100)) {
+      errors.discount = 'Giảm giá phải từ 0 đến 100%.';
+    }
+
+    // Validate images for new product
+    if (!isEditing && newImageFiles.length === 0) {
+      errors.images = 'Vui lòng tải lên ít nhất một hình ảnh.';
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleSaveProduct = async () => {
+    // Validate form before submitting
+    if (!validateForm()) {
+      toast.error('Vui lòng kiểm tra lại thông tin đã nhập');
+      return;
+    }
+
     try {
       setSaveLoading(true);
-      
+
       // Create FormData for multipart/form-data request
       const formData = new FormData();
 
       // Add product fields
-      formData.append('name', productForm.name);
-      formData.append('description', productForm.description || '');
+      formData.append('name', productForm.name.trim());
+      formData.append('description', productForm.description?.trim() || '');
       formData.append('price', parseFloat(productForm.price));
       formData.append('discount', productForm.discount ? parseFloat(productForm.discount) : 0);
       formData.append('stock', parseInt(productForm.stock));
@@ -120,12 +168,8 @@ const ProductsPage = () => {
         });
 
         // Call productService directly with FormData
-        try{
-          const resp=        await productService.updateProduct(selectedProduct._id, formData);
-        toast.success('Cập nhật sản phẩm thành công')
-        }catch(error){
-          toast.error(error.response.data.message)
-        }
+        await productService.updateProduct(selectedProduct._id, formData);
+        toast.success('Cập nhật sản phẩm thành công');
       } else {
         // Add new image files for creation
         newImageFiles.forEach(file => {
@@ -133,22 +177,30 @@ const ProductsPage = () => {
         });
 
         // Call productService directly with FormData
-        try {
-          const resp=        await productService.createProduct(formData);
-        toast.success('Tạo sản phẩm thành công')
-        } catch (error) {
-          toast.error(error.response.data.message)
-        }
+        await productService.createProduct(formData);
+        toast.success('Tạo sản phẩm thành công');
       }
 
-      setShowProductModal(false)
-      setSelectedProduct(null)
-      setNewImageFiles([])
+      // Only close modal and reset on success
+      setShowProductModal(false);
+      setSelectedProduct(null);
+      setNewImageFiles([]);
+      setFormErrors({});
 
       // Refresh the products list
-      dispatch(fetchProducts(filters))
+      dispatch(fetchProducts(filters));
     } catch (error) {
-      toast.error(error.message || 'Có lỗi xảy ra')
+      // Handle validation errors from backend
+      if (error.response?.data?.errors) {
+        const backendErrors = {};
+        error.response.data.errors.forEach(err => {
+          backendErrors[err.field] = err.message;
+        });
+        setFormErrors(backendErrors);
+        toast.error('Vui lòng kiểm tra lại thông tin đã nhập');
+      } else {
+        toast.error(error.response?.data?.message || 'Có lỗi xảy ra');
+      }
     } finally {
       setSaveLoading(false);
     }
@@ -394,21 +446,29 @@ const ProductsPage = () => {
                     value={productForm.name}
                     onChange={(e) => handleProductFormChange('name', e.target.value)}
                     placeholder="Nhập tên sản phẩm"
+                    isInvalid={!!formErrors.name}
                   />
+                  <Form.Control.Feedback type="invalid">
+                    {formErrors.name}
+                  </Form.Control.Feedback>
                 </Form.Group>
               </Col>
               <Col md={6}>
                 <Form.Group className="mb-3">
-                  <Form.Label>Danh mục</Form.Label>
+                  <Form.Label>Danh mục *</Form.Label>
                   <Form.Select
                     value={productForm.categoryId}
                     onChange={(e) => handleProductFormChange('categoryId', e.target.value)}
+                    isInvalid={!!formErrors.categoryId}
                   >
                     <option value="">Chọn danh mục</option>
                     {categories.map(cat => (
                       <option key={cat._id} value={cat._id}>{cat.name}</option>
                     ))}
                   </Form.Select>
+                  <Form.Control.Feedback type="invalid">
+                    {formErrors.categoryId}
+                  </Form.Control.Feedback>
                 </Form.Group>
               </Col>
             </Row>
@@ -433,7 +493,11 @@ const ProductsPage = () => {
                     value={productForm.price}
                     onChange={(e) => handleProductFormChange('price', e.target.value)}
                     placeholder="0"
+                    isInvalid={!!formErrors.price}
                   />
+                  <Form.Control.Feedback type="invalid">
+                    {formErrors.price}
+                  </Form.Control.Feedback>
                 </Form.Group>
               </Col>
               <Col md={4}>
@@ -446,7 +510,11 @@ const ProductsPage = () => {
                     placeholder="0"
                     min="0"
                     max="100"
+                    isInvalid={!!formErrors.discount}
                   />
+                  <Form.Control.Feedback type="invalid">
+                    {formErrors.discount}
+                  </Form.Control.Feedback>
                 </Form.Group>
               </Col>
               <Col md={4}>
@@ -458,19 +526,63 @@ const ProductsPage = () => {
                     onChange={(e) => handleProductFormChange('stock', e.target.value)}
                     placeholder="0"
                     min="0"
+                    isInvalid={!!formErrors.stock}
                   />
+                  <Form.Control.Feedback type="invalid">
+                    {formErrors.stock}
+                  </Form.Control.Feedback>
                 </Form.Group>
               </Col>
             </Row>
 
             <Form.Group className="mb-3">
-              <Form.Label>Hình ảnh</Form.Label>
+              <Form.Label>Hình ảnh {!isEditing && '*'}</Form.Label>
               <Form.Control
                 type="file"
                 multiple
-                accept="image/*"
-                onChange={(e) => setNewImageFiles([...e.target.files])}
+                accept=".jpg,.jpeg,.png,image/jpeg,image/png"
+                onChange={(e) => {
+                  const files = [...e.target.files];
+                  const validFiles = [];
+                  const invalidFiles = [];
+
+                  files.forEach(file => {
+                    const fileType = file.type.toLowerCase();
+                    const fileName = file.name.toLowerCase();
+
+                    // Kiểm tra MIME type và extension
+                    if (
+                      (fileType === 'image/jpeg' || fileType === 'image/jpg' || fileType === 'image/png') &&
+                      (fileName.endsWith('.jpg') || fileName.endsWith('.jpeg') || fileName.endsWith('.png'))
+                    ) {
+                      validFiles.push(file);
+                    } else {
+                      invalidFiles.push(file.name);
+                    }
+                  });
+
+                  if (invalidFiles.length > 0) {
+                    toast.error(`Chỉ hỗ trợ tệp JPG, PNG. Các tệp không hợp lệ: ${invalidFiles.join(', ')}`);
+                  }
+
+                  if (validFiles.length > 0) {
+                    setNewImageFiles(prev => [...prev, ...validFiles]);
+                    // Clear image error when files are added
+                    if (formErrors.images) {
+                      setFormErrors(prev => ({ ...prev, images: '' }));
+                    }
+                  }
+
+                  // Reset input để có thể chọn lại cùng file nếu cần
+                  e.target.value = '';
+                }}
+                isInvalid={!!formErrors.images}
               />
+              {formErrors.images && (
+                <div className="invalid-feedback d-block">
+                  {formErrors.images}
+                </div>
+              )}
               <div className="d-flex flex-wrap gap-2 mt-2">
                 {newImageFiles.map((file, index) => (
                   <div key={index} className="position-relative">
@@ -480,7 +592,7 @@ const ProductsPage = () => {
                 ))}
               </div>
               <Form.Text className="text-muted">
-                Chọn nhiều hình ảnh cho sản phẩm (JPG, PNG)
+                Chỉ hỗ trợ tệp JPG, PNG{!isEditing && ' (Bắt buộc)'}
               </Form.Text>
             </Form.Group>
 

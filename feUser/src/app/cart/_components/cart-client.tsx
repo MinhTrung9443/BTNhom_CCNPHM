@@ -58,7 +58,11 @@ export default function CartClient({ cart: initialCart }: CartClientProps) {
   };
 
   const totalQuantity = selectedItems.reduce((sum, item) => sum + item.quantity, 0);
-  const totalPrice = selectedItems.reduce((sum, item) => sum + item.productId.price * item.quantity, 0);
+  // Tính tổng giá dựa trên giá sau discount (nếu có), nếu không thì dùng giá gốc
+  const totalPrice = selectedItems.reduce((sum, item) => {
+    const price = item.productId.discountedPrice ?? item.productId.price;
+    return sum + price * item.quantity;
+  }, 0);
 
   const handleRemoveItem = async (productId: string) => {
     if (!session?.user?.accessToken) return;
@@ -231,23 +235,46 @@ export default function CartClient({ cart: initialCart }: CartClientProps) {
                         href={`/chi-tiet-san-pham/${item.productId.slug}`}
                         className="w-24 h-24 bg-gray-200 rounded-lg flex items-center justify-center relative overflow-hidden hover:opacity-80 transition-opacity cursor-pointer"
                       >
-                        <Image
-                          src={item.productId.images[0]}
-                          alt={item.productId.name}
-                          fill
-                          unoptimized
-                          sizes="96px"
-                          style={{ objectFit: "cover" }}
-                        />
+                        {item.productId.images?.[0] ? (
+                          <Image
+                            src={item.productId.images[0]}
+                            alt={item.productId.name}
+                            fill
+                            unoptimized
+                            sizes="96px"
+                            style={{ objectFit: "cover" }}
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
+                            Không có ảnh
+                          </div>
+                        )}
                       </Link>
 
                       <div className="flex-1">
                         <Link href={`/chi-tiet-san-pham/${item.productId.slug}`} className="hover:text-green-600 transition-colors cursor-pointer">
                           <h3 className="font-semibold mb-2">{item.productId.name}</h3>
                         </Link>
-                        <p className="text-green-600 font-bold mb-2">
-                          {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(item.productId.price)}
-                        </p>
+
+                        <div className="mb-2">
+                          {item.productId.discount > 0 && item.productId.discountedPrice ? (
+                            <div className="flex items-center gap-2">
+                              <p className="text-green-600 font-bold">
+                                {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(item.productId.discountedPrice)}
+                              </p>
+                              <p className="text-gray-400 line-through text-sm">
+                                {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(item.productId.price)}
+                              </p>
+                              <span className="bg-red-100 text-red-600 text-xs px-2 py-1 rounded">
+                                -{item.productId.discount}%
+                              </span>
+                            </div>
+                          ) : (
+                            <p className="text-green-600 font-bold">
+                              {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(item.productId.price)}
+                            </p>
+                          )}
+                        </div>
 
                         <div className="flex items-center gap-2">
                           <Button
