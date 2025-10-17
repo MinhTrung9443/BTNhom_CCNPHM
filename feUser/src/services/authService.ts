@@ -8,8 +8,8 @@ class AuthService {
    * @param userData - Dữ liệu đăng ký của người dùng.
    * @returns Promise<ApiResponse<RegisterResponseData>>
    */
-  async register(userData: RegisterRequest): Promise<ApiResponse<RegisterResponseData>> {
-    return await apiFetch<ApiResponse<RegisterResponseData>>("/auth/register", null, {
+  async register(userData: RegisterRequest): Promise<RegisterResponseData> {
+    return await apiFetch<RegisterResponseData>("/auth/register", null, {
       method: "POST",
       body: JSON.stringify(userData),
     });

@@ -33,10 +33,11 @@ export function CartProvider({ children }: CartProviderProps) {
 
     try {
       setIsLoading(true);
-      const response = await apiFetch('/cart/count', session.user.accessToken, {
+      const response = (await apiFetch('/cart/count', session.user.accessToken, {
         method: 'GET',
         next: { revalidate: 0 } // Không cache
-      });
+      }) 
+    )as { success: boolean; data: { count: number } };
 
       if (response.success) {
         setCartCount(response.data.count);

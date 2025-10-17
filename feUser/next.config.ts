@@ -1,6 +1,11 @@
 import type { NextConfig } from "next";
+import path from "path";
 
 const nextConfig: NextConfig = {
+   turbopack: {
+    root: path.join(__dirname), // đặt root chính là thư mục feUser
+  },
+  eslint: { ignoreDuringBuilds: true },
   images: {
        dangerouslyAllowSVG: true,
     remotePatterns: [

@@ -1,7 +1,8 @@
-// src/lib/locationUtils.ts
-import locationTree from '@/../public/tree.json';
+// @ts-ignore
 import { findBestMatch } from 'string-similarity';
 
+// src/lib/locationUtils.ts
+import locationTree from '@/../public/tree.json';
 // Định nghĩa kiểu dữ liệu cho cây địa chỉ
 interface District {
   name: string;

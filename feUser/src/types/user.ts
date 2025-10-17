@@ -37,6 +37,7 @@ export interface RegisterRequest {
 export interface RegisterResponseData {
   email: string;
   message: string;
+  success: boolean;
 }
 
 /**

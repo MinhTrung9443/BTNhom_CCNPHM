@@ -44,7 +44,14 @@ class UserService {
       cache: "no-store",
     });
 
-    return response;
+    return response as ApiResponse<FavoriteProduct[]> & {
+      pagination?: {
+        current: number;
+        limit: number;
+        total: number;
+        totalItems: number;
+      };
+    };
   }
 
   /**

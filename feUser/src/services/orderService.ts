@@ -133,7 +133,14 @@ class OrderService {
     const response = await apiFetch("/orders/latest-address", accessToken, {
       method: "GET",
     });
-    return response;
+    return response as  ApiResponse<{
+      recipientName: string;
+      phone: string;
+      address: string;
+      ward: string;
+      district: string;
+      province: string;
+    }>;
   }
 }
 

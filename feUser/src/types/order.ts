@@ -59,6 +59,29 @@ export interface OrderLine {
     comment: string;
     createdAt: string;
   } | null;
+  productSnapshot : {
+    _id: string;
+    name: string;
+    price: number;
+    discount: number;
+    actualPrice: number;
+    images: string[];
+    category: string;
+    description: string;
+    createdAt: string;
+    updatedAt: string;
+    __v: number;
+    capturedAt: string;
+    slug: string;
+    code: string;
+    categoryName: string;
+    isActive:boolean;
+    stock: number;
+    viewCount: number;
+    averageRating: number;
+    totalReviews: number;
+    soldCount:number
+  };
 }
 
 export type PerformerRole = "user" | "admin" | "system";

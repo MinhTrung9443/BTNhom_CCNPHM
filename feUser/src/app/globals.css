@@ -178,14 +178,6 @@ body {
   --sidebar-ring: oklch(0.556 0 0);
 }
 
-@layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
-  body {
-    @apply bg-gradient-to-br from-slate-50 via-white to-green-50/30 text-foreground;
-  }
-}
 
 /* Custom animations for cart highlight */
 @keyframes highlight-pulse {
@@ -275,4 +267,97 @@ body {
 
 .swiper-wrapper {
   pointer-events: auto !important;
+}
+
+/* TikTok-style Preloader Animations */
+@keyframes tiktok-glitch {
+  0%, 100% {
+    transform: translate(0);
+  }
+  33% {
+    transform: translate(-2px, 2px);
+  }
+  66% {
+    transform: translate(2px, -2px);
+  }
+}
+
+@keyframes tiktok-pulse {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.5);
+  }
+}
+
+@keyframes tiktok-float {
+  0% {
+    transform: translateY(100vh) translateX(0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-100px) translateX(50px);
+    opacity: 0;
+  }
+}
+
+@keyframes tiktok-gradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.tiktok-glitch {
+  animation: tiktok-glitch 0.3s infinite;
+}
+
+.tiktok-gradient-bg {
+  background: linear-gradient(45deg, #00f2ea, #ff0050, #000000);
+  background-size: 200% 200%;
+  animation: tiktok-gradient 3s ease infinite;
+}
+
+/* Prevent body scroll when preloader is active */
+body:has(.preloader-active) {
+  overflow: hidden;
+}
+
+/* Smooth fade-in for content after preloader */
+@keyframes content-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.content-loaded {
+  animation: content-fade-in 0.6s ease-out;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
 }
