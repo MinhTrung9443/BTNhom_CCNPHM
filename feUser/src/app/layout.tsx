@@ -70,7 +70,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="vi">
       <body className={`${inter.className} flex flex-col min-h-screen`}>
-        <Preloader />
+        {/* <Preloader /> */}
         <SessionProvider session={session}>
           <CartProvider>
             <Header />

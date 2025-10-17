@@ -16,6 +16,7 @@ import adminRoutes from "./src/routes/admin.route.js";
 import categoryRoutes from "./src/routes/category.route.js";
 import viewHistoryRoutes from "./src/routes/viewHistory.route.js";
 import loyaltyRoutes from "./src/routes/loyalty.route.js";
+import articleRoutes from "./src/routes/article.route.js";
 import logger from "./src/utils/logger.js";
 import { notFound, errorHandler } from "./src/middlewares/error.js";
 import cartRoutes from "./src/routes/cart.route.js";
@@ -81,6 +82,7 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/view-history", viewHistoryRoutes);
 app.use("/api/loyalty", loyaltyRoutes);
+app.use("/api/articles", articleRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
@@ -116,6 +118,18 @@ io.on("connection", (socket) => {
     socket.join("admin");
     logger.info(`Admin ${socket.userId} joined admin room`);
   }
+
+  // Handle article room joining for real-time updates
+  socket.on("joinArticle", (articleId) => {
+    socket.join(`article_${articleId}`);
+    logger.info(`User ${socket.userId} joined article room: article_${articleId}`);
+  });
+
+  // Handle article room leaving
+  socket.on("leaveArticle", (articleId) => {
+    socket.leave(`article_${articleId}`);
+    logger.info(`User ${socket.userId} left article room: article_${articleId}`);
+  });
 
   // Handle sendMessage event
   socket.on("sendMessage", (data) => {

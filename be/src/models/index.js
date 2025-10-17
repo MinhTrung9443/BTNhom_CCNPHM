@@ -12,6 +12,12 @@ import Favorite from "./Favorite.js";
 import LoyaltyPoints from "./LoyaltyPoints.js";
 import Notification from "./Notification.js";
 import ViewHistory from "./ViewHistory.js";
+import Article from "./Article.js";
+import Comment from "./Comment.js";
+import ArticleLike from "./ArticleLike.js";
+import CommentLike from "./CommentLike.js";
+import ArticleShare from "./ArticleShare.js";
+
 export {
   User,
   OTP,
@@ -27,4 +33,9 @@ export {
   Favorite,
   Notification,
   ViewHistory,
+  Article,
+  Comment,
+  ArticleLike,
+  CommentLike,
+  ArticleShare,
 };

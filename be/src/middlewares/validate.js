@@ -2,20 +2,33 @@ import Joi from 'joi';
 import { BadRequestError } from '../utils/AppError.js';
 
 const validate = (schema) => (req, res, next) => {
-  // Define what to validate against the schema
+  let effectiveSchema;
+  const contentType = req.headers['content-type'];
+
+  // If the schema is structured with json/formData keys, pick the right one.
+  if (schema.json && schema.formData) {
+    if (contentType && contentType.includes('multipart/form-data')) {
+      effectiveSchema = schema.formData;
+    } else {
+      effectiveSchema = schema.json;
+    }
+  } else {
+    // Fallback to the original behavior for non-structured schemas
+    effectiveSchema = schema;
+  }
+
   const toValidate = {};
-  if (schema.params) {
+  if (effectiveSchema.params) {
     toValidate.params = req.params;
   }
-  if (schema.query) {
+  if (effectiveSchema.query) {
     toValidate.query = req.query;
   }
-  if (schema.body) {
+  if (effectiveSchema.body) {
     toValidate.body = req.body;
   }
 
-  // Compile and validate
-  const { error, value } = Joi.compile(schema)
+  const { error, value } = Joi.compile(effectiveSchema)
     .prefs({ errors: { label: 'key' }, abortEarly: false })
     .validate(toValidate);
 
@@ -25,11 +38,27 @@ const validate = (schema) => (req, res, next) => {
       .join(', ');
     return next(new BadRequestError(errorMessage));
   }
-
-  // Assign validated values to the request object
-  // This mimics the original middleware's behavior of polluting the req object,
-  // but does so for params, query, and body, avoiding the read-only `req.query` error.
-  Object.assign(req, value.params, value.query, value.body);
+  
+  // Re-assign the validated properties back to the request object
+  if (value.params) {
+    Object.assign(req.params, value.params);
+  }
+  if (value.query) {
+    Object.assign(req.query, value.query);
+  }
+  if (value.body) {
+    // For FormData, we need to parse stringified fields
+    if (contentType && contentType.includes('multipart/form-data')) {
+      if (value.body.tags && typeof value.body.tags === 'string') {
+        try {
+          value.body.tags = JSON.parse(value.body.tags);
+        } catch (e) {
+          return next(new BadRequestError('Invalid JSON format for tags.'));
+        }
+      }
+    }
+    Object.assign(req.body, value.body);
+  }
 
   return next();
 };

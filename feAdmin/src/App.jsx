@@ -20,6 +20,10 @@ import CategoriesPage from './pages/categories/CategoriesPage'
 import DeliveriesPage from './pages/deliveries/DeliveriesPage'
 import Notifications from './pages/Notifications'
 import ChatPage from './pages/ChatPage'
+import ArticlesPage from './pages/articles/ArticlesPage'
+import ArticleFormPage from './pages/articles/ArticleFormPage'
+import CommentModerationPage from './pages/articles/CommentModerationPage'
+import ArticleAnalyticsPage from './pages/articles/ArticleAnalyticsPage'
 
 // Protected Route component
 const ProtectedRoute = ({ children }) => {
@@ -81,6 +85,11 @@ function App() {
                   <Route path="/deliveries" element={<DeliveriesPage />} />
                   <Route path="/notifications" element={<Notifications />} />
                   <Route path="/chat" element={<ChatPage />} />
+                  <Route path="/articles" element={<ArticlesPage />} />
+                  <Route path="/articles/create" element={<ArticleFormPage />} />
+                  <Route path="/articles/edit/:articleId" element={<ArticleFormPage />} />
+                  <Route path="/articles/comments" element={<CommentModerationPage />} />
+                  <Route path="/articles/analytics" element={<ArticleAnalyticsPage />} />
                   <Route path="*" element={<Navigate to="/dashboard" replace />} />
                 </Routes>
               </Layout>

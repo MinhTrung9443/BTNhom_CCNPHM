@@ -9,6 +9,8 @@ import dashboardSlice from './slices/dashboardSlice'
 import notificationsSlice from './slices/notificationsSlice'
 import categoriesSlice from './slices/categoriesSlice'
 import deliveriesSlice from './slices/deliveriesSlice'
+import articlesSlice from './slices/articlesSlice'
+import commentsSlice from './slices/commentsSlice'
 
 export const store = configureStore({
   reducer: {
@@ -22,6 +24,8 @@ export const store = configureStore({
     notifications: notificationsSlice,
     categories: categoriesSlice,
     deliveries: deliveriesSlice,
+    articles: articlesSlice,
+    comments: commentsSlice,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

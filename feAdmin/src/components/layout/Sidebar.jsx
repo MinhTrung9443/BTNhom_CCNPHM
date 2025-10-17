@@ -14,6 +14,7 @@ const Sidebar = () => {
     { path: "/categories", icon: "bi-tags", label: "Quản lý danh mục" },
     { path: "/deliveries", icon: "bi-truck", label: "Phương thức vận chuyển" },
     { path: "/orders", icon: "bi-cart-check", label: "Quản lý đơn hàng" },
+    { path: "/articles", icon: "bi-file-text", label: "Quản lý bài viết" },
     { path: "/notifications", icon: "bi-bell", label: "Thông báo" },
     { path: "/vouchers", icon: "bi-ticket-perforated", label: "Quản lý voucher" },
     { path: "/chat", icon: "bi-chat-dots", label: "Chat hỗ trợ" },
