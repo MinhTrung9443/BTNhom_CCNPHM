@@ -463,15 +463,30 @@ const _revertOrderSideEffects = async (order) => {
 // TODO: Cần bổ sung tặng điểm bằng 1% giá trị đơn hàng sau khi khách đã nhận hàng
 
 export const placeOrder = async (userId, { previewOrder: clientPreview }) => {
-  // Step 1: Verify the client's preview against a fresh server-side calculation.
+  // if #1: Kiểm tra userId
+  if (!userId){
+    throw new AppError("Thiếu thông tin người dùng.", 400);
+  }
+
+  // if #2: Kiểm tra dữ liệu preview từ client
+  if (!clientPreview){
+    throw new AppError("Thiếu dữ liệu preview từ client.", 400);
+  }
+
+  // Xác minh preview từ server
   const serverPreview = await _verifyOrderPreview(userId, clientPreview);
-  console.log("Server Preview:", serverPreview);
-  // Step 2: Create the order using the *trusted* server-side preview data.
+
+  // if #3: Kiểm tra serverPreview hợp lệ
+  if (!serverPreview){
+    throw new AppError("Không thể xác minh dữ liệu đơn hàng.", 400);
+  }
+
+  // Tạo đơn hàng
   const newOrder = await Order.create({
     ...serverPreview,
-    userId: userId, // Explicitly add the userId from the authenticated session
+    userId: userId,
     payment: {
-      paymentMethod: serverPreview.paymentMethod, // Use the verified payment method
+      paymentMethod: serverPreview.paymentMethod,
       amount: serverPreview.totalAmount,
       status: "pending",
       createdAt: new Date(),
@@ -480,35 +495,46 @@ export const placeOrder = async (userId, { previewOrder: clientPreview }) => {
     timeline: [
       {
         status: DETAILED_ORDER_STATUS.NEW,
-        description: 'Đơn hàng mới được tạo.',
-        performedBy:  'user' ,
+        description: "Đơn hàng mới được tạo.",
+        performedBy: "user",
       },
     ],
-  });
+  }); [8]
 
-  // Step 3: Execute all post-creation side effects (stock, vouchers, points).
-  await _executePostOrderActions(newOrder);
+  // if #4: Kiểm tra tạo đơn hàng
+  if (!newOrder){
+    throw new AppError("Không thể tạo đơn hàng.", 500);
+  }
 
-  // Create persistent notification for admin
-  const user = await User.findById(userId).select('name').lean();
+  // if #5: Nếu có đơn hàng, chạy các tác vụ sau tạo
+  if (newOrder) {
+    await _executePostOrderActions(newOrder);
+  }
+
+  // Tạo thông báo cho admin
+  const user = await User.findById(userId).select("name").lean();
   const notification = await Notification.create({
-    title: 'Đơn hàng mới',
-    message: `Khách hàng ${user?.name || 'N/A'} đã đặt đơn hàng #${newOrder._id} với tổng giá trị ${newOrder.totalAmount.toLocaleString('vi-VN')} VNĐ`,
-    type: 'order',
+    title: "Đơn hàng mới",
+    message: `Khách hàng ${user?.name || "N/A"} đã đặt đơn hàng #${
+      newOrder._id
+    } với tổng giá trị ${newOrder.totalAmount.toLocaleString("vi-VN")} VNĐ`,
+    type: "order",
     referenceId: newOrder._id,
-    recipient: 'admin',
+    recipient: "admin",
     metadata: {
       orderAmount: newOrder.totalAmount,
-      userName: user?.name || 'N/A',
+      userName: user?.name || "N/A",
       orderLinesCount: newOrder.orderLines.length,
-    }
+    },
   });
-  logger.info(`Notification created for new order: ${notification._id}`);
 
-  logger.info(`New order created: ${newOrder._id} for user: ${userId}`);
+  // if #6: Kiểm tra tạo thông báo
+  if (!notification){
+    logger.warn(`Không thể tạo thông báo cho đơn hàng ${newOrder._id}`); [15]
+  }
 
-  // Emit real-time notification to admin room
-  if (global.io) {
+  // if #7: Kiểm tra Socket.IO trước khi gửi thông báo realtime
+  if (global.io){
     global.io.to("admin").emit("newOrder", {
       orderId: newOrder._id,
       userId: newOrder.userId,
@@ -517,13 +543,19 @@ export const placeOrder = async (userId, { previewOrder: clientPreview }) => {
       createdAt: newOrder.createdAt,
       status: newOrder.status,
     });
-    logger.info(
-      `New order notification sent to admin room for order ${newOrder._id}`
-    );
+    logger.info(`Realtime notification sent for order ${newOrder._id}`); 
+  } else {
+    logger.warn("Socket.IO chưa khởi tạo, không thể gửi thông báo realtime."); 
   }
 
-  return newOrder;
+  // if #8: Trả về kết quả
+  if (newOrder) {
+    return newOrder;
+  } else {
+    throw new AppError("Đơn hàng không tồn tại sau khi tạo.", 500);
+  }
 };
+
 
 
 export const getOrderStats = async (userId = null) => {
