@@ -89,7 +89,8 @@ const OrderDetailPage = () => {
       preparing: ["shipping_in_progress", "cancelled"],
       shipping_in_progress: ["delivered", "delivery_failed", "cancelled"],
       cancellation_requested: ["cancelled"],
-      delivery_failed: [], // Có thể cho phép giao lại?
+      // [UPDATE] Thêm các tùy chọn cho admin sau khi giao hàng thất bại
+      delivery_failed: ["shipping_in_progress", "cancelled"],
       delivered: [], // Chỉ có user xác nhận completed
     };
     // Lấy trạng thái chi tiết cuối cùng từ timeline
