@@ -27,9 +27,11 @@ export function ArticleList({
 
   if (loading && articles.length === 0) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {Array.from({ length: 6 }).map((_, index) => (
-          <ArticleCardSkeleton key={index} />
+      <div className="flex flex-col items-center space-y-8">
+        {Array.from({ length: 3 }).map((_, index) => (
+          <div key={index} className="w-full max-w-2xl">
+            <ArticleCardSkeleton />
+          </div>
         ))}
       </div>
     );
@@ -47,9 +49,11 @@ export function ArticleList({
 
   return (
     <div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="flex flex-col items-center space-y-8">
         {articles.map((article) => (
-          <ArticleCard key={article._id} article={article} />
+          <div key={article._id} className="w-full max-w-2xl">
+            <ArticleCard article={article} />
+          </div>
         ))}
       </div>
 

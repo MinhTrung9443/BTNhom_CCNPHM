@@ -21,16 +21,19 @@ const articleSchema = new mongoose.Schema({
   excerpt: { 
     type: String, 
     trim: true, 
-    maxlength: 500 
+    maxlength: 500
   },
   featuredImage: {
-    url: { type: String },
-    publicId: { type: String },
-    alt: { type: String }
+    type: String,
+    trim: true,
   },
-  status: { 
-    type: String, 
-    enum: ['draft', 'published', 'archived'], 
+  images: [{
+    type: String,
+    trim: true,
+  }],
+  status: {
+    type: String,
+    enum: ['draft', 'published', 'archived'],
     default: 'draft',
     index: true
   },

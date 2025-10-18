@@ -44,7 +44,7 @@ export function useComments(articleId: string) {
         ...comment,
         content: data.content,
         isEdited: data.isEdited,
-        editedAt: data.editedAt,
+        editedAt: new Date(data.editedAt).toISOString(),
       }));
     },
     onCommentLikeUpdate: (data) => {
@@ -69,16 +69,17 @@ export function useComments(articleId: string) {
           articleId,
           pageNum,
           10,
-          session?.accessToken
+          session?.user?.accessToken
         );
+        console.log("Fetched comments:", response);
 
         if (response.success && response.data) {
-          const newComments = response.data.data;
+          const newComments = response.data;
           setComments((prev) =>
             append ? [...prev, ...newComments] : newComments
           );
           setHasMore(
-            response.data.meta.currentPage < response.data.meta.totalPages
+            response.meta.currentPage < response.meta.totalPages
           );
         }
       } catch (err: any) {
@@ -87,7 +88,7 @@ export function useComments(articleId: string) {
         setLoading(false);
       }
     },
-    [articleId, session?.accessToken]
+    [articleId, session?.user?.accessToken]
   );
 
   const loadMore = useCallback(() => {
@@ -105,7 +106,7 @@ export function useComments(articleId: string) {
 
   const addComment = useCallback(
     async (content: string, parentCommentId: string | null = null) => {
-      if (!session?.accessToken) {
+      if (!session?.user?.accessToken) {
         throw new Error("Vui lòng đăng nhập để bình luận");
       }
 
@@ -113,7 +114,7 @@ export function useComments(articleId: string) {
         articleId,
         content,
         parentCommentId,
-        session.accessToken
+        session.user.accessToken
       );
 
       if (response.success && response.data) {
@@ -122,19 +123,19 @@ export function useComments(articleId: string) {
         return response.data;
       }
     },
-    [articleId, session?.accessToken, refresh]
+    [articleId, session?.user?.accessToken, refresh]
   );
 
   const updateComment = useCallback(
     async (commentId: string, content: string) => {
-      if (!session?.accessToken) {
+      if (!session?.user?.accessToken) {
         throw new Error("Vui lòng đăng nhập");
       }
 
       const response = await articleService.updateComment(
         commentId,
         content,
-        session.accessToken
+        session.user.accessToken
       );
 
       if (response.success && response.data) {
@@ -147,32 +148,32 @@ export function useComments(articleId: string) {
         return response.data;
       }
     },
-    [session?.accessToken]
+    [session?.user?.accessToken]
   );
 
   const deleteComment = useCallback(
     async (commentId: string) => {
-      if (!session?.accessToken) {
+      if (!session?.user?.accessToken) {
         throw new Error("Vui lòng đăng nhập");
       }
 
-      await articleService.deleteComment(commentId, session.accessToken);
+      await articleService.deleteComment(commentId, session.user.accessToken);
 
       // Remove the comment from the list
       setComments((prev) => prev.filter((comment) => comment._id !== commentId));
     },
-    [session?.accessToken]
+    [session?.user?.accessToken]
   );
 
   const toggleLike = useCallback(
     async (commentId: string) => {
-      if (!session?.accessToken) {
+      if (!session?.user?.accessToken) {
         throw new Error("Vui lòng đăng nhập để thích bình luận");
       }
 
       const response = await articleService.toggleCommentLike(
         commentId,
-        session.accessToken
+        session.user.accessToken
       );
 
       if (response.success && response.data) {
@@ -194,12 +195,14 @@ export function useComments(articleId: string) {
         );
       }
     },
-    [session?.accessToken]
+    [session?.user?.accessToken]
   );
 
   useEffect(() => {
-    fetchComments(1, false);
-  }, []);
+    if (articleId) {
+      fetchComments(1, false);
+    }
+  }, [articleId, fetchComments]);
 
   return {
     comments,

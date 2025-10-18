@@ -86,13 +86,13 @@ class ArticleService {
     page: number = 1,
     limit: number = 10,
     accessToken?: string
-  ): Promise<ApiResponse<{ meta: CommentListResponse; data: Comment[] }>> {
+  ): Promise<{ success: boolean; message: string; meta: CommentListResponse; data: Comment[] }> {
     const searchParams = new URLSearchParams({
       page: page.toString(),
       limit: limit.toString(),
     });
 
-    return await apiFetch<ApiResponse<{ meta: CommentListResponse; data: Comment[] }>>(
+    return await apiFetch<{ success: boolean; message: string; meta: CommentListResponse; data: Comment[] }>(
       `/articles/public/${articleId}/comments?${searchParams.toString()}`,
       accessToken
     );

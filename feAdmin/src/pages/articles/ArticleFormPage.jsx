@@ -23,8 +23,6 @@ const ArticleFormPage = () => {
     status: 'draft',
   })
   const [tagInput, setTagInput] = useState('')
-  const [featuredImage, setFeaturedImage] = useState(null)
-  const [imagePreview, setImagePreview] = useState(null)
   const [saveLoading, setSaveLoading] = useState(false)
   const [errors, setErrors] = useState({})
 
@@ -46,9 +44,6 @@ const ArticleFormPage = () => {
         tags: currentArticle.tags || [],
         status: currentArticle.status || 'draft',
       })
-      if (currentArticle.featuredImage?.url) {
-        setImagePreview(currentArticle.featuredImage.url)
-      }
     }
   }, [currentArticle, isEditing])
 
@@ -63,17 +58,6 @@ const ArticleFormPage = () => {
     }
   }
 
-  const handleImageChange = (e) => {
-    const file = e.target.files[0]
-    if (file) {
-      setFeaturedImage(file)
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        setImagePreview(reader.result)
-      }
-      reader.readAsDataURL(file)
-    }
-  }
 
   const handleAddTag = () => {
     if (tagInput.trim() && !formData.tags.includes(tagInput.trim())) {
@@ -125,10 +109,6 @@ const ArticleFormPage = () => {
         ...formData,
         status: publishNow ? 'published' : formData.status,
       };
-
-      if (featuredImage) {
-        articleData.featuredImage = featuredImage;
-      }
 
       if (isEditing) {
         await dispatch(updateArticle({ articleId, articleData })).unwrap()
@@ -266,34 +246,7 @@ const ArticleFormPage = () => {
         </Col>
 
         <Col lg={4}>
-          {/* Featured Image */}
-          <Card className="border-0 shadow-sm mb-4">
-            <Card.Header className="bg-white">
-              <h5 className="mb-0">Ảnh đại diện</h5>
-            </Card.Header>
-            <Card.Body>
-              {imagePreview && (
-                <div className="mb-3">
-                  <img 
-                    src={getImageSrc(imagePreview, 400, 250)} 
-                    alt="Preview" 
-                    className="img-fluid rounded"
-                    style={{ width: '100%', height: '200px', objectFit: 'cover' }}
-                  />
-                </div>
-              )}
-              <Form.Group>
-                <Form.Control
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageChange}
-                />
-                <Form.Text className="text-muted">
-                  Khuyến nghị: 1200x630px (JPG, PNG)
-                </Form.Text>
-              </Form.Group>
-            </Card.Body>
-          </Card>
+
 
           {/* Tags */}
           <Card className="border-0 shadow-sm mb-4">

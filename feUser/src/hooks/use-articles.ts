@@ -27,8 +27,9 @@ export function useArticles(initialFilters?: ArticleFilters) {
         );
 
         if (response.success && response.data) {
+          console.log(response);
           // Correctly destructure the nested response
-          const { data: newArticles, meta } = response.data;
+          const { data: newArticles, meta } = response;
           setArticles((prev) => (append ? [...prev, ...newArticles] : newArticles));
           setHasMore(meta.hasNext);
         }

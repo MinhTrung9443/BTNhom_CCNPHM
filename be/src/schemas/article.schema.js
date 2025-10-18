@@ -26,11 +26,6 @@ const createArticleJsonSchema = Joi.object({
     ...commonArticleBody,
     title: commonArticleBody.title.required(),
     content: commonArticleBody.content.required(),
-    featuredImage: Joi.object({
-      url: Joi.string().uri().required(),
-      publicId: Joi.string().optional().allow(''),
-      alt: Joi.string().optional().allow('')
-    }).optional(),
     tags: Joi.array().items(Joi.string().trim()).optional(),
   })
 });
@@ -61,13 +56,8 @@ const updateArticleJsonSchema = Joi.object({
   params: Joi.object({
     id: Joi.string().pattern(/^[0-9a-fA-F]{24}$/).required()
   }),
-  body: Joi.object({
+ body: Joi.object({
     ...commonArticleBody,
-    featuredImage: Joi.object({
-      url: Joi.string().uri().required(),
-      publicId: Joi.string().optional().allow(''),
-      alt: Joi.string().optional().allow('')
-    }).optional(),
     tags: Joi.array().items(Joi.string().trim()).optional(),
   }).or('title', 'content') // At least one field must be updated
 });

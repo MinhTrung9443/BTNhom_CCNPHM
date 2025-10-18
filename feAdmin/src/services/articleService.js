@@ -27,12 +27,10 @@ const articleService = {
   },
 
   // Create article
-  createArticle: async (articleData) => {
+ createArticle: async (articleData) => {
     const formData = new FormData();
     Object.keys(articleData).forEach(key => {
-      if (key === 'featuredImage' && articleData[key]) {
-        formData.append(key, articleData[key]);
-      } else if (typeof articleData[key] === 'object' && articleData[key] !== null) {
+      if (typeof articleData[key] === 'object' && articleData[key] !== null) {
         formData.append(key, JSON.stringify(articleData[key]));
       } else {
         formData.append(key, articleData[key]);
@@ -51,9 +49,7 @@ const articleService = {
   updateArticle: async (articleId, articleData) => {
     const formData = new FormData();
     Object.keys(articleData).forEach(key => {
-      if (key === 'featuredImage' && articleData[key]) {
-        formData.append(key, articleData[key]);
-      } else if (typeof articleData[key] === 'object' && articleData[key] !== null) {
+      if (typeof articleData[key] === 'object' && articleData[key] !== null) {
         formData.append(key, JSON.stringify(articleData[key]));
       } else {
         formData.append(key, articleData[key]);

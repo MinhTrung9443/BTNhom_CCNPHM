@@ -11,7 +11,7 @@
  */
 export function generateArticleMetaTags(article, baseUrl) {
   const url = `${baseUrl}/articles/${article.slug}`;
-  const imageUrl = article.featuredImage?.url || `${baseUrl}/default-article-image.jpg`;
+  const defaultImageUrl = `${baseUrl}/default-article-image.jpg`;
   
   return {
     title: article.seoMeta?.title || article.title,
@@ -21,12 +21,12 @@ export function generateArticleMetaTags(article, baseUrl) {
     ogType: 'article',
     ogTitle: article.seoMeta?.title || article.title,
     ogDescription: article.seoMeta?.description || article.excerpt || '',
-    ogImage: imageUrl,
+    ogImage: defaultImageUrl,
     ogUrl: url,
-    twitterCard: 'summary_large_image',
+    twitterCard: 'summary',
     twitterTitle: article.seoMeta?.title || article.title,
     twitterDescription: article.seoMeta?.description || article.excerpt || '',
-    twitterImage: imageUrl,
+    twitterImage: defaultImageUrl,
     articlePublishedTime: article.publishedAt?.toISOString(),
     articleModifiedTime: article.updatedAt?.toISOString(),
     articleAuthor: 'Đặc Sản Sóc Trăng',
@@ -43,7 +43,7 @@ export function generateArticleMetaTags(article, baseUrl) {
  */
 export function generateArticleStructuredData(article, baseUrl) {
   const url = `${baseUrl}/articles/${article.slug}`;
-  const imageUrl = article.featuredImage?.url || `${baseUrl}/default-article-image.jpg`;
+  const defaultImageUrl = `${baseUrl}/default-article-image.jpg`;
   
   return {
     '@context': 'https://schema.org',
@@ -52,8 +52,8 @@ export function generateArticleStructuredData(article, baseUrl) {
     description: article.excerpt || '',
     image: {
       '@type': 'ImageObject',
-      url: imageUrl,
-      width: 1200,
+      url: defaultImageUrl,
+      width: 120,
       height: 630
     },
     datePublished: article.publishedAt?.toISOString(),
@@ -185,16 +185,16 @@ export function generateSeoExcerpt(content, maxLength = 160) {
  */
 export function generateOpenGraphTags(article, baseUrl) {
   const url = `${baseUrl}/articles/${article.slug}`;
-  const imageUrl = article.featuredImage?.url || `${baseUrl}/default-article-image.jpg`;
+  const defaultImageUrl = `${baseUrl}/default-article-image.jpg`;
   
   return {
     'og:type': 'article',
     'og:title': article.seoMeta?.title || article.title,
     'og:description': article.seoMeta?.description || article.excerpt || '',
-    'og:image': imageUrl,
+    'og:image': defaultImageUrl,
     'og:image:width': '1200',
     'og:image:height': '630',
-    'og:image:alt': article.featuredImage?.alt || article.title,
+    'og:image:alt': article.title,
     'og:url': url,
     'og:site_name': 'Đặc Sản Sóc Trăng',
     'og:locale': 'vi_VN',
@@ -213,13 +213,13 @@ export function generateOpenGraphTags(article, baseUrl) {
  * @returns {Object} Twitter Card tags
  */
 export function generateTwitterCardTags(article, baseUrl) {
-  const imageUrl = article.featuredImage?.url || `${baseUrl}/default-article-image.jpg`;
+  const defaultImageUrl = `${baseUrl}/default-article-image.jpg`;
   
   return {
-    'twitter:card': 'summary_large_image',
+    'twitter:card': 'summary',
     'twitter:title': article.seoMeta?.title || article.title,
     'twitter:description': article.seoMeta?.description || article.excerpt || '',
-    'twitter:image': imageUrl,
-    'twitter:image:alt': article.featuredImage?.alt || article.title
+    'twitter:image': defaultImageUrl,
+    'twitter:image:alt': article.title
   };
 }

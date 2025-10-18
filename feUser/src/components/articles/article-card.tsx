@@ -1,11 +1,12 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { Article } from "@/types/article";
 import { Calendar, Eye, Heart, MessageCircle, Share2 } from "lucide-react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { ArticleBody } from "./article-body";
+import Link from "next/link";
 
 interface ArticleCardProps {
   article: Article;
@@ -29,19 +30,7 @@ export function ArticleCard({ article }: ArticleCardProps) {
   };
 
   return (
-    <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-300 h-full flex flex-col">
-      <Link href={`/bai-viet/${article.slug}`} className="block">
-        <div className="relative w-full h-48 overflow-hidden">
-          <Image
-            src={article.featuredImage.url}
-            alt={article.featuredImage.alt || article.title}
-            fill
-            className="object-cover hover:scale-105 transition-transform duration-300"
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-          />
-        </div>
-      </Link>
-
+    <Card className="overflow-hidden h-full flex flex-col">
       <CardContent className="flex-1 p-4">
         <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
           <Calendar className="w-4 h-4" />
@@ -49,17 +38,15 @@ export function ArticleCard({ article }: ArticleCardProps) {
         </div>
 
         <Link href={`/bai-viet/${article.slug}`}>
-          <h3 className="font-semibold text-lg mb-2 line-clamp-2 hover:text-primary transition-colors">
+          <h3 className="font-semibold text-lg mb-2 hover:text-primary transition-colors">
             {article.title}
           </h3>
         </Link>
-
-        <p className="text-sm text-muted-foreground line-clamp-3 mb-3">
-          {article.excerpt}
-        </p>
+        
+        <ArticleBody content={article.content} slug={article.slug} />
 
         {article.tags && article.tags.length > 0 && (
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 mt-4">
             {article.tags.slice(0, 3).map((tag) => (
               <Badge key={tag} variant="secondary" className="text-xs">
                 {tag}

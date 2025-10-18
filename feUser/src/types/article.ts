@@ -4,11 +4,8 @@ export interface Article {
   slug: string;
   content: string;
   excerpt: string;
-  featuredImage: {
-    url: string;
-    publicId: string;
-    alt: string;
-  };
+  featuredImage: string;
+  images?: string[];
   status: 'draft' | 'published' | 'archived';
   tags: string[];
   publishedAt: string;
@@ -33,10 +30,6 @@ export interface ArticlePreview {
   title: string;
   slug: string;
   excerpt: string;
-  featuredImage: {
-    url: string;
-    alt: string;
-  };
   tags: string[];
   publishedAt: string;
   stats: {

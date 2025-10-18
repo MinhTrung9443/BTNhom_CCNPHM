@@ -180,15 +180,6 @@ const ArticlesPage = () => {
                     <tr key={article._id}>
                       <td>
                         <div className="d-flex align-items-center">
-                          {article.featuredImage?.url && (
-                            <img
-                              src={getImageSrc(article.featuredImage.url, 60, 60)}
-                              alt={article.featuredImage.alt || article.title}
-                              className="rounded me-3"
-                              style={{ width: '60px', height: '60px', objectFit: 'cover' }}
-                              onError={(e) => handleImageError(e, 60, 60)}
-                            />
-                          )}
                           <div style={{ maxWidth: '400px' }}>
                             <div className="fw-semibold">{article.title}</div>
                             {article.excerpt && (

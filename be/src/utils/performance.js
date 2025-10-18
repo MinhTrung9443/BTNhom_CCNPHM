@@ -142,14 +142,6 @@ export function buildTextSearchQuery(searchTerm, fields = ['title', 'excerpt', '
 export function optimizeArticleForResponse(article, options = {}) {
   const optimized = { ...article };
 
-  // Optimize featured image
-  if (optimized.featuredImage?.url) {
-    if (options.includeResponsiveImages) {
-      optimized.featuredImage.responsive = generateResponsiveImages(optimized.featuredImage.url);
-    } else {
-      optimized.featuredImage.url = optimizeImageUrl(optimized.featuredImage.url, options.imageSize || 'medium');
-    }
-  }
 
   // Remove content for list views
   if (options.excludeContent) {

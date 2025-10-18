@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect } from "react";
-import Image from "next/image";
 import { ArticleDetailResponse } from "@/types/article";
 import { Calendar, Eye, Heart, MessageCircle, Share2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -82,20 +81,6 @@ export function ArticleDetail({ article, onViewTracked }: ArticleDetailProps) {
           </div>
         )}
       </header>
-
-      {/* Featured Image */}
-      {article.featuredImage && (
-        <div className="relative w-full h-[400px] md:h-[500px] mb-8 rounded-lg overflow-hidden">
-          <Image
-            src={article.featuredImage.url}
-            alt={article.featuredImage.alt || article.title}
-            fill
-            className="object-cover"
-            priority
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 1200px"
-          />
-        </div>
-      )}
 
       {/* Content */}
       <div

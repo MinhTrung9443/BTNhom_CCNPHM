@@ -21,22 +21,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         openGraph: {
           title: article.seoMeta?.title || article.title,
           description: article.seoMeta?.description || article.excerpt,
-          images: [
-            {
-              url: article.featuredImage.url,
-              alt: article.featuredImage.alt || article.title,
-            },
-          ],
           type: "article",
           publishedTime: article.publishedAt,
           authors: ["Đặc sản Sóc Trăng"],
           tags: article.tags,
         },
         twitter: {
-          card: "summary_large_image",
+          card: "summary",
           title: article.seoMeta?.title || article.title,
           description: article.seoMeta?.description || article.excerpt,
-          images: [article.featuredImage.url],
         },
       };
     }

@@ -161,7 +161,7 @@ export const articleService = {
       sort,
       skip: pagination.skip,
       limit: pagination.limit,
-      select: 'title slug excerpt featuredImage tags publishedAt stats',
+      select: 'title slug excerpt tags publishedAt stats content featuredImage images',
       sortBy
     });
 
@@ -173,7 +173,6 @@ export const articleService = {
     // Optimize articles for response with responsive images
     const optimizedArticles = articles.map(article => {
       const optimized = optimizeArticleForResponse(article, {
-        excludeContent: true,
         includeResponsiveImages: true,
         maxExcerptLength: 150
       });
