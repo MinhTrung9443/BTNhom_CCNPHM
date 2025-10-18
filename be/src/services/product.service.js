@@ -7,11 +7,11 @@ export const productService = {
 
     const total = await Product.countDocuments();
     const products = await Product.find()
-      .populate('categoryId', 'name')
+      .populate("categoryId", "name")
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
-      .select('name slug description price discount images categoryId createdAt stock');
+      .select("name slug description price discount images categoryId createdAt stock");
 
     const totalPages = Math.ceil(total / limit);
 
@@ -23,8 +23,8 @@ export const productService = {
         totalProducts: total,
         hasNext: page < totalPages,
         hasPrev: page > 1,
-        limit
-      }
+        limit,
+      },
     };
   },
 
@@ -37,18 +37,18 @@ export const productService = {
       {
         $group: {
           _id: "$orderLines.productId",
-          totalSold: { $sum: "$orderLines.quantity" }
-        }
+          totalSold: { $sum: "$orderLines.quantity" },
+        },
       },
       { $sort: { totalSold: -1 } },
       { $skip: skip },
-      { $limit: limit }
+      { $limit: limit },
     ]);
 
-    const productIds = bestSellers.map(item => item._id);
+    const productIds = bestSellers.map((item) => item._id);
     const products = await Product.find({ _id: { $in: productIds } })
-      .populate('categoryId', 'name')
-      .select('name slug description price discount images categoryId createdAt stock');
+      .populate("categoryId", "name")
+      .select("name slug description price discount images categoryId createdAt stock");
 
     const totalBestSellers = await Order.aggregate([
       { $match: { status: { $in: ["paid", "shipped", "completed"] } } },
@@ -56,21 +56,25 @@ export const productService = {
       {
         $group: {
           _id: "$orderLines.productId",
-        }
+        },
       },
-      { $count: "total" }
+      { $count: "total" },
     ]);
 
     const total = totalBestSellers[0]?.total || 0;
     const totalPages = Math.ceil(total / limit);
 
-    const sortedProducts = bestSellers.map(seller => {
-      const product = products.find(p => p._id.toString() === seller._id.toString());
-      return product ? {
-        ...product.toObject(),
-        totalSold: seller.totalSold
-      } : null;
-    }).filter(Boolean);
+    const sortedProducts = bestSellers
+      .map((seller) => {
+        const product = products.find((p) => p._id.toString() === seller._id.toString());
+        return product
+          ? {
+              ...product.toObject(),
+              totalSold: seller.totalSold,
+            }
+          : null;
+      })
+      .filter(Boolean);
 
     return {
       products: sortedProducts,
@@ -80,8 +84,8 @@ export const productService = {
         totalProducts: total,
         hasNext: page < totalPages,
         hasPrev: page > 1,
-        limit
-      }
+        limit,
+      },
     };
   },
 
@@ -92,38 +96,42 @@ export const productService = {
       {
         $group: {
           _id: "$productId",
-          totalViews: { $sum: "$viewCount" }
-        }
+          totalViews: { $sum: "$viewCount" },
+        },
       },
       { $sort: { totalViews: -1 } },
       { $skip: skip },
-      { $limit: limit }
+      { $limit: limit },
     ]);
 
-    const productIds = mostViewed.map(item => item._id);
+    const productIds = mostViewed.map((item) => item._id);
     const products = await Product.find({ _id: { $in: productIds } })
-      .populate('categoryId', 'name')
-      .select('name slug description price discount images categoryId createdAt stock');
+      .populate("categoryId", "name")
+      .select("name slug description price discount images categoryId createdAt stock");
 
     const totalViewed = await ProductView.aggregate([
       {
         $group: {
           _id: "$productId",
-        }
+        },
       },
-      { $count: "total" }
+      { $count: "total" },
     ]);
 
     const total = totalViewed[0]?.total || 0;
     const totalPages = Math.ceil(total / limit);
 
-    const sortedProducts = mostViewed.map(viewed => {
-      const product = products.find(p => p._id.toString() === viewed._id.toString());
-      return product ? {
-        ...product.toObject(),
-        totalViews: viewed.totalViews
-      } : null;
-    }).filter(Boolean);
+    const sortedProducts = mostViewed
+      .map((viewed) => {
+        const product = products.find((p) => p._id.toString() === viewed._id.toString());
+        return product
+          ? {
+              ...product.toObject(),
+              totalViews: viewed.totalViews,
+            }
+          : null;
+      })
+      .filter(Boolean);
 
     return {
       products: sortedProducts,
@@ -133,8 +141,8 @@ export const productService = {
         totalProducts: total,
         hasNext: page < totalPages,
         hasPrev: page > 1,
-        limit
-      }
+        limit,
+      },
     };
   },
 
@@ -143,11 +151,11 @@ export const productService = {
 
     const total = await Product.countDocuments({ discount: { $gt: 0 } });
     const products = await Product.find({ discount: { $gt: 0 } })
-      .populate('categoryId', 'name')
+      .populate("categoryId", "name")
       .sort({ discount: -1 })
       .skip(skip)
       .limit(limit)
-      .select('name slug description price discount images categoryId createdAt stock');
+      .select("name slug description price discount images categoryId createdAt stock");
 
     const totalPages = Math.ceil(total / limit);
 
@@ -159,8 +167,8 @@ export const productService = {
         totalProducts: total,
         hasNext: page < totalPages,
         hasPrev: page > 1,
-        limit
-      }
+        limit,
+      },
     };
   },
 
@@ -178,31 +186,40 @@ export const productService = {
       if (maxPrice) filter.price.$lte = parseFloat(maxPrice);
     }
     if (search) {
-      filter.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } }
-      ];
+      filter.$or = [{ name: { $regex: search, $options: "i" } }, { description: { $regex: search, $options: "i" } }];
     }
 
     let sort = { createdAt: -1 };
     if (sortBy) {
       switch (sortBy) {
-        case 'price_asc': sort = { price: 1 }; break;
-        case 'price_desc': sort = { price: -1 }; break;
-        case 'name_asc': sort = { name: 1 }; break;
-        case 'name_desc': sort = { name: -1 }; break;
-        case 'newest': sort = { createdAt: -1 }; break;
-        case 'oldest': sort = { createdAt: 1 }; break;
+        case "price_asc":
+          sort = { price: 1 };
+          break;
+        case "price_desc":
+          sort = { price: -1 };
+          break;
+        case "name_asc":
+          sort = { name: 1 };
+          break;
+        case "name_desc":
+          sort = { name: -1 };
+          break;
+        case "newest":
+          sort = { createdAt: -1 };
+          break;
+        case "oldest":
+          sort = { createdAt: 1 };
+          break;
       }
     }
 
     const total = await Product.countDocuments(filter);
     const products = await Product.find(filter)
-      .populate('categoryId', 'name')
+      .populate("categoryId", "name")
       .sort(sort)
       .skip(skip)
       .limit(limit)
-      .select('name slug description price discount images categoryId createdAt stock');
+      .select("name slug description price discount images categoryId createdAt stock");
 
     const totalPages = Math.ceil(total / limit);
 
@@ -214,34 +231,33 @@ export const productService = {
         totalProducts: total,
         hasNext: page < totalPages,
         hasPrev: page > 1,
-      }
+      },
     };
   },
 
   async getProductDetail(id, userId) {
-    const productPromise = Product.findById(id)
-      .populate('categoryId', 'name description');
+    const productPromise = Product.findById(id).populate("categoryId", "name description");
 
-    const successfulOrderStatuses = ['completed', 'shipped', 'delivered', 'paid'];
-    const buyerCountPromise = Order.distinct('userId', {
-      'orderLines.productId': id,
-      'status': { $in: successfulOrderStatuses }
+    const successfulOrderStatuses = ["completed", "shipped", "delivered", "paid"];
+    const buyerCountPromise = Order.distinct("userId", {
+      "orderLines.productId": id,
+      status: { $in: successfulOrderStatuses },
     }).countDocuments();
 
-    const reviewerCountPromise = Review.distinct('userId', {
-      'productId': id
+    const reviewerCountPromise = Review.distinct("userId", {
+      productId: id,
     }).countDocuments();
 
     let isSavedPromise = Promise.resolve(false);
     if (userId) {
-      isSavedPromise = Favorite.exists({ userId, productId: id }).then(fav => !!fav);
+      isSavedPromise = Favorite.exists({ userId, productId: id }).then((fav) => !!fav);
     }
 
     const [product, buyerCount, reviewerCount, isSaved] = await Promise.all([
       productPromise,
       buyerCountPromise,
       reviewerCountPromise,
-      isSavedPromise
+      isSavedPromise,
     ]);
 
     if (!product) {
@@ -271,8 +287,7 @@ export const productService = {
   },
 
   async getProductDetailBySlug(slug, userId) {
-    const productPromise = Product.findOne({ slug })
-      .populate('categoryId', 'name description');
+    const productPromise = Product.findOne({ slug }).populate("categoryId", "name description");
 
     const product = await productPromise;
 
@@ -281,27 +296,23 @@ export const productService = {
     }
 
     const id = product._id;
-    const successfulOrderStatuses = ['completed', 'shipped', 'delivered', 'paid'];
-    const buyerCountPromise = Order.distinct('userId', {
-      'orderLines.productId': id,
-      'status': { $in: successfulOrderStatuses }
+    const successfulOrderStatuses = ["completed", "shipped", "delivered", "paid"];
+    const buyerCountPromise = Order.distinct("userId", {
+      "orderLines.productId": id,
+      status: { $in: successfulOrderStatuses },
     }).countDocuments();
 
-    const reviewerCountPromise = Review.distinct('userId', {
-      'productId': id
+    const reviewerCountPromise = Review.distinct("userId", {
+      productId: id,
     }).countDocuments();
 
     let isSavedPromise = Promise.resolve(false);
     if (userId) {
-      isSavedPromise = Favorite.exists({ userId, productId: id }).then(fav => !!fav);
+      isSavedPromise = Favorite.exists({ userId, productId: id }).then((fav) => !!fav);
     }
     console.log({ userId, id });
 
-    const [buyerCount, reviewerCount, isSaved] = await Promise.all([
-      buyerCountPromise,
-      reviewerCountPromise,
-      isSavedPromise
-    ]);
+    const [buyerCount, reviewerCount, isSaved] = await Promise.all([buyerCountPromise, reviewerCountPromise, isSavedPromise]);
 
     if (userId) {
       await ProductView.findOneAndUpdate(
@@ -326,40 +337,36 @@ export const productService = {
   },
 
   async getRelatedProducts(id) {
-    const currentProduct = await Product.findById(id).select('categoryId');
+    const currentProduct = await Product.findById(id).select("categoryId");
     if (!currentProduct) {
       throw new AppError("Không tìm thấy sản phẩm", 404);
     }
 
     return Product.find({
       categoryId: currentProduct.categoryId,
-      _id: { $ne: id }
+      _id: { $ne: id },
     })
       .limit(4)
-      .populate('categoryId', 'name')
-      .select('name slug price discount images categoryId stock');
+      .populate("categoryId", "name")
+      .select("name slug price discount images categoryId stock");
   },
 
   async recordProductView(productId, userId) {
-    await ProductView.findOneAndUpdate(
-      { userId, productId },
-      { $inc: { viewCount: 1 }, lastViewedAt: new Date() },
-      { upsert: true, new: true }
-    );
+    await ProductView.findOneAndUpdate({ userId, productId }, { $inc: { viewCount: 1 }, lastViewedAt: new Date() }, { upsert: true, new: true });
   },
 
   async getProductById(id) {
-    const product = await Product.findById(id).populate('categoryId').populate('reviews');
+    const product = await Product.findById(id).populate("categoryId").populate("reviews");
 
     if (!product) {
       throw new AppError("Sản phẩm không tồn tại", 404);
     }
-    const buyerCount = await Order.distinct('userId', {
-      'items.productId': id,
-      'status': 'completed'
+    const buyerCount = await Order.distinct("userId", {
+      "items.productId": id,
+      status: "completed",
     }).countDocuments();
-    const reviewerCount = await Review.distinct('userId', {
-      'productId': id
+    const reviewerCount = await Review.distinct("userId", {
+      productId: id,
     }).countDocuments();
 
     return {
@@ -373,24 +380,43 @@ export const productService = {
     if (!Array.isArray(ids)) {
       throw new AppError("IDs must be an array", 400);
     }
-    return Product.find({ '_id': { $in: ids } })
-      .select('name slug price discount images stock');
-  }
-,
+    return Product.find({ _id: { $in: ids } }).select("name slug price discount images stock");
+  },
   async updateProduct(id, updateData) {
+    // Kiểm tra tên sản phẩm trùng lặp nếu có cập nhật tên
+    if (updateData.name) {
+      const existingProduct = await Product.findOne({
+        name: updateData.name,
+        _id: { $ne: id }, // Loại trừ sản phẩm hiện tại
+      });
+
+      if (existingProduct) {
+        const error = new AppError("Validation failed", 400);
+        error.errors = [
+          {
+            field: "name",
+            message: "Sản phẩm đã tồn tại.",
+          },
+        ];
+        throw error;
+      }
+    }
+
     const product = await Product.findByIdAndUpdate(id, updateData, {
       new: true,
       runValidators: true,
     });
+
     if (!product) {
       throw new AppError("Không tìm thấy sản phẩm", 404);
     }
+
     return product;
   },
 
   async deleteProduct(productId) {
     // Check if the product is part of any order
-    const orderCount = await Order.countDocuments({ 'orderLines.productId': productId });
+    const orderCount = await Order.countDocuments({ "orderLines.productId": productId });
 
     if (orderCount > 0) {
       // If the product is in an order, deactivate it (soft delete)
@@ -398,21 +424,28 @@ export const productService = {
       if (!product) {
         throw new AppError("Không tìm thấy sản phẩm", 404);
       }
-      return { message: 'Sản phẩm đã được vô hiệu hóa vì đã có trong đơn hàng.', product, softDeleted: true };
+      return { message: "Sản phẩm đã được vô hiệu hóa vì đã có trong đơn hàng.", product, softDeleted: true };
     } else {
       // If the product is not in any order, delete it permanently
       const product = await Product.findByIdAndDelete(productId);
       if (!product) {
         throw new AppError("Không tìm thấy sản phẩm", 404);
       }
-      return { message: 'Sản phẩm đã được xóa vĩnh viễn.', productId, softDeleted: false };
+      return { message: "Sản phẩm đã được xóa vĩnh viễn.", productId, softDeleted: false };
     }
   },
 
   async createProduct(productData) {
     const exitsProduct = await Product.findOne({ name: productData.name });
     if (exitsProduct) {
-      throw new AppError("Sản phẩm đã tồn tại", 400);
+      const error = new AppError("Validation failed", 400);
+      error.errors = [
+        {
+          field: "name",
+          message: "Sản phẩm đã tồn tại.",
+        },
+      ];
+      throw error;
     }
     const product = new Product(productData);
     await product.save();
@@ -428,19 +461,16 @@ export const productService = {
     inStock = null,
     page = 1,
     limit = 12,
-    sortBy = 'createdAt',
-    sortOrder = 'desc'
+    sortBy = "createdAt",
+    sortOrder = "desc",
   }) {
     // Xây dựng filter object
     const filter = { isActive: true };
 
     // Text search - không phân biệt hoa thường
     if (keyword && keyword.trim()) {
-      const searchRegex = new RegExp(keyword.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
-      filter.$or = [
-        { name: searchRegex },
-        { description: searchRegex }
-      ];
+      const searchRegex = new RegExp(keyword.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
+      filter.$or = [{ name: searchRegex }, { description: searchRegex }];
     }
 
     // Filter theo danh mục
@@ -469,10 +499,10 @@ export const productService = {
 
     // Xây dựng sort object
     const sort = {};
-    sort[sortBy] = sortOrder === 'asc' ? 1 : -1;
+    sort[sortBy] = sortOrder === "asc" ? 1 : -1;
 
     // Nếu không sort theo createdAt, thêm createdAt làm sort thứ hai để đảm bảo consistent
-    if (sortBy !== 'createdAt') {
+    if (sortBy !== "createdAt") {
       sort.createdAt = -1;
     }
 
@@ -482,20 +512,20 @@ export const productService = {
     // Thực hiện truy vấn song song
     const [products, total] = await Promise.all([
       Product.find(filter)
-        .populate('categoryId', 'name slug')
+        .populate("categoryId", "name slug")
         .sort(sort)
         .skip(skip)
         .limit(limit)
-        .select('name slug price discount images averageRating totalReviews soldCount stock categoryId createdAt')
+        .select("name slug price discount images averageRating totalReviews soldCount stock categoryId createdAt")
         .lean(),
-      Product.countDocuments(filter)
+      Product.countDocuments(filter),
     ]);
 
     // Tính toán thông tin phân trang
     const totalPages = Math.ceil(total / limit);
 
     // Format dữ liệu trả về
-    const formattedProducts = products.map(product => ({
+    const formattedProducts = products.map((product) => ({
       _id: product._id,
       name: product.name,
       slug: product.slug,
@@ -508,7 +538,7 @@ export const productService = {
       soldCount: product.soldCount || 0,
       stock: product.stock,
       category: product.categoryId,
-      createdAt: product.createdAt
+      createdAt: product.createdAt,
     }));
 
     const meta = {
@@ -523,20 +553,20 @@ export const productService = {
         categoryId: categoryId || null,
         priceRange: {
           min: minPrice,
-          max: maxPrice
+          max: maxPrice,
         },
         minRating: minRating || null,
-        inStock
+        inStock,
       },
       sort: {
         sortBy,
-        sortOrder
-      }
+        sortOrder,
+      },
     };
 
     return {
       meta,
-      data: formattedProducts
+      data: formattedProducts,
     };
-  }
+  },
 };

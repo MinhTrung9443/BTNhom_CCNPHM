@@ -200,7 +200,6 @@ const ProductsPage = () => {
           backendErrors[err.field] = err.message;
         });
         setFormErrors(backendErrors);
-        toast.error("Vui lòng kiểm tra lại thông tin đã nhập");
       } else {
         toast.error(error.response?.data?.message || "Có lỗi xảy ra");
       }
