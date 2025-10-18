@@ -7,7 +7,7 @@ import { useSession, signOut } from "next-auth/react";
 import { useCart } from "@/contexts/cart-context";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, ShoppingCart, Heart, Search, User, LogOut, Package, Eye, MessageSquare, Gift, Calendar, Coins } from "lucide-react";
+import { Menu, ShoppingCart, Heart, Search, User, LogOut, Package, Eye, MessageSquare, Gift, Calendar, Coins, Newspaper } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
@@ -20,13 +20,12 @@ import {
 import { UserAvatar } from "@/components/user-avatar";
 import { UserInfo } from "@/components/user-info";
 import { HeaderSearch } from "@/components/header-search";
-import { UnifiedSearch } from "@/components/unified-search";
-import { NotificationCenter } from "@/components/notifications/notification-center";
 
 const navigation = [
   { name: "Trang Chủ", href: "/" },
+  { name: "Giới Thiệu", href: "/about" },
   { name: "Sản Phẩm", href: "/search" },
-  { name: "Bài viết", href: "/bai-viet" },
+  { name: "Bài Viết", href: "/bai-viet" },
   { name: "Voucher", href: "/voucher" },
   { name: "Liên Hệ", href: "/lien-he" },
 ];
@@ -105,29 +104,24 @@ export default function Header() {
 
           {/* Search Bar */}
           <div className="hidden lg:flex flex-1 max-w-md mx-8">
-            <UnifiedSearch className="w-full" />
+            <HeaderSearch className="w-full" />
           </div>
 
           {/* Actions */}
           <div className="flex items-center space-x-2">
             {isLoggedIn && (
-              <>
-                <Link href="/yeu-thich">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className={`hidden sm:flex transition-all duration-300 rounded-lg group ${
-                      isHomePage && !isScrolled ? "text-white hover:bg-white/10 hover:text-white" : "text-red-500 hover:bg-red-50 hover:text-red-600"
-                    }`}
-                    suppressHydrationWarning
-                  >
-                    <Heart className="w-5 h-5 group-hover:scale-110 group-hover:fill-current transition-all duration-300" />
-                  </Button>
-                </Link>
-                <div className={isHomePage && !isScrolled ? "text-white" : ""}>
-                  <NotificationCenter />
-                </div>
-              </>
+              <Link href="/yeu-thich">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={`hidden sm:flex transition-all duration-300 rounded-lg group ${
+                    isHomePage && !isScrolled ? "text-white hover:bg-white/10 hover:text-white" : "text-red-500 hover:bg-red-50 hover:text-red-600"
+                  }`}
+                  suppressHydrationWarning
+                >
+                  <Heart className="w-5 h-5 group-hover:scale-110 group-hover:fill-current transition-all duration-300" />
+                </Button>
+              </Link>
             )}
             <Link href="/cart">
               <Button
@@ -320,6 +314,12 @@ export default function Header() {
                           <Button variant="ghost" className="w-full justify-start" size="sm">
                             <Coins className="mr-2 h-4 w-4" />
                             Điểm tích lũy
+                          </Button>
+                        </Link>
+                        <Link href="/bai-viet" onClick={() => setIsOpen(false)}>
+                          <Button variant="ghost" className="w-full justify-start" size="sm">
+                            <Newspaper className="mr-2 h-4 w-4" />
+                            Bài viết
                           </Button>
                         </Link>
                         <Button

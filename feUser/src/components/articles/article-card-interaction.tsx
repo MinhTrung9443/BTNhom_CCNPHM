@@ -2,11 +2,12 @@
 
 import { useState } from 'react';
 import { useSession } from 'next-auth/react';
-import { ThumbsUp, MessageCircle, Share2 } from 'lucide-react';
+import { ThumbsUp, MessageCircle } from 'lucide-react';
 import { Article } from '@/types/article';
 import { useToast } from '@/hooks/use-toast';
 import { articleService } from '@/services/articleService';
 import Link from 'next/link';
+import { ShareButton } from './share-button';
 
 interface ArticleCardInteractionProps {
   article: Article;
@@ -17,6 +18,7 @@ export function ArticleCardInteraction({ article }: ArticleCardInteractionProps)
   const { toast } = useToast();
   const [isLiked, setIsLiked] = useState(article.userInteraction?.hasLiked || false);
   const [likeCount, setLikeCount] = useState(article.stats.likes);
+  const [shareCount, setShareCount] = useState(article.stats.shares);
 
   const handleLike = async (e: React.MouseEvent) => {
     e.preventDefault(); // Prevent navigating to article detail
@@ -41,6 +43,10 @@ export function ArticleCardInteraction({ article }: ArticleCardInteractionProps)
     }
   };
   
+  const handleShare = (newShareCount: number) => {
+    setShareCount(newShareCount);
+  };
+  
   const formatNumber = (num: number) => {
     if (num >= 1000) {
       return (num / 1000).toFixed(1) + "k";
@@ -63,10 +69,12 @@ export function ArticleCardInteraction({ article }: ArticleCardInteractionProps)
                 <span>{formatNumber(article.stats.comments)} Bình luận</span>
             </Link>
         </div>
-        <div className="flex items-center gap-1.5">
-            <Share2 className="w-4 h-4" />
-            <span>{formatNumber(article.stats.shares)} Chia sẻ</span>
-        </div>
+        <ShareButton
+          articleId={article._id}
+          articleSlug={article.slug}
+          shareCount={shareCount}
+          onShare={handleShare}
+        />
     </div>
   );
 }

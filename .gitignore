@@ -42,3 +42,5 @@ be/logs/error.log
 be/logs/combined.log
 /feUser/.idea
 /feUser/.idea
+*.xml
+.github

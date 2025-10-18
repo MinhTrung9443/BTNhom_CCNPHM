@@ -62,7 +62,7 @@ export function useArticles(initialFilters?: ArticleFilters) {
 
   useEffect(() => {
     fetchArticles(1, false);
-  }, [filters]);
+  }, [fetchArticles]);
 
   return {
     articles,

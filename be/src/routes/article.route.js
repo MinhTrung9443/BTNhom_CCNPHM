@@ -90,6 +90,7 @@ router.get(
 // Get published articles (with pagination, search, filters)
 router.get(
   '/public',
+  optionalAuth,
   validate(getPublishedArticlesQuerySchema),
   optimizeResponseImages,
   addImagePreloadHints,

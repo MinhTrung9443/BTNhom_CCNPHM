@@ -74,7 +74,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <SessionProvider session={session}>
           <CartProvider>
             <Header />
-            <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">{children}</main>
+            <main className="flex-grow">{children}</main>
             <Footer />
             <ChatWidget />
             <N8nChatbot />

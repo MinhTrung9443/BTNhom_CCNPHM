@@ -10,23 +10,25 @@
  * @returns {Object} SEO meta tags
  */
 export function generateArticleMetaTags(article, baseUrl) {
-  const url = `${baseUrl}/articles/${article.slug}`;
-  const defaultImageUrl = `${baseUrl}/default-article-image.jpg`;
+  const url = `${baseUrl}/bai-viet/${article.slug}`;
+  const imageUrl = article.featuredImage
+    ? (article.featuredImage.startsWith('http') ? article.featuredImage : `${baseUrl}${article.featuredImage}`)
+    : `${baseUrl}/default-article-image.jpg`;
   
   return {
     title: article.seoMeta?.title || article.title,
-    description: article.seoMeta?.description || article.excerpt || '',
+    description: article.seoMeta?.description || generateSeoExcerpt(article.content, 155) || '',
     keywords: article.seoMeta?.keywords || article.tags || [],
     canonical: url,
     ogType: 'article',
     ogTitle: article.seoMeta?.title || article.title,
-    ogDescription: article.seoMeta?.description || article.excerpt || '',
-    ogImage: defaultImageUrl,
+    ogDescription: article.seoMeta?.description || generateSeoExcerpt(article.content, 155) || '',
+    ogImage: imageUrl,
     ogUrl: url,
-    twitterCard: 'summary',
+    twitterCard: 'summary_large_image',
     twitterTitle: article.seoMeta?.title || article.title,
-    twitterDescription: article.seoMeta?.description || article.excerpt || '',
-    twitterImage: defaultImageUrl,
+    twitterDescription: article.seoMeta?.description || generateSeoExcerpt(article.content, 155) || '',
+    twitterImage: imageUrl,
     articlePublishedTime: article.publishedAt?.toISOString(),
     articleModifiedTime: article.updatedAt?.toISOString(),
     articleAuthor: 'Đặc Sản Sóc Trăng',
@@ -184,14 +186,16 @@ export function generateSeoExcerpt(content, maxLength = 160) {
  * @returns {Object} Open Graph tags
  */
 export function generateOpenGraphTags(article, baseUrl) {
-  const url = `${baseUrl}/articles/${article.slug}`;
-  const defaultImageUrl = `${baseUrl}/default-article-image.jpg`;
+  const url = `${baseUrl}/bai-viet/${article.slug}`;
+  const imageUrl = article.featuredImage
+    ? (article.featuredImage.startsWith('http') ? article.featuredImage : `${baseUrl}${article.featuredImage}`)
+    : `${baseUrl}/default-article-image.jpg`;
   
   return {
     'og:type': 'article',
     'og:title': article.seoMeta?.title || article.title,
-    'og:description': article.seoMeta?.description || article.excerpt || '',
-    'og:image': defaultImageUrl,
+    'og:description': article.seoMeta?.description || generateSeoExcerpt(article.content, 155) || '',
+    'og:image': imageUrl,
     'og:image:width': '1200',
     'og:image:height': '630',
     'og:image:alt': article.title,
@@ -213,13 +217,15 @@ export function generateOpenGraphTags(article, baseUrl) {
  * @returns {Object} Twitter Card tags
  */
 export function generateTwitterCardTags(article, baseUrl) {
-  const defaultImageUrl = `${baseUrl}/default-article-image.jpg`;
-  
+  const imageUrl = article.featuredImage
+    ? (article.featuredImage.startsWith('http') ? article.featuredImage : `${baseUrl}${article.featuredImage}`)
+    : `${baseUrl}/default-article-image.jpg`;
+
   return {
-    'twitter:card': 'summary',
+    'twitter:card': 'summary_large_image',
     'twitter:title': article.seoMeta?.title || article.title,
-    'twitter:description': article.seoMeta?.description || article.excerpt || '',
-    'twitter:image': defaultImageUrl,
+    'twitter:description': article.seoMeta?.description || generateSeoExcerpt(article.content, 155) || '',
+    'twitter:image': imageUrl,
     'twitter:image:alt': article.title
   };
 }

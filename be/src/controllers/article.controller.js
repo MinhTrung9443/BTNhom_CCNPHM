@@ -9,6 +9,9 @@ export const articleController = {
    */
   createArticle: async (req, res, next) => {
     try {
+      if (req.file) {
+        req.body.featuredImage = req.file.path;
+      }
       const article = await articleService.createArticle(req.body);
       res.status(201).json({
         success: true,
@@ -57,6 +60,9 @@ export const articleController = {
    */
   updateArticle: async (req, res, next) => {
     try {
+      if (req.file) {
+        req.body.featuredImage = req.file.path;
+      }
       const article = await articleService.updateArticle(
         req.params.id,
         req.body

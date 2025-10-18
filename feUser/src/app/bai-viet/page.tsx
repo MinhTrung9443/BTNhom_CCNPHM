@@ -35,47 +35,43 @@ export default function ArticlesPage() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      {/* Breadcrumb */}
-      <div className="mb-6">
-        <Breadcrumb
-          items={[
-            { label: "Bài viết" }
-          ]}
+    <div className="bg-gray-50">
+      {/* Header */}
+      <div className="bg-white py-8">
+        <div className="container mx-auto px-4 max-w-6xl">
+          <div className="mb-6">
+            <Breadcrumb items={[{ label: "Bài viết" }]} />
+          </div>
+          <div className="mb-8">
+            <h1 className="text-3xl md:text-4xl font-bold mb-2">Bài viết</h1>
+            <p className="text-muted-foreground">
+              Khám phá những câu chuyện và kiến thức về đặc sản Sóc Trăng
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="container mx-auto px-4 py-8 max-w-6xl">
+        <ArticleFilters
+          onFilterChange={handleFilterChange}
+          availableTags={availableTags}
+        />
+        {/* Error Alert */}
+        {error && (
+          <Alert variant="destructive" className="mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        {/* Article List */}
+        <ArticleList
+          articles={articles}
+          loading={loading}
+          hasMore={hasMore}
+          onLoadMore={loadMore}
         />
       </div>
-
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl md:text-4xl font-bold mb-2">
-          Bài viết
-        </h1>
-        <p className="text-muted-foreground">
-          Khám phá những câu chuyện và kiến thức về đặc sản Sóc Trăng
-        </p>
-      </div>
-
-      {/* Filters */}
-      <ArticleFilters
-        onFilterChange={handleFilterChange}
-        availableTags={availableTags}
-      />
-
-      {/* Error Alert */}
-      {error && (
-        <Alert variant="destructive" className="mb-6">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-
-      {/* Article List */}
-      <ArticleList
-        articles={articles}
-        loading={loading}
-        hasMore={hasMore}
-        onLoadMore={loadMore}
-      />
     </div>
   );
 }

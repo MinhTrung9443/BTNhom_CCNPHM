@@ -28,28 +28,43 @@ const articleService = {
 
   // Create article
  createArticle: async (articleData) => {
-    const formData = new FormData();
-    Object.keys(articleData).forEach(key => {
-      if (typeof articleData[key] === 'object' && articleData[key] !== null) {
-        formData.append(key, JSON.stringify(articleData[key]));
-      } else {
-        formData.append(key, articleData[key]);
-      }
-    });
+   const formData = new FormData();
+   
+   // Logic mới để xử lý file và các trường khác
+   Object.keys(articleData).forEach(key => {
+     if (key === 'featuredImage' && articleData[key] instanceof File) {
+       // Nếu là featuredImage và là File, append trực tiếp
+       formData.append(key, articleData[key]);
+     } else if (typeof articleData[key] === 'object' && articleData[key] !== null) {
+       // Stringify các object khác (như tags)
+       formData.append(key, JSON.stringify(articleData[key]));
+     } else {
+       // Append các giá trị nguyên thủy
+       formData.append(key, articleData[key]);
+     }
+   });
 
-    const response = await api.post('/articles/admin', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    })
-    return response.data
-  },
+   const response = await api.post('/articles/admin', formData, {
+     headers: {
+       'Content-Type': 'multipart/form-data',
+     },
+   })
+   return response.data
+ },
 
   // Update article
   updateArticle: async (articleId, articleData) => {
     const formData = new FormData();
+    
+    // Logic mới để xử lý file và các trường khác
     Object.keys(articleData).forEach(key => {
-      if (typeof articleData[key] === 'object' && articleData[key] !== null) {
+      if (key === 'featuredImage' && articleData[key] instanceof File) {
+        // Nếu là featuredImage và là File, append trực tiếp
+        formData.append(key, articleData[key]);
+      } else if (key === 'featuredImage' && typeof articleData[key] === 'string') {
+         // Nếu featuredImage là string (URL ảnh cũ), cũng append
+         formData.append(key, articleData[key]);
+      } else if (typeof articleData[key] === 'object' && articleData[key] !== null) {
         formData.append(key, JSON.stringify(articleData[key]));
       } else {
         formData.append(key, articleData[key]);

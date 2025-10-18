@@ -1,8 +1,8 @@
 import express from 'express';
 import { articleInteractionController } from '../controllers/articleInteraction.controller.js';
-import { protect } from '../middlewares/auth.js';
+import { protect, optionalAuth } from '../middlewares/auth.js';
 import { validate } from '../middlewares/validate.js';
-import { likeArticleSchema } from '../schemas/interaction.schema.js';
+import { likeArticleSchema, shareArticleSchema } from '../schemas/interaction.schema.js';
 
 const router = express.Router();
 
@@ -12,6 +12,14 @@ router.post(
   protect,
   validate(likeArticleSchema),
   articleInteractionController.toggleLike
+);
+
+// Track an article share
+router.post(
+  '/:id/share',
+  optionalAuth,
+  validate(shareArticleSchema),
+  articleInteractionController.trackShare
 );
 
 export default router;

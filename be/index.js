@@ -49,14 +49,18 @@ if (process.env.NODE_ENV !== "production") {
   app.use(morgan("dev", { stream: logger.stream }));
 }
 
+// app.use(
+//   cors({
+//     origin:
+//       process.env.NODE_ENV === "production"
+//         ? [process.env.FRONTEND_URL, process.env.ADMIN_URL].filter(Boolean)
+//         : ["http://localhost:5173", "http://localhost:5174", "http://localhost:3000"],
+//     credentials: true,
+//   })
+// );
+
 app.use(
-  cors({
-    origin:
-      process.env.NODE_ENV === "production"
-        ? [process.env.FRONTEND_URL, process.env.ADMIN_URL].filter(Boolean)
-        : ["http://localhost:5173", "http://localhost:5174", "http://localhost:3000"],
-    credentials: true,
-  })
+  cors()
 );
 
 app.use("/uploads", express.static("uploads"));

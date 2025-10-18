@@ -79,7 +79,7 @@ export function ArticleFilters({
   const hasActiveFilters = keyword || selectedTags.length > 0;
 
   return (
-    <div className="space-y-4 mb-8">
+    <div className="space-y-4 mb-8 p-4 md:p-6 bg-card rounded-lg border">
       {/* Search and Sort */}
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="flex-1 relative">

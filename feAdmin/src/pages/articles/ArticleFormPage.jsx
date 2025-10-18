@@ -25,6 +25,8 @@ const ArticleFormPage = () => {
   const [tagInput, setTagInput] = useState('')
   const [saveLoading, setSaveLoading] = useState(false)
   const [errors, setErrors] = useState({})
+  const [imageFile, setImageFile] = useState(null); // File object
+  const [imagePreview, setImagePreview] = useState(null); // URL xem trước
 
   useEffect(() => {
     if (isEditing && articleId) {
@@ -44,6 +46,10 @@ const ArticleFormPage = () => {
         tags: currentArticle.tags || [],
         status: currentArticle.status || 'draft',
       })
+      // Thêm dòng này:
+      if (currentArticle.featuredImage) {
+        setImagePreview(getImageSrc(currentArticle.featuredImage)); // Hiển thị ảnh cũ
+      }
     }
   }, [currentArticle, isEditing])
 
@@ -76,6 +82,14 @@ const ArticleFormPage = () => {
     }))
   }
 
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setImageFile(file); // Lưu file
+      setImagePreview(URL.createObjectURL(file)); // Tạo link xem trước
+    }
+  };
+
   const validateForm = () => {
     const newErrors = {}
     
@@ -99,30 +113,45 @@ const ArticleFormPage = () => {
 
   const handleSave = async (publishNow = false) => {
     if (!validateForm()) {
-      toast.error('Vui lòng kiểm tra lại thông tin')
-      return
+      toast.error('Vui lòng kiểm tra lại thông tin');
+      return;
     }
 
-    setSaveLoading(true)
+    setSaveLoading(true);
     try {
       const articleData = {
         ...formData,
         status: publishNow ? 'published' : formData.status,
       };
 
-      if (isEditing) {
-        await dispatch(updateArticle({ articleId, articleData })).unwrap()
-        toast.success('Cập nhật bài viết thành công')
+      // --- THÊM LOGIC NÀY ---
+      if (imageFile) {
+        // Nếu có file ảnh mới, gán file vào
+        articleData.featuredImage = imageFile;
+      } else if (isEditing && currentArticle.featuredImage && imagePreview) {
+        // Nếu đang edit, không có file mới, nhưng CÓ preview
+        // (nghĩa là dùng lại ảnh cũ) -> gán lại URL ảnh cũ
+        articleData.featuredImage = currentArticle.featuredImage;
       } else {
-        await dispatch(createArticle(articleData)).unwrap()
-        toast.success('Tạo bài viết thành công')
+        // Không có file mới, cũng không có preview (đã bị xóa)
+        articleData.featuredImage = ""; // Gửi chuỗi rỗng để xóa
+      }
+      // -----------------------
+
+      if (isEditing) {
+        await dispatch(updateArticle({ articleId, articleData })).unwrap();
+        toast.success('Cập nhật bài viết thành công');
+      } else {
+        await dispatch(createArticle(articleData)).unwrap();
+        toast.success('Tạo bài viết thành công');
       }
       
-      navigate('/articles')
+      navigate('/articles');
     } catch (error) {
-      toast.error(error || 'Có lỗi xảy ra')
+    
+      toast.error(error || 'Có lỗi xảy ra');
     } finally {
-      setSaveLoading(false)
+      setSaveLoading(false);
     }
   }
 
@@ -280,6 +309,54 @@ const ArticleFormPage = () => {
                   ))}
                 </div>
               </Form.Group>
+            </Card.Body>
+          </Card>
+
+          {/* Featured Image */}
+          <Card className="border-0 shadow-sm mb-4">
+            <Card.Header className="bg-white">
+              <h5 className="mb-0">Ảnh đại diện (Featured Image)</h5>
+            </Card.Header>
+            <Card.Body>
+              <Form.Group>
+                <Form.Control
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                />
+                <Form.Text className="text-muted">
+                  Ảnh này sẽ hiển thị khi chia sẻ và làm ảnh bìa.
+                </Form.Text>
+              </Form.Group>
+
+              {imagePreview && (
+                <div className="mt-3 position-relative">
+                  <p className="text-muted small mb-1">Xem trước:</p>
+                  <img
+                    src={imagePreview}
+                    alt="Xem trước ảnh đại diện"
+                    className="rounded"
+                    style={{ width: '100%', height: 'auto', maxHeight: '250px', objectFit: 'cover' }}
+                    onError={(e) => handleImageError(e, 100, 100)}
+                  />
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    className="position-absolute top-0 end-0 m-2"
+                    onClick={() => {
+                      setImageFile(null);
+                      setImagePreview(null);
+                      // Nếu đang edit, đừng xóa link ảnh cũ trong data
+                      if (isEditing && currentArticle.featuredImage) {
+                         setFormData(prev => ({...prev, featuredImage: null}));
+                         setImagePreview(null); // Xóa preview
+                      }
+                    }}
+                  >
+                    <i className="bi bi-trash"></i> Xóa
+                  </Button>
+                </div>
+              )}
             </Card.Body>
           </Card>
 
