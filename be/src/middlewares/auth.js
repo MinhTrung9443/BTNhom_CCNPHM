@@ -47,6 +47,8 @@ const restrictTo = (...roles) => {
 };
 
 // Middleware xác thực tùy chọn - cho phép request đi qua dù có token hay không
+import logger from '../utils/logger.js';
+
 const optionalAuth = async (req, res, next) => {
   let token;
   if (
@@ -56,21 +58,25 @@ const optionalAuth = async (req, res, next) => {
     token = req.headers.authorization.split(" ")[1];
   }
 
-  // Nếu không có token, cho phép request đi qua
   if (!token) {
+    logger.info('optionalAuth: No token provided.');
     return next();
   }
 
   try {
     const decoded = jwt.verify(token, config.jwt.secret);
+    logger.info(`optionalAuth: Token decoded for user ID: ${decoded.id}`);
 
     const currentUser = await User.findById(decoded.id).select("-password");
     if (currentUser) {
       req.user = currentUser;
+      logger.info(`optionalAuth: User ${currentUser._id} attached to request.`);
+    } else {
+      logger.warn(`optionalAuth: User with ID ${decoded.id} not found.`);
     }
     next();
   } catch (error) {
-    // Nếu token không hợp lệ, vẫn cho phép request đi qua (không throw error)
+    logger.error(`optionalAuth: Invalid token - ${error.message}`);
     next();
   }
 };

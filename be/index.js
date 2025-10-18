@@ -17,6 +17,8 @@ import categoryRoutes from "./src/routes/category.route.js";
 import viewHistoryRoutes from "./src/routes/viewHistory.route.js";
 import loyaltyRoutes from "./src/routes/loyalty.route.js";
 import articleRoutes from "./src/routes/article.route.js";
+import commentRoutes from "./src/routes/comment.route.js";
+import articleInteractionRoutes from './src/routes/article-interaction.route.js';
 import logger from "./src/utils/logger.js";
 import { notFound, errorHandler } from "./src/middlewares/error.js";
 import cartRoutes from "./src/routes/cart.route.js";
@@ -83,6 +85,8 @@ app.use("/api/categories", categoryRoutes);
 app.use("/api/view-history", viewHistoryRoutes);
 app.use("/api/loyalty", loyaltyRoutes);
 app.use("/api/articles", articleRoutes);
+app.use("/api/comments", commentRoutes);
+app.use('/api/article-interactions', articleInteractionRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

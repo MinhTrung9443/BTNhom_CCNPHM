@@ -3,6 +3,7 @@ import ArticleLike from '../models/ArticleLike.js';
 import ArticleShare from '../models/ArticleShare.js';
 import Comment from '../models/Comment.js';
 import { NotFoundError, BadRequestError } from '../utils/AppError.js';
+import logger from '../utils/logger.js';
 import {
   generateArticleMetaTags,
   generateArticleStructuredData,
@@ -125,11 +126,11 @@ export const articleService = {
    * @param {Object} queryParams - Query parameters
    * @returns {Promise<Object>} Published articles with pagination
    */
-  async getPublishedArticles(queryParams) {
+  async getPublishedArticles(queryParams, userId = null) {
     const pagination = buildPaginationQuery(queryParams.page, queryParams.limit, 20);
     const { search, tags, sortBy } = queryParams;
 
-    const filter = { 
+    const filter = {
       status: 'published',
       publishedAt: { $lte: new Date() }
     };
@@ -170,6 +171,17 @@ export const articleService = {
       Article.countDocuments(filter)
     ]);
 
+    // Check user like status if userId is provided
+    let userLikes = new Set();
+    if (userId && articles.length > 0) {
+      const articleIds = articles.map(a => a._id);
+      const likes = await ArticleLike.find({
+        article: { $in: articleIds },
+        user: userId
+      }).select('article').lean();
+      userLikes = new Set(likes.map(l => l.article.toString()));
+    }
+
     // Optimize articles for response with responsive images
     const optimizedArticles = articles.map(article => {
       const optimized = optimizeArticleForResponse(article, {
@@ -181,6 +193,11 @@ export const articleService = {
       if (article.content) {
         optimized.readingTime = calculateReadingTime(article.content);
       }
+      
+      // Add user interaction status
+      optimized.userInteraction = {
+        hasLiked: userLikes.has(article._id.toString())
+      };
 
       return optimized;
     });
@@ -223,8 +240,9 @@ export const articleService = {
    * @returns {Promise<Object>} Article with user interaction status and SEO data
    */
   async getArticleBySlug(slug, userId = null, baseUrl = null) {
-    const article = await Article.findOne({ 
-      slug, 
+    logger.info(`getArticleBySlug Service: Received userId: ${userId}`);
+    const article = await Article.findOne({
+      slug,
       status: 'published',
       publishedAt: { $lte: new Date() }
     }).lean();
@@ -245,15 +263,19 @@ export const articleService = {
     };
 
     if (userId) {
+      logger.info(`getArticleBySlug Service: Checking like status for article ${article._id} and user ${userId}`);
       const [hasLiked, hasShared] = await Promise.all([
         ArticleLike.exists({ article: article._id, user: userId }),
         ArticleShare.exists({ article: article._id, user: userId })
       ]);
+      logger.info(`getArticleBySlug Service: hasLiked result: ${hasLiked}`);
 
       userInteraction = {
         hasLiked: !!hasLiked,
         hasShared: !!hasShared
       };
+    } else {
+      logger.info('getArticleBySlug Service: No userId provided, skipping interaction check.');
     }
 
     // Generate SEO data if baseUrl provided

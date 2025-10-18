@@ -16,7 +16,7 @@ export function useNotifications() {
 
   const fetchNotifications = useCallback(
     async (pageNum: number, append: boolean = false) => {
-      if (!session?.accessToken) return;
+      if (!session?.user?.accessToken) return;
 
       try {
         setLoading(true);
@@ -25,7 +25,7 @@ export function useNotifications() {
         const response = await notificationService.getNotifications(
           pageNum,
           20,
-          session.accessToken
+          session.user.accessToken
         );
 
         if (response.success && response.data) {
@@ -44,7 +44,7 @@ export function useNotifications() {
         setLoading(false);
       }
     },
-    [session?.accessToken]
+    [session?.user?.accessToken]
   );
 
   const loadMore = useCallback(() => {
@@ -62,12 +62,12 @@ export function useNotifications() {
 
   const markAsRead = useCallback(
     async (notificationId: string) => {
-      if (!session?.accessToken) return;
+      if (!session?.user?.accessToken) return;
 
       try {
         await notificationService.markAsRead(
           notificationId,
-          session.accessToken
+          session.user.accessToken
         );
 
         setNotifications((prev) =>
@@ -80,14 +80,14 @@ export function useNotifications() {
         console.error("Failed to mark notification as read:", err);
       }
     },
-    [session?.accessToken]
+    [session?.user?.accessToken]
   );
 
   const markAllAsRead = useCallback(async () => {
-    if (!session?.accessToken) return;
+    if (!session?.user?.accessToken) return;
 
     try {
-      await notificationService.markAllAsRead(session.accessToken);
+      await notificationService.markAllAsRead(session.user.accessToken);
       setNotifications((prev) =>
         prev.map((notif) => ({ ...notif, read: true }))
       );
@@ -95,16 +95,16 @@ export function useNotifications() {
     } catch (err: any) {
       console.error("Failed to mark all notifications as read:", err);
     }
-  }, [session?.accessToken]);
+  }, [session?.user?.accessToken]);
 
   const deleteNotification = useCallback(
     async (notificationId: string) => {
-      if (!session?.accessToken) return;
+      if (!session?.user?.accessToken) return;
 
       try {
         await notificationService.deleteNotification(
           notificationId,
-          session.accessToken
+          session.user.accessToken
         );
 
         setNotifications((prev) => {
@@ -118,7 +118,7 @@ export function useNotifications() {
         console.error("Failed to delete notification:", err);
       }
     },
-    [session?.accessToken]
+    [session?.user?.accessToken]
   );
 
   // Listen for real-time notifications via Socket.IO
@@ -139,10 +139,10 @@ export function useNotifications() {
 
   // Initial fetch
   useEffect(() => {
-    if (session?.accessToken) {
+    if (session?.user?.accessToken) {
       fetchNotifications(1, false);
     }
-  }, [session?.accessToken]);
+  }, [session?.user?.accessToken]);
 
   return {
     notifications,

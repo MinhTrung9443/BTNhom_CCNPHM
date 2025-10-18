@@ -3,11 +3,6 @@ import Joi from 'joi';
 // Create comment schema
 const createCommentSchema = {
   body: Joi.object({
-    article: Joi.string().pattern(/^[0-9a-fA-F]{24}$/).required().messages({
-      'string.base': 'ID bài viết phải là một chuỗi ký tự.',
-      'string.pattern.base': 'ID bài viết không hợp lệ.',
-      'any.required': 'ID bài viết là bắt buộc.'
-    }),
     content: Joi.string().trim().min(1).max(1000).required().messages({
       'string.base': 'Nội dung bình luận phải là một chuỗi ký tự.',
       'string.empty': 'Nội dung bình luận không được để trống.',
@@ -15,9 +10,16 @@ const createCommentSchema = {
       'string.max': 'Nội dung bình luận không được vượt quá {#limit} ký tự.',
       'any.required': 'Nội dung bình luận là bắt buộc.'
     }),
-    parentComment: Joi.string().pattern(/^[0-9a-fA-F]{24}$/).optional().allow(null).messages({
+    parentCommentId: Joi.string().pattern(/^[0-9a-fA-F]{24}$/).optional().allow(null).messages({
       'string.base': 'ID bình luận cha phải là một chuỗi ký tự.',
       'string.pattern.base': 'ID bình luận cha không hợp lệ.'
+    })
+  }),
+  params: Joi.object({
+    id: Joi.string().pattern(/^[0-9a-fA-F]{24}$/).required().messages({
+      'string.base': 'ID bài viết phải là một chuỗi ký tự.',
+      'string.pattern.base': 'ID bài viết không hợp lệ.',
+      'any.required': 'ID bài viết là bắt buộc.'
     })
   })
 };

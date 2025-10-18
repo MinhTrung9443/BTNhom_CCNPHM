@@ -17,7 +17,7 @@ export function useArticleLike(articleId: string, initialLiked: boolean = false,
   });
 
   const toggleLike = useCallback(async () => {
-    if (!session?.accessToken) {
+    if (!session?.user.accessToken) {
       throw new Error("Vui lòng đăng nhập để thích bài viết");
     }
 
@@ -25,19 +25,19 @@ export function useArticleLike(articleId: string, initialLiked: boolean = false,
 
     setIsLiking(true);
     try {
-      const response = await articleService.toggleLike(
+      const response = await articleService.toggleArticleLike(
         articleId,
-        session.accessToken
+        session.user.accessToken
       );
 
       if (response.success && response.data) {
-        setHasLiked(response.data.hasLiked);
-        setLikesCount(response.data.likesCount);
+        setHasLiked(response.data.liked);
+        setLikesCount(response.data.likes);
       }
     } finally {
       setIsLiking(false);
     }
-  }, [articleId, session?.accessToken, isLiking]);
+  }, [articleId, session?.user.accessToken, isLiking]);
 
   return {
     hasLiked,

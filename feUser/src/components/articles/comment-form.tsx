@@ -1,124 +1,96 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { useSession } from "next-auth/react";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, Send } from "lucide-react";
-import Link from "next/link";
+import { useState } from 'react';
+import { useSession } from 'next-auth/react';
+import { useToast } from '@/hooks/use-toast';
+import { articleService } from '@/services/articleService';
+import { Comment } from '@/types/article';
+import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
+import { UserAvatar } from '@/components/user-avatar';
 
 interface CommentFormProps {
-  onSubmit: (content: string) => Promise<void>;
-  placeholder?: string;
-  submitLabel?: string;
+  articleId: string;
+  parentCommentId?: string | null;
+  commentId?: string;
+  onCommentAdded: (comment: Comment) => void;
   onCancel?: () => void;
-  autoFocus?: boolean;
+  isReply?: boolean;
+  initialContent?: string;
 }
 
 export function CommentForm({
-  onSubmit,
-  placeholder = "Viết bình luận của bạn...",
-  submitLabel = "Gửi bình luận",
+  articleId,
+  parentCommentId = null,
+  onCommentAdded,
   onCancel,
-  autoFocus = false,
+  commentId,
+  isReply = false,
+  initialContent = '',
 }: CommentFormProps) {
-  const { data: session, status } = useSession();
-  const [content, setContent] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { data: session } = useSession();
+  const { toast } = useToast();
+  const [content, setContent] = useState(initialContent);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!content.trim() || !session) return;
 
-    if (!content.trim()) {
-      setError("Vui lòng nhập nội dung bình luận");
-      return;
-    }
-
-    if (content.length > 1000) {
-      setError("Bình luận không được vượt quá 1000 ký tự");
-      return;
-    }
-
+    setIsSubmitting(true);
     try {
-      setSubmitting(true);
-      setError(null);
-      await onSubmit(content.trim());
-      setContent("");
-    } catch (err: any) {
-      setError(err.message || "Không thể gửi bình luận");
+      let response;
+      if (commentId) {
+        response = await articleService.updateComment(
+          commentId,
+          content,
+          session.user.accessToken
+        );
+        toast({ title: 'Bình luận của bạn đã được cập nhật' });
+      } else {
+        response = await articleService.createComment(
+          articleId,
+          content,
+          parentCommentId,
+          session.user.accessToken
+        );
+        toast({ title: 'Bình luận của bạn đã được gửi' });
+      }
+      onCommentAdded(response.data);
+      setContent('');
+      if (onCancel) onCancel();
+    } catch (error) {
+      toast({
+        title: 'Lỗi',
+        description: 'Không thể gửi bình luận. Vui lòng thử lại.',
+        variant: 'destructive',
+      });
     } finally {
-      setSubmitting(false);
+      setIsSubmitting(false);
     }
   };
 
-  if (status === "loading") {
-    return (
-      <div className="p-4 border rounded-lg">
-        <p className="text-sm text-muted-foreground">Đang tải...</p>
-      </div>
-    );
-  }
-
-  if (!session) {
-    return (
-      <div className="p-4 border rounded-lg bg-muted/50">
-        <p className="text-sm text-muted-foreground mb-2">
-          Bạn cần đăng nhập để bình luận
-        </p>
-        <Link href="/login">
-          <Button size="sm">Đăng nhập</Button>
-        </Link>
-      </div>
-    );
-  }
+  if (!session) return null;
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3">
-      {error && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-
-      <Textarea
-        value={content}
-        onChange={(e) => setContent(e.target.value)}
-        placeholder={placeholder}
-        rows={3}
-        maxLength={1000}
-        disabled={submitting}
-        autoFocus={autoFocus}
-        className="resize-none"
-      />
-
-      <div className="flex items-center justify-between">
-        <span className="text-xs text-muted-foreground">
-          {content.length}/1000 ký tự
-        </span>
-        <div className="flex gap-2">
-          {onCancel && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={onCancel}
-              disabled={submitting}
-            >
+    <form onSubmit={handleSubmit} className={`flex items-start space-x-4 ${isReply ? 'mt-4' : ''}`}>
+      <UserAvatar session={session} className="w-10 h-10" />
+      <div className="flex-1">
+        <Textarea
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          placeholder={isReply ? 'Viết câu trả lời của bạn...' : 'Viết bình luận của bạn...'}
+          className="w-full"
+          rows={isReply ? 2 : 3}
+        />
+        <div className="mt-2 flex justify-end space-x-2">
+          {isReply && onCancel && (
+            <Button type="button" variant="ghost" onClick={onCancel}>
               Hủy
             </Button>
           )}
-          <Button type="submit" size="sm" disabled={submitting || !content.trim()}>
-            {submitting ? (
-              "Đang gửi..."
-            ) : (
-              <>
-                <Send className="w-4 h-4 mr-2" />
-                {submitLabel}
-              </>
-            )}
+          <Button type="submit" disabled={isSubmitting || !content.trim()}>
+            {isSubmitting ? (commentId ? 'Đang cập nhật...' : 'Đang gửi...') : (commentId ? 'Cập nhật' : 'Gửi bình luận')}
           </Button>
         </div>
       </div>

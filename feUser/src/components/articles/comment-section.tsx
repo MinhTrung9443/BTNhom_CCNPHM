@@ -1,182 +1,170 @@
-"use client";
+'use client';
 
-import { CommentForm } from "./comment-form";
-import { CommentItem } from "./comment-item";
-import { useComments } from "@/hooks/use-comments";
-import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, Loader2, MessageCircle } from "lucide-react";
-import { Separator } from "@/components/ui/separator";
-import { useToast } from "@/hooks/use-toast";
+import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
+import { useSocket } from '@/hooks/useSocket';
+import { useInfiniteScroll } from '@/hooks/use-infinite-scroll';
+import { articleService } from '@/services/articleService';
+import { Comment } from '@/types/article';
+import { CommentItem } from './comment-item';
+import { CommentForm } from './comment-form';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
 
 interface CommentSectionProps {
   articleId: string;
 }
 
 export function CommentSection({ articleId }: CommentSectionProps) {
-  const { toast } = useToast();
-  const {
-    comments,
-    loading,
-    error,
+  const { data: session } = useSession();
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+  const { socket } = useSocket();
+
+  useEffect(() => {
+    if (socket) {
+      const deleteHandler = (data: { commentId: string }) => {
+        handleCommentDeleted(data.commentId);
+      };
+      const updateHandler = (data: { comment: Comment }) => {
+        handleCommentUpdated(data.comment);
+      };
+      const likeHandler = (data: { commentId: string, likes: number }) => {
+        handleCommentLikeUpdate(data.commentId, data.likes);
+      };
+
+      socket.on('commentDeleted', deleteHandler);
+      socket.on('commentUpdated', updateHandler);
+      socket.on('commentLikeUpdated', likeHandler);
+
+      return () => {
+        socket.off('commentDeleted', deleteHandler);
+        socket.off('commentUpdated', updateHandler);
+        socket.off('commentLikeUpdated', likeHandler);
+      };
+    }
+  }, [socket]);
+
+  const fetchComments = async (pageNum: number) => {
+    setIsLoading(true);
+    try {
+      const res = await articleService.getComments(articleId, pageNum, 10, session?.user.accessToken);
+      console.log('Fetched comments:', res);
+      const newComments = res.data;
+      setComments((prev) => (pageNum === 1 ? newComments : [...prev, ...newComments]));
+      setHasMore(res.meta.hasNext);
+    } catch (error) {
+      console.error('Failed to fetch comments', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchComments(1);
+  }, [articleId, session]);
+
+  const loadMoreComments = () => {
+    const nextPage = page + 1;
+    setPage(nextPage);
+    fetchComments(nextPage);
+  };
+
+  const { loadMoreRef } = useInfiniteScroll({
+    onLoadMore: loadMoreComments,
     hasMore,
-    loadMore,
-    addComment,
-    updateComment,
-    deleteComment,
-    toggleLike,
-  } = useComments(articleId);
+    loading: isLoading,
+  });
 
-  const handleAddComment = async (content: string) => {
-    try {
-      await addComment(content);
-      toast({
-        title: "Thành công",
-        description: "Bình luận của bạn đã được gửi",
-      });
-    } catch (err: any) {
-      toast({
-        title: "Lỗi",
-        description: err.message || "Không thể gửi bình luận",
-        variant: "destructive",
-      });
-      throw err;
+  const handleCommentAdded = (newComment: Comment) => {
+    if (newComment.parentComment) {
+      // Add reply to the parent
+      setComments(comments.map(c => {
+        if (c._id === newComment.parentComment) {
+          return { ...c, replies: [...(c.replies || []), newComment] };
+        }
+        return c;
+      }));
+    } else {
+      // Add new root comment
+      setComments([newComment, ...comments]);
     }
   };
 
-  const handleReply = async (commentId: string, content: string) => {
-    try {
-      await addComment(content, commentId);
-      toast({
-        title: "Thành công",
-        description: "Câu trả lời của bạn đã được gửi",
-      });
-    } catch (err: any) {
-      toast({
-        title: "Lỗi",
-        description: err.message || "Không thể gửi câu trả lời",
-        variant: "destructive",
-      });
-      throw err;
-    }
+  const handleCommentUpdated = (updatedComment: Comment) => {
+    setComments(prevComments =>
+      prevComments.map(c => {
+        if (c._id === updatedComment._id) {
+          return updatedComment;
+        }
+        if (c.replies) {
+          return {
+            ...c,
+            replies: c.replies.map(r => r._id === updatedComment._id ? updatedComment : r)
+          };
+        }
+        return c;
+      })
+    );
   };
 
-  const handleEdit = async (commentId: string, content: string) => {
-    try {
-      await updateComment(commentId, content);
-      toast({
-        title: "Thành công",
-        description: "Bình luận đã được cập nhật",
-      });
-    } catch (err: any) {
-      toast({
-        title: "Lỗi",
-        description: err.message || "Không thể cập nhật bình luận",
-        variant: "destructive",
-      });
-      throw err;
-    }
+  const handleCommentLikeUpdate = (commentId: string, likes: number) => {
+    setComments(comments.map(c => {
+      if (c._id === commentId) {
+        return { ...c, likes };
+      }
+      if (c.replies) {
+        return {
+          ...c,
+          replies: c.replies.map(r => r._id === commentId ? { ...r, likes } : r)
+        };
+      }
+      return c;
+    }));
   };
 
-  const handleDelete = async (commentId: string) => {
-    try {
-      await deleteComment(commentId);
-      toast({
-        title: "Thành công",
-        description: "Bình luận đã được xóa",
-      });
-    } catch (err: any) {
-      toast({
-        title: "Lỗi",
-        description: err.message || "Không thể xóa bình luận",
-        variant: "destructive",
-      });
-      throw err;
-    }
-  };
-
-  const handleLike = async (commentId: string) => {
-    try {
-      await toggleLike(commentId);
-    } catch (err: any) {
-      toast({
-        title: "Lỗi",
-        description: err.message || "Không thể thích bình luận",
-        variant: "destructive",
-      });
-      throw err;
-    }
+  const handleCommentDeleted = (commentId: string) => {
+    setComments(comments.filter(c => c._id !== commentId).map(c => {
+      if (c.replies) {
+        return { ...c, replies: c.replies.filter(r => r._id !== commentId) };
+      }
+      return c;
+    }));
   };
 
   return (
-    <div className="mt-12">
-      <Separator className="mb-8" />
-
-      <div className="space-y-6">
-        <div className="flex items-center gap-2">
-          <MessageCircle className="w-5 h-5" />
-          <h2 className="text-2xl font-bold">
-            Bình luận ({comments.length})
-          </h2>
-        </div>
-
-        {/* Comment Form */}
-        <CommentForm onSubmit={handleAddComment} />
-
-        {/* Error Alert */}
-        {error && (
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-
-        {/* Comments List */}
-        {loading && comments.length === 0 ? (
-          <div className="flex justify-center py-8">
-            <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-          </div>
-        ) : comments.length === 0 ? (
-          <div className="text-center py-8">
-            <p className="text-muted-foreground">
-              Chưa có bình luận nào. Hãy là người đầu tiên bình luận!
-            </p>
-          </div>
+    <section id="comment-section" className="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700">
+      <h2 className="text-2xl font-bold mb-6">Bình luận</h2>
+      {session && (
+        <CommentForm
+          articleId={articleId}
+          onCommentAdded={handleCommentAdded}
+        />
+      )}
+      <div className="mt-8 space-y-6">
+        {isLoading && comments.length === 0 ? (
+          Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-24 w-full" />)
         ) : (
-          <div className="space-y-6">
-            {comments.map((comment) => (
+          comments.map((comment, index) => (
+            <div key={comment._id} ref={index === comments.length - 1 ? loadMoreRef : null}>
               <CommentItem
-                key={comment._id}
+                articleId={articleId}
                 comment={comment}
-                onReply={handleReply}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-                onLike={handleLike}
+                onCommentUpdated={handleCommentUpdated}
+                onCommentDeleted={handleCommentDeleted}
+                onReplyAdded={handleCommentAdded}
               />
-            ))}
-          </div>
+            </div>
+          ))
         )}
-
-        {/* Load More Button */}
-        {hasMore && (
-          <div className="flex justify-center pt-4">
-            <Button
-              variant="outline"
-              onClick={loadMore}
-              disabled={loading}
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Đang tải...
-                </>
-              ) : (
-                "Xem thêm bình luận"
-              )}
-            </Button>
+        {!isLoading && hasMore && (
+          <div className="text-center">
+            <Button onClick={loadMoreComments}>Tải thêm bình luận</Button>
           </div>
         )}
       </div>
-    </div>
+    </section>
   );
 }

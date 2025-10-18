@@ -4,36 +4,26 @@ import { sitemapController } from '../controllers/sitemap.controller.js';
 import { performanceController } from '../controllers/performance.controller.js';
 import { protect, optionalAuth, restrictTo } from '../middlewares/auth.js';
 import { validate } from '../middlewares/validate.js';
-import { verifyCommentOwnership } from '../middlewares/commentAuth.js';
 import { validateArticleStatusTransition } from '../middlewares/articleAuth.js';
 import {
   createArticleSchema,
   updateArticleSchema,
   getArticleByIdSchema,
   getArticlesQuerySchema,
-  getPublishedArticlesQuerySchema
+  getPublishedArticlesQuerySchema,
 } from '../schemas/article.schema.js';
-import upload from '../middlewares/upload.js';
+import { getArticleBySlugSchema } from '../schemas/interaction.schema.js';
 import {
-  createCommentSchema,
-  updateCommentSchema,
-  deleteCommentSchema,
   getArticleCommentsSchema,
-  moderateCommentSchema,
-  getCommentsForModerationSchema,
-  bulkModerateCommentsSchema
+  createCommentSchema,
 } from '../schemas/comment.schema.js';
-import {
-  likeArticleSchema,
-  likeCommentSchema,
-  shareArticleSchema,
-  getArticleBySlugSchema
-} from '../schemas/interaction.schema.js';
+import upload from '../middlewares/upload.js';
 import {
   optimizeResponseImages,
   addImagePreloadHints,
-  addLazyLoadingSupport
+  addLazyLoadingSupport,
 } from '../middlewares/imageOptimization.js';
+import { commentController } from '../controllers/comment.controller.js';
 
 const router = express.Router();
 
@@ -122,59 +112,15 @@ router.get(
   '/public/:id/comments',
   optionalAuth,
   validate(getArticleCommentsSchema),
-  articleController.getArticleComments
+  commentController.getArticleComments
 );
 
-// Track article share (optional authentication)
-router.post(
-  '/public/:id/share',
-  optionalAuth,
-  validate(shareArticleSchema),
-  articleController.trackArticleShare
-);
-
-// ==================== AUTHENTICATED USER ROUTES ====================
-
-// Create comment (requires authentication)
+// Create a comment on an article
 router.post(
   '/public/:id/comments',
   protect,
   validate(createCommentSchema),
-  articleController.createComment
-);
-
-// Update comment (requires authentication and ownership)
-router.put(
-  '/public/comments/:commentId',
-  protect,
-  validate(updateCommentSchema),
-  verifyCommentOwnership,
-  articleController.updateComment
-);
-
-// Delete comment (requires authentication and ownership or admin)
-router.delete(
-  '/public/comments/:commentId',
-  protect,
-  validate(deleteCommentSchema),
-  verifyCommentOwnership,
-  articleController.deleteComment
-);
-
-// Like/Unlike article (requires authentication)
-router.post(
-  '/public/:id/like',
-  protect,
-  validate(likeArticleSchema),
-  articleController.toggleArticleLike
-);
-
-// Like/Unlike comment (requires authentication)
-router.post(
-  '/public/comments/:commentId/like',
-  protect,
-  validate(likeCommentSchema),
-  articleController.toggleCommentLike
+  commentController.createComment
 );
 
 // ==================== ADMIN ROUTES ====================
@@ -185,33 +131,6 @@ router.get(
   protect,
   restrictTo('admin'),
   articleController.getArticleAnalytics
-);
-
-// Get comments for moderation
-router.get(
-  '/admin/comments',
-  protect,
-  restrictTo('admin'),
-  validate(getCommentsForModerationSchema),
-  articleController.getCommentsForModeration
-);
-
-// Bulk moderate comments
-router.post(
-  '/admin/comments/bulk-moderate',
-  protect,
-  restrictTo('admin'),
-  validate(bulkModerateCommentsSchema),
-  articleController.bulkModerateComments
-);
-
-// Moderate single comment
-router.patch(
-  '/admin/comments/:commentId/moderate',
-  protect,
-  restrictTo('admin'),
-  validate(moderateCommentSchema),
-  articleController.moderateComment
 );
 
 // Get all articles (admin view with all statuses)

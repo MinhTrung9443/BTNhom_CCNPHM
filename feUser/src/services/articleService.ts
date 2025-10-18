@@ -16,20 +16,19 @@ class ArticleService {
   async getArticles(
     filters?: ArticleFilters,
     accessToken?: string
-  ): Promise<ApiResponse<{ meta: ArticleListResponse; data: Article[] }>> {
+  ): Promise<{ meta: ArticleListResponse; data: Article[] }> {
     const searchParams = new URLSearchParams();
     
     if (filters?.page) searchParams.append("page", filters.page.toString());
     if (filters?.limit) searchParams.append("limit", filters.limit.toString());
-    if (filters?.keyword) searchParams.append("keyword", filters.keyword);
+    if (filters?.keyword) searchParams.append("search", filters.keyword);
     if (filters?.tags && filters.tags.length > 0) {
       filters.tags.forEach(tag => searchParams.append("tags", tag));
     }
     if (filters?.sortBy) searchParams.append("sortBy", filters.sortBy);
-    if (filters?.sortOrder) searchParams.append("sortOrder", filters.sortOrder);
 
     const endpoint = `/articles/public${searchParams.toString() ? "?" + searchParams.toString() : ""}`;
-    return await apiFetch<ApiResponse<{ meta: ArticleListResponse; data: Article[] }>>
+    return await apiFetch<{ meta: ArticleListResponse; data: Article[] }>
 (endpoint, accessToken);
   }
 
@@ -49,12 +48,12 @@ class ArticleService {
   /**
    * Like/Unlike bài viết
    */
-  async toggleLike(
+  async toggleArticleLike(
     articleId: string,
     accessToken: string
-  ): Promise<ApiResponse<{ hasLiked: boolean; likesCount: number }>> {
-    return await apiFetch<ApiResponse<{ hasLiked: boolean; likesCount: number }>>(
-      `/articles/public/${articleId}/like`,
+  ): Promise<ApiResponse<{ liked: boolean; likes: number }>> {
+    return await apiFetch<ApiResponse<{ liked: boolean; likes: number }>>(
+      `/article-interactions/${articleId}/like`,
       accessToken,
       { method: "POST" }
     );
@@ -67,9 +66,9 @@ class ArticleService {
     articleId: string,
     platform: 'facebook' | 'zalo' | 'twitter' | 'copy',
     accessToken?: string
-  ): Promise<ApiResponse<{ sharesCount: number }>> {
-    return await apiFetch<ApiResponse<{ sharesCount: number }>>(
-      `/articles/public/${articleId}/share`,
+  ): Promise<ApiResponse<{ shares: number; platform: string }>> {
+    return await apiFetch<ApiResponse<{ shares: number; platform: string }>>(
+      `/article-interactions/${articleId}/share`,
       accessToken,
       {
         method: "POST",
@@ -86,13 +85,13 @@ class ArticleService {
     page: number = 1,
     limit: number = 10,
     accessToken?: string
-  ): Promise<{ success: boolean; message: string; meta: CommentListResponse; data: Comment[] }> {
+  ): Promise<{ meta: CommentListResponse; data: Comment[] }> {
     const searchParams = new URLSearchParams({
       page: page.toString(),
       limit: limit.toString(),
     });
 
-    return await apiFetch<{ success: boolean; message: string; meta: CommentListResponse; data: Comment[] }>(
+    return await apiFetch<{ meta: CommentListResponse; data: Comment[] }>(
       `/articles/public/${articleId}/comments?${searchParams.toString()}`,
       accessToken
     );
@@ -126,7 +125,7 @@ class ArticleService {
     accessToken: string
   ): Promise<ApiResponse<Comment>> {
     return await apiFetch<ApiResponse<Comment>>(
-      `/articles/public/comments/${commentId}`,
+      `/comments/${commentId}`,
       accessToken,
       {
         method: "PUT",
@@ -141,9 +140,9 @@ class ArticleService {
   async deleteComment(
     commentId: string,
     accessToken: string
-  ): Promise<ApiResponse<null>> {
-    return await apiFetch<ApiResponse<null>>(
-      `/articles/public/comments/${commentId}`,
+  ): Promise<ApiResponse<{ message: string }>> {
+    return await apiFetch<ApiResponse<{ message: string }>>(
+      `/comments/${commentId}`,
       accessToken,
       { method: "DELETE" }
     );
@@ -155,31 +154,14 @@ class ArticleService {
   async toggleCommentLike(
     commentId: string,
     accessToken: string
-  ): Promise<ApiResponse<{ hasLiked: boolean; likesCount: number }>> {
-    return await apiFetch<ApiResponse<{ hasLiked: boolean; likesCount: number }>>(
-      `/articles/public/comments/${commentId}/like`,
+  ): Promise<ApiResponse<{ liked: boolean; likes: number }>> {
+    return await apiFetch<ApiResponse<{ liked: boolean; likes: number }>>(
+      `/comments/${commentId}/like`,
       accessToken,
       { method: "POST" }
     );
   }
 
-  /**
-   * Trả lời comment
-   */
-  async replyToComment(
-    commentId: string,
-    content: string,
-    accessToken: string
-  ): Promise<ApiResponse<Comment>> {
-    return await apiFetch<ApiResponse<Comment>>(
-      `/articles/public/comments/${commentId}/reply`,
-      accessToken,
-      {
-        method: "POST",
-        body: JSON.stringify({ content }),
-      }
-    );
-  }
 }
 
 export const articleService = new ArticleService();

@@ -30,9 +30,10 @@ export const commentService = {
       if (!parentCommentDoc) {
         throw new NotFoundError('Không tìm thấy bình luận cha');
       }
-
-      if (parentCommentDoc.level >= 2) {
-        throw new BadRequestError('Không thể trả lời bình luận này (đã đạt giới hạn 3 cấp)');
+      
+      // Nếu trả lời một bình luận con (level 1), thì gán parent của nó cho bình luận mới
+      if (parentCommentDoc.level >= 1) {
+        commentData.parentComment = parentCommentDoc.parentComment;
       }
 
       if (parentCommentDoc.article.toString() !== article) {
@@ -45,7 +46,7 @@ export const commentService = {
       article,
       author: userId,
       content,
-      parentComment: parentComment || null
+      parentComment: commentData.parentComment || null
     });
 
     await comment.save();
@@ -230,7 +231,7 @@ export const commentService = {
     }
 
     // Check ownership
-    if (comment.author.toString() !== userId) {
+    if (!comment.author.equals(userId)) {
       throw new UnauthorizedError('Bạn không có quyền chỉnh sửa bình luận này');
     }
 
@@ -244,10 +245,13 @@ export const commentService = {
     // Emit real-time event for comment update
     if (global.io) {
       global.io.to(`article_${comment.article}`).emit('commentUpdated', {
-        commentId: commentId,
-        content: content,
-        isEdited: true,
-        editedAt: comment.editedAt,
+        comment: {
+          ...comment.toObject(),
+          author: {
+            ...comment.author,
+            isAdmin: comment.author.role === 'admin'
+          }
+        },
         articleId: comment.article
       });
     }
@@ -270,7 +274,8 @@ export const commentService = {
     }
 
     // Check ownership or admin
-    if (!isAdmin && comment.author.toString() !== userId) {
+    if (!isAdmin && !comment.author.equals(userId)) {
+      console.log('Unauthorized delete attempt by user:', userId);
       throw new UnauthorizedError('Bạn không có quyền xóa bình luận này');
     }
 

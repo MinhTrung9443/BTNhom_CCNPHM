@@ -1,127 +1,64 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Share2, Facebook, Twitter, Copy, Check } from "lucide-react";
-import { articleService } from "@/services/articleService";
-import { useSession } from "next-auth/react";
-import { useToast } from "@/hooks/use-toast";
+import { Facebook, Twitter, Link as LinkIcon } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 
 interface ArticleShareButtonsProps {
-  articleId: string;
-  articleTitle: string;
   articleUrl: string;
-  variant?: "default" | "outline" | "ghost";
-  size?: "default" | "sm" | "lg" | "icon";
+  articleTitle: string;
+  onShare: () => void;
 }
 
-export function ArticleShareButtons({
-  articleId,
-  articleTitle,
-  articleUrl,
-  variant = "outline",
-  size = "default",
-}: ArticleShareButtonsProps) {
-  const { data: session } = useSession();
+export function ArticleShareButtons({ articleUrl, articleTitle, onShare }: ArticleShareButtonsProps) {
   const { toast } = useToast();
-  const [copied, setCopied] = useState(false);
 
-  const trackShare = async (platform: 'facebook' | 'zalo' | 'twitter' | 'copy') => {
-    try {
-      await articleService.trackShare(
-        articleId,
-        platform,
-        session?.accessToken
-      );
-    } catch (err) {
-      console.error("Failed to track share:", err);
-    }
-  };
+  const shareOptions = [
+    {
+      name: 'Facebook',
+      icon: <Facebook className="w-5 h-5" />,
+      url: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(articleUrl)}`,
+    },
+    {
+      name: 'Twitter',
+      icon: <Twitter className="w-5 h-5" />,
+      url: `https://twitter.com/intent/tweet?url=${encodeURIComponent(articleUrl)}&text=${encodeURIComponent(articleTitle)}`,
+    },
+  ];
 
-  const handleFacebookShare = () => {
-    const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(articleUrl)}`;
-    window.open(url, "_blank", "width=600,height=400");
-    trackShare("facebook");
-  };
-
-  const handleTwitterShare = () => {
-    const url = `https://twitter.com/intent/tweet?url=${encodeURIComponent(articleUrl)}&text=${encodeURIComponent(articleTitle)}`;
-    window.open(url, "_blank", "width=600,height=400");
-    trackShare("twitter");
-  };
-
-  const handleZaloShare = () => {
-    const url = `https://sp.zalo.me/share_inline?url=${encodeURIComponent(articleUrl)}`;
-    window.open(url, "_blank", "width=600,height=400");
-    trackShare("zalo");
-  };
-
-  const handleCopyLink = async () => {
-    try {
-      await navigator.clipboard.writeText(articleUrl);
-      setCopied(true);
-      toast({
-        title: "Đã sao chép",
-        description: "Đường dẫn đã được sao chép vào clipboard",
-      });
-      trackShare("copy");
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      toast({
-        title: "Lỗi",
-        description: "Không thể sao chép đường dẫn",
-        variant: "destructive",
-      });
-    }
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(articleUrl).then(() => {
+      toast({ title: 'Đã sao chép liên kết!' });
+      onShare();
+    }, () => {
+      toast({ title: 'Lỗi', description: 'Không thể sao chép liên kết.', variant: 'destructive' });
+    });
   };
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant={variant} size={size}>
-          <Share2 className="w-5 h-5 mr-2" />
-          Chia sẻ
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-48">
-        <DropdownMenuItem onClick={handleFacebookShare}>
-          <Facebook className="w-4 h-4 mr-2" />
-          Chia sẻ lên Facebook
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={handleZaloShare}>
-          <svg
-            className="w-4 h-4 mr-2"
-            viewBox="0 0 24 24"
-            fill="currentColor"
-          >
-            <path d="M12 2C6.477 2 2 6.477 2 12c0 5.523 4.477 10 10 10s10-4.477 10-10c0-5.523-4.477-10-10-10zm0 18c-4.411 0-8-3.589-8-8s3.589-8 8-8 8 3.589 8 8-3.589 8-8 8zm-1-13h2v6h-2V7zm0 8h2v2h-2v-2z" />
-          </svg>
-          Chia sẻ lên Zalo
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={handleTwitterShare}>
-          <Twitter className="w-4 h-4 mr-2" />
-          Chia sẻ lên Twitter
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={handleCopyLink}>
-          {copied ? (
-            <>
-              <Check className="w-4 h-4 mr-2 text-green-500" />
-              Đã sao chép
-            </>
-          ) : (
-            <>
-              <Copy className="w-4 h-4 mr-2" />
-              Sao chép đường dẫn
-            </>
-          )}
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <div className="flex items-center space-x-2 bg-white dark:bg-gray-800 p-2 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
+      {shareOptions.map((option) => (
+        <a
+          key={option.name}
+          href={option.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={onShare}
+          className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+          aria-label={`Share on ${option.name}`}
+        >
+          {option.icon}
+        </a>
+      ))}
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={copyToClipboard}
+        className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+        aria-label="Copy link"
+      >
+        <LinkIcon className="w-5 h-5" />
+      </Button>
+    </div>
   );
 }

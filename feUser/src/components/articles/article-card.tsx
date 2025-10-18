@@ -1,11 +1,11 @@
 "use client";
 
-import Image from "next/image";
 import { Article } from "@/types/article";
-import { Calendar, Eye, Heart, MessageCircle, Share2 } from "lucide-react";
+import { Calendar } from "lucide-react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArticleBody } from "./article-body";
+import { ArticleCardInteraction } from "./article-card-interaction";
 import Link from "next/link";
 
 interface ArticleCardProps {
@@ -20,13 +20,6 @@ export function ArticleCard({ article }: ArticleCardProps) {
       month: "long",
       day: "numeric",
     });
-  };
-
-  const formatNumber = (num: number) => {
-    if (num >= 1000) {
-      return (num / 1000).toFixed(1) + "k";
-    }
-    return num.toString();
   };
 
   return (
@@ -56,27 +49,8 @@ export function ArticleCard({ article }: ArticleCardProps) {
         )}
       </CardContent>
 
-      <CardFooter className="p-4 pt-0 border-t">
-        <div className="flex items-center justify-between w-full text-sm text-muted-foreground">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-1">
-              <Eye className="w-4 h-4" />
-              <span>{formatNumber(article.stats.views)}</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <Heart className="w-4 h-4" />
-              <span>{formatNumber(article.stats.likes)}</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <MessageCircle className="w-4 h-4" />
-              <span>{formatNumber(article.stats.comments)}</span>
-            </div>
-          </div>
-          <div className="flex items-center gap-1">
-            <Share2 className="w-4 h-4" />
-            <span>{formatNumber(article.stats.shares)}</span>
-          </div>
-        </div>
+      <CardFooter className="p-4 pt-2 border-t">
+        <ArticleCardInteraction article={article} />
       </CardFooter>
     </Card>
   );

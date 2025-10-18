@@ -25,7 +25,6 @@ import { NotificationCenter } from "@/components/notifications/notification-cent
 
 const navigation = [
   { name: "Trang Chủ", href: "/" },
-  { name: "Giới Thiệu", href: "/about" },
   { name: "Sản Phẩm", href: "/search" },
   { name: "Bài viết", href: "/bai-viet" },
   { name: "Voucher", href: "/voucher" },

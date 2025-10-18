@@ -73,15 +73,11 @@ export function useComments(articleId: string) {
         );
         console.log("Fetched comments:", response);
 
-        if (response.success && response.data) {
-          const newComments = response.data;
-          setComments((prev) =>
-            append ? [...prev, ...newComments] : newComments
-          );
-          setHasMore(
-            response.meta.currentPage < response.meta.totalPages
-          );
-        }
+        const newComments = response.data;
+        setComments((prev) =>
+          append ? [...prev, ...newComments] : newComments
+        );
+        setHasMore(response.meta.currentPage < response.meta.totalPages);
       } catch (err: any) {
         setError(err.response?.data?.message || "Không thể tải bình luận");
       } finally {
@@ -183,10 +179,10 @@ export function useComments(articleId: string) {
             if (comment._id === commentId) {
               return {
                 ...comment,
-                likes: response.data!.likesCount,
+                likes: response.data!.likes,
                 userInteraction: {
                   ...comment.userInteraction!,
-                  hasLiked: response.data!.hasLiked,
+                  hasLiked: response.data!.liked,
                 },
               };
             }

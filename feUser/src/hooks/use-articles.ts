@@ -26,15 +26,13 @@ export function useArticles(initialFilters?: ArticleFilters) {
           session?.user?.accessToken
         );
 
-        if (response.success && response.data) {
-          console.log(response);
-          // Correctly destructure the nested response
+        if (response && response.data) {
           const { data: newArticles, meta } = response;
           setArticles((prev) => (append ? [...prev, ...newArticles] : newArticles));
           setHasMore(meta.hasNext);
         }
-      } catch (err: any) {
-        setError(err.response?.data?.message || "Không thể tải bài viết");
+      } catch (err: unknown) {
+        setError((err as any).response?.data?.message || "Không thể tải bài viết");
       } finally {
         setLoading(false);
       }

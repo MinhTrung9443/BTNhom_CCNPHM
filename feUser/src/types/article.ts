@@ -21,6 +21,9 @@ export interface Article {
     comments: number;
     shares: number;
   };
+  userInteraction?: {
+    hasLiked: boolean;
+  };
   createdAt: string;
   updatedAt: string;
 }
@@ -89,11 +92,32 @@ export interface CommentListResponse {
   totalPages: number;
   totalItems: number;
   itemsPerPage: number;
+  hasNext: boolean;
+  hasPrev: boolean;
 }
 
 export interface ArticleDetailResponse extends Article {
   userInteraction?: {
     hasLiked: boolean;
     hasShared: boolean;
+  };
+  seo?: {
+    metaTags: {
+      title: string;
+      description: string;
+      keywords: string[];
+    };
+    openGraph: {
+      title: string;
+      description: string;
+      url: string;
+      image: string;
+    };
+    twitter: {
+      title: string;
+      description: string;
+      image: string;
+    };
+    canonical: string;
   };
 }
