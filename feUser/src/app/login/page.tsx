@@ -96,7 +96,7 @@ export default function LoginPage() {
       });
 
       if (result?.error) {
-        setError(result.error);
+        setError("Email hoặc mật khẩu không chính xác."); 
       } else if (result?.ok) {
         router.push(callbackUrl);
         router.refresh();
@@ -125,13 +125,23 @@ export default function LoginPage() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
-              <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
+        <div style={{
+          color: '#D8000C', // Màu đỏ cho lỗi
+          backgroundColor: '#FFD2D2', // Nền đỏ nhạt
+          border: '1px solid #D8000C',
+          padding: '10px',
+          borderRadius: '5px',
+          marginBottom: '1rem',
+          textAlign: 'center'
+        }}>
+          {error}
+        </div>
+      )}
 
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">
+                Email <span className="text-red-500">*</span>
+              </Label>
               <Input
                 id="email"
                 type="email"
@@ -146,7 +156,9 @@ export default function LoginPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Mật khẩu</Label>
+              <Label htmlFor="password">
+                Mật khẩu <span className="text-red-500">*</span>
+              </Label>
               <Input
                 id="password"
                 type="password"
