@@ -18,13 +18,75 @@ export default function LoginPage() {
 
   const [email, setEmail] = useState("user1@example.com");
   const [password, setPassword] = useState("12345678");
+
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [emailError, setEmailError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+
+  const validateEmail = (email: string) => {
+    if (!email) {
+      return "Email là trường bắt buộc";
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return "Email không đúng định dạng";
+    }
+    return "";
+  };
+
+  const validatePassword = (password: string) => {
+    if (!password) {
+      return "Mật khẩu là trường bắt buộc";
+    }
+    return "";
+  };
+
+  const validateForm = () => {
+    const emailErr = validateEmail(email);
+    const passwordErr = validatePassword(password);
+
+    setEmailError(emailErr);
+    setPasswordError(passwordErr);
+
+    return !emailErr && !passwordErr;
+  };
+
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setEmail(value);
+    if (emailError) {
+      setEmailError("");
+    }
+  };
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setPassword(value);
+    if (passwordError) {
+      setPasswordError("");
+    }
+  };
+
+  const handleEmailBlur = () => {
+    const error = validateEmail(email);
+    setEmailError(error);
+  };
+
+  const handlePasswordBlur = () => {
+    const error = validatePassword(password);
+    setPasswordError(error);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     setError("");
+
+    if (!validateForm()) {
+      return;
+    }
+
+    setIsLoading(true);
 
     try {
       const result = await signIn("credentials", {
@@ -85,10 +147,12 @@ export default function LoginPage() {
                 type="email"
                 placeholder="user1@example.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
+                onChange={handleEmailChange}
+                onBlur={handleEmailBlur}
                 disabled={isLoading}
+                className={emailError ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""}
               />
+              {emailError && <p className="text-sm text-red-500 mt-1">{emailError}</p>}
             </div>
 
             <div className="space-y-2">
@@ -100,10 +164,12 @@ export default function LoginPage() {
                 type="password"
                 placeholder="••••••••"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
+                onChange={handlePasswordChange}
+                onBlur={handlePasswordBlur}
                 disabled={isLoading}
+                className={passwordError ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""}
               />
+              {passwordError && <p className="text-sm text-red-500 mt-1">{passwordError}</p>}
               <div className="text-right">
                 <Link href="/forgot-password" className="text-sm text-green-600 hover:underline">
                   Quên mật khẩu?

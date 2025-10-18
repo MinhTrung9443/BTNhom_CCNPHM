@@ -5,14 +5,10 @@
 // import UserVoucher from "../models/UserVoucher.js";
 // import Delivery from "../models/Delivery.js";
 // import Notification from "../models/Notification.js";
-import {User, Product, Review, Voucher, UserVoucher, Delivery, Notification} from "../models/index.js";
+import { User, Product, Review, Voucher, UserVoucher, Delivery, Notification, Cart } from "../models/index.js";
 import AppError from "../utils/AppError.js";
 import logger from "../utils/logger.js";
-import Order, {
-  ORDER_STATUS,
-  DETAILED_ORDER_STATUS,
-  STATUS_MAP,
-} from "../models/Order.js";
+import Order, { ORDER_STATUS, DETAILED_ORDER_STATUS, STATUS_MAP } from "../models/Order.js";
 import mongoose from "mongoose";
 
 const calculateShippingFee = async (shippingMethod) => {
@@ -23,9 +19,7 @@ const calculateShippingFee = async (shippingMethod) => {
     isActive: true,
   }).lean();
   if (!deliveryMethod) {
-    logger.warn(
-      `Phương thức vận chuyển '${shippingMethod}' không hợp lệ hoặc không hoạt động.`
-    );
+    logger.warn(`Phương thức vận chuyển '${shippingMethod}' không hợp lệ hoặc không hoạt động.`);
     return 0; // Hoặc throw lỗi tùy theo yêu cầu nghiệp vụ
   }
   return deliveryMethod.price;
@@ -37,20 +31,13 @@ export const getUserOrders = async (userId, page = 1, limit = 10, status = null,
   }
 
   if (search) {
-    const searchRegex = new RegExp(search, 'i');
-    filter.$or = [
-      { 'orderLines.productName': searchRegex },
-      { recipientName: searchRegex },
-      { phoneNumber: searchRegex },
-    ];
+    const searchRegex = new RegExp(search, "i");
+    filter.$or = [{ "orderLines.productName": searchRegex }, { recipientName: searchRegex }, { phoneNumber: searchRegex }];
   }
 
   const skip = (page - 1) * limit;
 
-  const orders = await Order.find(filter)
-    .sort({ createdAt: -1 })
-    .skip(skip)
-    .limit(limit);
+  const orders = await Order.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit);
 
   const total = await Order.countDocuments(filter);
 
@@ -60,19 +47,12 @@ export const getUserOrders = async (userId, page = 1, limit = 10, status = null,
       current: page,
       limit,
       total: Math.ceil(total / limit),
-      totalOrders: total
-    }
+      totalOrders: total,
+    },
   };
 };
 
-export const getAllOrders = async (
-  page = 1,
-  limit = 10,
-  status = null,
-  search = null,
-  sortBy = "createdAt",
-  sortOrder = "desc"
-) => {
+export const getAllOrders = async (page = 1, limit = 10, status = null, search = null, sortBy = "createdAt", sortOrder = "desc") => {
   const filter = {};
 
   // Lọc theo trạng thái
@@ -95,12 +75,7 @@ export const getAllOrders = async (
   const sort = { [sortBy]: sortOrder === "asc" ? 1 : -1 };
 
   const [orders, total] = await Promise.all([
-    Order.find(filter)
-      .populate("userId", "name email")
-      .sort(sort)
-      .skip(skip)
-      .limit(limit)
-      .lean(),
+    Order.find(filter).populate("userId", "name email").sort(sort).skip(skip).limit(limit).lean(),
     Order.countDocuments(filter),
   ]);
 
@@ -122,8 +97,8 @@ export const getOrderDetail = async (orderId, userId = null) => {
   }
 
   const order = await Order.findOne(filter)
-    .populate('userId', 'name email phone')
-    .populate('deliveryId', 'name price description') // Populate with specific fields
+    .populate("userId", "name email phone")
+    .populate("deliveryId", "name price description") // Populate with specific fields
     .lean(); // Use lean for faster queries
 
   if (!order) {
@@ -132,10 +107,10 @@ export const getOrderDetail = async (orderId, userId = null) => {
 
   // Lấy danh sách các đánh giá liên quan đến đơn hàng này
   const reviews = await Review.find({ orderId: order._id }).lean();
-  const reviewsMap = new Map(reviews.map(review => [review.productId.toString(), review]));
+  const reviewsMap = new Map(reviews.map((review) => [review.productId.toString(), review]));
 
   // Gắn thông tin đánh giá vào từng order line
-  order.orderLines = order.orderLines.map(line => ({
+  order.orderLines = order.orderLines.map((line) => ({
     ...line,
     review: reviewsMap.get(line.productId.toString()) || null,
   }));
@@ -143,17 +118,7 @@ export const getOrderDetail = async (orderId, userId = null) => {
   return order;
 };
 
-export const previewOrder = async (
-  userId,
-  {
-    orderLines,
-    shippingAddress,
-    voucherCode,
-    shippingMethod,
-    pointsToApply = 0,
-    paymentMethod,
-  }
-) => {
+export const previewOrder = async (userId, { orderLines, shippingAddress, voucherCode, shippingMethod, pointsToApply = 0, paymentMethod }) => {
   if (!orderLines || orderLines.length === 0) {
     throw new AppError("Vui lòng chọn sản phẩm để xem trước", 400);
   }
@@ -203,9 +168,7 @@ export const previewOrder = async (
   }
 
   // Phí ship chỉ được tính khi có phương thức vận chuyển
-  const shippingFee = shippingMethod
-    ? await calculateShippingFee(shippingMethod)
-    : null;
+  const shippingFee = shippingMethod ? await calculateShippingFee(shippingMethod) : null;
   let discount = 0;
   let appliedVoucherCode = null;
 
@@ -227,7 +190,7 @@ export const previewOrder = async (
       if (userVoucher) {
         if (subtotal >= voucher.minPurchaseAmount) {
           // Tính discount dựa trên discountType
-          if (voucher.discountType === 'percentage') {
+          if (voucher.discountType === "percentage") {
             // Giảm theo phần trăm
             discount = subtotal * (voucher.discountValue / 100);
             // Áp dụng giới hạn giảm tối đa nếu có
@@ -240,16 +203,10 @@ export const previewOrder = async (
           }
           appliedVoucherCode = voucher.code;
         } else {
-          throw new AppError(
-            `Đơn hàng tối thiểu để áp dụng voucher này là ${voucher.minPurchaseAmount}`,
-            400
-          );
+          throw new AppError(`Đơn hàng tối thiểu để áp dụng voucher này là ${voucher.minPurchaseAmount}`, 400);
         }
       } else {
-        throw new AppError(
-          "Bạn không có quyền sử dụng voucher này hoặc đã sử dụng rồi",
-          400
-        );
+        throw new AppError("Bạn không có quyền sử dụng voucher này hoặc đã sử dụng rồi", 400);
       }
     } else {
       throw new AppError("Voucher không hợp lệ hoặc đã hết hạn", 400);
@@ -263,20 +220,13 @@ export const previewOrder = async (
     const user = await User.findById(userId).select("loyaltyPoints").lean();
     if (user && user.loyaltyPoints > 0) {
       // 1. Calculate max discount allowed (50% of value, rounded down to nearest 100)
-      const maxAllowableDiscount =
-        Math.floor((totalAfterVoucher * 0.5) / 100) * 100;
+      const maxAllowableDiscount = Math.floor((totalAfterVoucher * 0.5) / 100) * 100;
 
       // 2. Determine points to actually apply
       // It's the minimum of: what user wants to apply, what user has, and the max allowed by the rule
-      pointsApplied = Math.min(
-        pointsToApply,
-        user.loyaltyPoints,
-        maxAllowableDiscount
-      );
+      pointsApplied = Math.min(pointsToApply, user.loyaltyPoints, maxAllowableDiscount);
     } else {
-      logger.warn(
-        `User ${userId} does not have enough loyalty points or tried to apply points with a zero balance.`
-      );
+      logger.warn(`User ${userId} does not have enough loyalty points or tried to apply points with a zero balance.`);
     }
   }
 
@@ -315,13 +265,7 @@ const _verifyOrderPreview = async (userId, clientPreview) => {
   const changes = [];
 
   // 1. Compare top-level numeric fields
-  const fieldsToCompare = [
-    "subtotal",
-    "shippingFee",
-    "discount",
-    "pointsApplied",
-    "totalAmount",
-  ];
+  const fieldsToCompare = ["subtotal", "shippingFee", "discount", "pointsApplied", "totalAmount"];
   for (const field of fieldsToCompare) {
     if (clientPreview[field] !== serverPreview[field]) {
       changes.push({
@@ -341,9 +285,7 @@ const _verifyOrderPreview = async (userId, clientPreview) => {
     });
   } else {
     clientPreview.orderLines.forEach((clientLine, index) => {
-      const serverLine = serverPreview.orderLines.find(
-        (sl) => sl.productId.toString() === clientLine.productId.toString()
-      );
+      const serverLine = serverPreview.orderLines.find((sl) => sl.productId.toString() === clientLine.productId.toString());
 
       if (!serverLine) {
         changes.push({
@@ -354,16 +296,7 @@ const _verifyOrderPreview = async (userId, clientPreview) => {
       }
 
       // Compare critical fields within each line item
-      const lineFields = [
-        "productName",
-        "productPrice",
-        "quantity",
-        "lineTotal",
-        "productCode",
-        "productImage",
-        "discount",
-        "productActualPrice",
-      ];
+      const lineFields = ["productName", "productPrice", "quantity", "lineTotal", "productCode", "productImage", "discount", "productActualPrice"];
       for (const field of lineFields) {
         if (clientLine[field] !== serverLine[field]) {
           changes.push({
@@ -380,10 +313,7 @@ const _verifyOrderPreview = async (userId, clientPreview) => {
   console.log(changes);
   // 3. If any changes were found, throw a detailed error
   if (changes.length > 0) {
-    throw new AppError(
-      "Một vài sản phẩm trong đơn hàng vừa được cập nhật. Vui lòng thực hiện lại.",
-      409
-    );
+    throw new AppError("Một vài sản phẩm trong đơn hàng vừa được cập nhật. Vui lòng thực hiện lại.", 409);
   }
 
   return serverPreview; // Return the trusted, server-generated preview if everything matches
@@ -401,13 +331,8 @@ const _executePostOrderActions = async (order) => {
   if (order.voucherCode) {
     const voucher = await Voucher.findOne({ code: order.voucherCode }).lean();
     if (voucher) {
-      await UserVoucher.updateOne(
-        { userId: order.userId, voucherId: voucher._id, isUsed: false },
-        { $set: { isUsed: true, orderId: order._id } }
-      );
-      logger.info(
-        `Voucher ${order.voucherCode} marked as used for user ${order.userId}`
-      );
+      await UserVoucher.updateOne({ userId: order.userId, voucherId: voucher._id, isUsed: false }, { $set: { isUsed: true, orderId: order._id } });
+      logger.info(`Voucher ${order.voucherCode} marked as used for user ${order.userId}`);
     }
   }
 
@@ -416,10 +341,13 @@ const _executePostOrderActions = async (order) => {
     await User.findByIdAndUpdate(order.userId, {
       $inc: { loyaltyPoints: -order.pointsApplied },
     });
-    logger.info(
-      `Deducted ${order.pointsApplied} points from user ${order.userId}`
-    );
+    logger.info(`Deducted ${order.pointsApplied} points from user ${order.userId}`);
   }
+
+  // 4. Remove ordered products from user's cart
+  const productIds = order.orderLines.map((line) => line.productId);
+  await Cart.updateOne({ userId: order.userId }, { $pull: { items: { productId: { $in: productIds } } } });
+  logger.info(`Removed ${productIds.length} products from cart for user ${order.userId}`);
 };
 
 const _revertOrderSideEffects = async (order) => {
@@ -428,11 +356,7 @@ const _revertOrderSideEffects = async (order) => {
   try {
     // 1. Revert stock
     for (const line of order.orderLines) {
-      await Product.findByIdAndUpdate(
-        line.productId,
-        { $inc: { stock: line.quantity } },
-        { session }
-      );
+      await Product.findByIdAndUpdate(line.productId, { $inc: { stock: line.quantity } }, { session });
     }
     logger.info(`Reverted stock for order ${order._id}`);
 
@@ -451,13 +375,21 @@ const _revertOrderSideEffects = async (order) => {
 
     // 3. Revert loyalty points
     if (order.pointsApplied > 0) {
-      await User.findByIdAndUpdate(
-        order.userId,
-        { $inc: { loyaltyPoints: order.pointsApplied } },
-        { session }
-      );
+      await User.findByIdAndUpdate(order.userId, { $inc: { loyaltyPoints: order.pointsApplied } }, { session });
       logger.info(`Reverted ${order.pointsApplied} points for user ${order.userId}`);
     }
+
+    // 4. Add products back to user's cart (optional - commented out as users might not want this)
+    // const cartItems = order.orderLines.map(line => ({
+    //   productId: line.productId,
+    //   quantity: line.quantity
+    // }));
+    // await Cart.updateOne(
+    //   { userId: order.userId },
+    //   { $addToSet: { items: { $each: cartItems } } },
+    //   { session, upsert: true }
+    // );
+    // logger.info(`Added ${cartItems.length} products back to cart for user ${order.userId}`);
 
     await session.commitTransaction();
   } catch (error) {
@@ -469,7 +401,6 @@ const _revertOrderSideEffects = async (order) => {
     session.endSession();
   }
 };
-
 
 // TODO: Cần bổ sung tặng điểm bằng 1% giá trị đơn hàng sau khi khách đã nhận hàng
 
@@ -491,8 +422,8 @@ export const placeOrder = async (userId, { previewOrder: clientPreview }) => {
     timeline: [
       {
         status: DETAILED_ORDER_STATUS.NEW,
-        description: 'Đơn hàng mới được tạo.',
-        performedBy:  'user' ,
+        description: "Đơn hàng mới được tạo.",
+        performedBy: "user",
       },
     ],
   });
@@ -501,18 +432,20 @@ export const placeOrder = async (userId, { previewOrder: clientPreview }) => {
   await _executePostOrderActions(newOrder);
 
   // Create persistent notification for admin
-  const user = await User.findById(userId).select('name').lean();
+  const user = await User.findById(userId).select("name").lean();
   const notification = await Notification.create({
-    title: 'Đơn hàng mới',
-    message: `Khách hàng ${user?.name || 'N/A'} đã đặt đơn hàng #${newOrder._id} với tổng giá trị ${newOrder.totalAmount.toLocaleString('vi-VN')} VNĐ`,
-    type: 'order',
+    title: "Đơn hàng mới",
+    message: `Khách hàng ${user?.name || "N/A"} đã đặt đơn hàng #${newOrder._id} với tổng giá trị ${newOrder.totalAmount.toLocaleString(
+      "vi-VN"
+    )} VNĐ`,
+    type: "order",
     referenceId: newOrder._id,
-    recipient: 'admin',
+    recipient: "admin",
     metadata: {
       orderAmount: newOrder.totalAmount,
-      userName: user?.name || 'N/A',
+      userName: user?.name || "N/A",
       orderLinesCount: newOrder.orderLines.length,
-    }
+    },
   });
   logger.info(`Notification created for new order: ${notification._id}`);
 
@@ -528,14 +461,11 @@ export const placeOrder = async (userId, { previewOrder: clientPreview }) => {
       createdAt: newOrder.createdAt,
       status: newOrder.status,
     });
-    logger.info(
-      `New order notification sent to admin room for order ${newOrder._id}`
-    );
+    logger.info(`New order notification sent to admin room for order ${newOrder._id}`);
   }
 
   return newOrder;
 };
-
 
 export const getOrderStats = async (userId = null) => {
   const filter = userId ? { userId } : {};
@@ -544,7 +474,7 @@ export const getOrderStats = async (userId = null) => {
     { $match: filter },
     {
       $group: {
-        _id: '$status',
+        _id: "$status",
         count: { $sum: 1 },
       },
     },
@@ -558,7 +488,7 @@ export const getOrderStats = async (userId = null) => {
 
   // Vì database đã lưu business status (pending, processing, shipping, v.v.)
   // nên chỉ cần map trực tiếp từ aggregate results
-  stats.forEach(stat => {
+  stats.forEach((stat) => {
     const businessStatus = stat._id;
     // Chỉ cập nhật nếu businessStatus tồn tại trong ORDER_STATUS
     if (result[businessStatus] !== undefined) {
@@ -567,18 +497,14 @@ export const getOrderStats = async (userId = null) => {
   });
   console.log("Order Stats Result:", result);
   return result;
-
 };
 export const getOrderByIdForAdmin = async (orderId) => {
-  const order = await Order.findById(orderId)
-    .populate("userId", "name email")
-    .lean();
+  const order = await Order.findById(orderId).populate("userId", "name email").lean();
   if (!order) {
     throw new AppError("Không tìm thấy đơn hàng", 404);
   }
   return order;
 };
-
 
 // TODO: nếu là phương thức khác COD thì không auto confirm, thanh toán thành công thì tự chuyển sang confirmed
 export const autoConfirmOrders = async () => {
@@ -586,7 +512,7 @@ export const autoConfirmOrders = async () => {
 
   const ordersToConfirm = await Order.find({
     status: ORDER_STATUS.PENDING,
-    createdAt: { $lte: thirtyMinutesAgo }
+    createdAt: { $lte: thirtyMinutesAgo },
   });
 
   let confirmedCount = 0;
@@ -600,7 +526,6 @@ export const autoConfirmOrders = async () => {
   }
 
   return confirmedCount;
-
 };
 
 // cron
@@ -624,17 +549,14 @@ export const markOrderComfirmed = async (orderId) => {
   const timelineEntry = createTimelineEntry(DETAILED_ORDER_STATUS.CONFIRMED, "system", {});
   updateFields.$push = { timeline: timelineEntry };
 
-  const updatedOrder = await Order.findByIdAndUpdate(
-    orderId,
-    updateFields,
-    { new: true, runValidators: true }
-  ).populate('userId', 'name email phone');
+  const updatedOrder = await Order.findByIdAndUpdate(orderId, updateFields, { new: true, runValidators: true }).populate(
+    "userId",
+    "name email phone"
+  );
   return updatedOrder;
-
 };
 
 export const isValidStatusTransition = (currentStatus, newStatus) => {
-
   const validTransitions = {
     [ORDER_STATUS.PENDING]: [ORDER_STATUS.PROCESSING, ORDER_STATUS.CANCELLED],
     [ORDER_STATUS.PROCESSING]: [ORDER_STATUS.CANCELLED],
@@ -650,16 +572,15 @@ export const isValidStatusTransition = (currentStatus, newStatus) => {
 
 export const getTimestampField = (status) => {
   const timestampMap = {
-    [DETAILED_ORDER_STATUS.CONFIRMED]: 'confirmedAt',
-    [DETAILED_ORDER_STATUS.PREPARING]: 'preparingAt',
-    [DETAILED_ORDER_STATUS.SHIPPING_IN_PROGRESS]: 'shippingAt',
-    [DETAILED_ORDER_STATUS.DELIVERED]: 'deliveredAt',
-    [DETAILED_ORDER_STATUS.CANCELLED]: 'cancelledAt',
+    [DETAILED_ORDER_STATUS.CONFIRMED]: "confirmedAt",
+    [DETAILED_ORDER_STATUS.PREPARING]: "preparingAt",
+    [DETAILED_ORDER_STATUS.SHIPPING_IN_PROGRESS]: "shippingAt",
+    [DETAILED_ORDER_STATUS.DELIVERED]: "deliveredAt",
+    [DETAILED_ORDER_STATUS.CANCELLED]: "cancelledAt",
   };
 
   return timestampMap[status];
 };
-
 
 export const createTimelineEntry = (status, performer, metadata = {}) => {
   const statusDescriptions = {
@@ -680,15 +601,12 @@ export const createTimelineEntry = (status, performer, metadata = {}) => {
   const entry = {
     status,
     timestamp: new Date(),
-    description: statusDescriptions[status] || 'Cập nhật trạng thái đơn hàng',
+    description: statusDescriptions[status] || "Cập nhật trạng thái đơn hàng",
     performedBy: performer,
     metadata: {
-      ...metadata
-    }
+      ...metadata,
+    },
   };
-
-
-
 
   // Thêm thông tin bổ sung cho từng trạng thái
   if (status === DETAILED_ORDER_STATUS.CANCELLED && metadata.cancelledReason) {
@@ -697,7 +615,7 @@ export const createTimelineEntry = (status, performer, metadata = {}) => {
   }
 
   if (status === DETAILED_ORDER_STATUS.SHIPPING_IN_PROGRESS) {
-    entry.description = 'Đơn hàng đang được giao đến bạn';
+    entry.description = "Đơn hàng đang được giao đến bạn";
     if (metadata.trackingNumber) {
       entry.description += ` - Mã vận đơn: ${metadata.trackingNumber}`;
       entry.metadata.trackingNumber = metadata.trackingNumber;
@@ -731,16 +649,9 @@ const ADMIN_MANUAL_DETAILED_STATUSES = [
   DETAILED_ORDER_STATUS.REFUNDED,
 ];
 
-export const updateOrderStatusByAdmin = async (
-  orderId,
-  newDetailedStatus,
-  metadata = {}
-) => {
+export const updateOrderStatusByAdmin = async (orderId, newDetailedStatus, metadata = {}) => {
   if (!ADMIN_MANUAL_DETAILED_STATUSES.includes(newDetailedStatus)) {
-    throw new AppError(
-      `Admin không thể tự cập nhật trạng thái thành '${newDetailedStatus}'.`,
-      403
-    );
+    throw new AppError(`Admin không thể tự cập nhật trạng thái thành '${newDetailedStatus}'.`, 403);
   }
 
   const order = await Order.findById(orderId);
@@ -750,10 +661,7 @@ export const updateOrderStatusByAdmin = async (
 
   const newGeneralStatus = reverseStatusMap[newDetailedStatus];
   if (!newGeneralStatus) {
-    throw new AppError(
-      `Không tìm thấy trạng thái tổng quan cho '${newDetailedStatus}'.`,
-      500
-    );
+    throw new AppError(`Không tìm thấy trạng thái tổng quan cho '${newDetailedStatus}'.`, 500);
   }
 
   const updateFields = {
@@ -768,8 +676,7 @@ export const updateOrderStatusByAdmin = async (
   if (newDetailedStatus === DETAILED_ORDER_STATUS.CANCELLED) {
     updateFields.cancelledAt = new Date();
     updateFields.cancelledBy = "admin";
-    updateFields.cancelledReason =
-      metadata.reason || "Bị hủy bởi quản trị viên";
+    updateFields.cancelledReason = metadata.reason || "Bị hủy bởi quản trị viên";
   }
 
   const timelineEntry = createTimelineEntry(newDetailedStatus, "admin", metadata);
@@ -800,7 +707,7 @@ export const cancelOrderByUser = async (userId, orderId, reason) => {
     order.cancelledBy = "user";
     order.cancelledReason = reason || "Người dùng tự hủy đơn hàng.";
     order.timeline.push(createTimelineEntry(DETAILED_ORDER_STATUS.CANCELLED, "user", { reason: order.cancelledReason }));
-    
+
     await order.save();
     await _revertOrderSideEffects(order);
     return order;
@@ -839,18 +746,13 @@ export const getOrdersWithCancellationRequests = async (page = 1, limit = 10) =>
   const filter = {
     "timeline.status": DETAILED_ORDER_STATUS.CANCELLATION_REQUESTED,
     // Optional: Ensure we only get orders that are not yet fully cancelled or completed
-    "status": { $in: [ORDER_STATUS.SHIPPING, ORDER_STATUS.PROCESSING] }
+    status: { $in: [ORDER_STATUS.SHIPPING, ORDER_STATUS.PROCESSING] },
   };
 
   const skip = (page - 1) * limit;
 
   const [orders, total] = await Promise.all([
-    Order.find(filter)
-      .populate("userId", "name email")
-      .sort({ cancellationRequestedAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean(),
+    Order.find(filter).populate("userId", "name email").sort({ cancellationRequestedAt: -1 }).skip(skip).limit(limit).lean(),
     Order.countDocuments(filter),
   ]);
 
@@ -881,14 +783,16 @@ export const approveCancellationRequest = async (orderId, adminId) => {
   order.status = ORDER_STATUS.CANCELLED;
   order.cancelledAt = new Date();
   order.cancelledBy = "admin";
-  order.cancelledReason = `Admin chấp nhận yêu cầu hủy từ người dùng. Lý do: ${order.cancellationRequestReason || 'Không có lý do'}`;
-  
+  order.cancelledReason = `Admin chấp nhận yêu cầu hủy từ người dùng. Lý do: ${order.cancellationRequestReason || "Không có lý do"}`;
+
   // Add timeline entry
-  order.timeline.push(createTimelineEntry(DETAILED_ORDER_STATUS.CANCELLED, "admin", {
-    reason: `Chấp nhận yêu cầu hủy từ người dùng.`,
-    originalReason: order.cancellationRequestReason,
-    approvedBy: adminId
-  }));
+  order.timeline.push(
+    createTimelineEntry(DETAILED_ORDER_STATUS.CANCELLED, "admin", {
+      reason: `Chấp nhận yêu cầu hủy từ người dùng.`,
+      originalReason: order.cancellationRequestReason,
+      approvedBy: adminId,
+    })
+  );
 
   await order.save();
 
@@ -933,12 +837,7 @@ export const getPendingReturns = async (page = 1, limit = 10) => {
   const skip = (page - 1) * limit;
 
   const [orders, total] = await Promise.all([
-    Order.find(filter)
-      .populate("userId", "name email")
-      .sort({ returnRequestedAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean(),
+    Order.find(filter).populate("userId", "name email").sort({ returnRequestedAt: -1 }).skip(skip).limit(limit).lean(),
     Order.countDocuments(filter),
   ]);
 

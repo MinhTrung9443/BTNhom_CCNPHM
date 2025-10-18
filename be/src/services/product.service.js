@@ -410,6 +410,10 @@ export const productService = {
   },
 
   async createProduct(productData) {
+    const exitsProduct = await Product.findOne({ name: productData.name });
+    if (exitsProduct) {
+      throw new AppError("Sản phẩm đã tồn tại", 400);
+    }
     const product = new Product(productData);
     await product.save();
     return product;
