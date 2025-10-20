@@ -51,9 +51,9 @@ export const productController = {
     res.status(200).json({ success: true, data });
   },
 
-  async getRelatedProducts(req, res, next) {
+  async getSimilarProducts(req, res, next) {
     const { id } = req.params;
-    const data = await productService.getRelatedProducts(id);
+    const data = await productService.getSimilarProducts(id);
     res.status(200).json({ success: true, data });
   },
 

@@ -323,17 +323,17 @@ export const productService = {
     };
   },
 
-  async getRelatedProducts(id) {
+  async getSimilarProducts(id) {
     const currentProduct = await Product.findById(id).select('categoryId');
     if (!currentProduct) {
-      throw new AppError("Không tìm thấy sản phẩm", 404);
+      throw new AppError('Không tìm thấy sản phẩm', 404);
     }
 
     return Product.find({
       categoryId: currentProduct.categoryId,
-      _id: { $ne: id }
+      _id: { $ne: id },
     })
-      .limit(4)
+      .limit(5)
       .populate('categoryId', 'name')
       .select('name slug price discount images categoryId stock');
   },
