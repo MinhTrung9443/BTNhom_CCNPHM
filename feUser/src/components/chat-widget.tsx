@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
-import { useSocket } from "@/hooks/useSocket";
+// Import the hook and the message type
+import { useSocket, IChatMessage } from "@/hooks/useSocket";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,84 +12,61 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Send, X, MessageCircle, Minimize2, Headphones, HelpCircle } from "lucide-react";
 import "@/styles/chat-widget.css";
 
-interface Message {
-  sender: string;
-  senderRole: "user" | "admin";
-  message: string;
-  room: string;
-  timestamp: string;
-}
+// The IChatMessage interface is now imported from the hook, so this is not needed.
+// interface Message {
+//   sender: string;
+//   senderRole: "user" | "admin";
+//   message: string;
+//   room: string;
+//   timestamp: string;
+// }
 
 export default function ChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState("");
   const [hasNewMessage, setHasNewMessage] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const { socket, socketService, isConnected } = useSocket();
   const { data: session } = useSession();
 
-  const roomName = session?.user?.id ? `chat_${session.user.id}` : null;
+  // The useSocket hook now provides everything needed for the chat functionality.
+  const { isConnected, messages, sendMessage: sendSocketMessage } = useSocket();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
+  // Scroll to the bottom of the chat whenever new messages arrive.
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
+  // This effect handles showing a notification when a new message arrives
+  // and the chat window is either closed or minimized.
   useEffect(() => {
-    if (!socket || !roomName) return;
+    if (messages.length > 0) {
+      const lastMessage = messages[messages.length - 1];
+      if ((!isOpen || isMinimized) && lastMessage.senderRole === "admin") {
+        setHasNewMessage(true);
 
-    console.log("Setting up socket listeners for room:", roomName);
-
-    // Listen for messages
-    const handleMessage = (message: Message) => {
-      console.log("Received message:", message);
-      if (message.room === roomName) {
-        setMessages((prev) => [...prev, message]);
-
-        // Show notification if chat is closed or minimized and message is from admin
-        if ((!isOpen || isMinimized) && message.senderRole === "admin") {
-          setHasNewMessage(true);
-
-          // Show browser notification if supported
-          if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
-            new Notification("Tin nhắn mới từ hỗ trợ viên", {
-              body: message.message.length > 50 ? message.message.substring(0, 50) + "..." : message.message,
-              icon: "/favicon.ico",
-              tag: "chat-message",
-            });
-          }
+        // Show a browser notification if permission is granted.
+        if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
+          new Notification("Tin nhắn mới từ hỗ trợ viên", {
+            body: lastMessage.message.length > 50 ? lastMessage.message.substring(0, 50) + "..." : lastMessage.message,
+            icon: "/favicon.ico", // Make sure this icon exists in your public folder
+            tag: "chat-message",
+          });
         }
       }
-    };
-
-    // Listen for room messages (when joining)
-    const handleRoomMessages = (data: { room: string; messages: Message[] }) => {
-      console.log("Received room messages:", data);
-      if (data.room === roomName) {
-        setMessages(data.messages || []);
-      }
-    };
-
-    socket.on("message", handleMessage);
-    socket.on("roomMessages", handleRoomMessages);
-
-    return () => {
-      socket.off("message", handleMessage);
-      socket.off("roomMessages", handleRoomMessages);
-    };
-  }, [socket, roomName, isOpen, isMinimized]);
+    }
+  }, [messages, isOpen, isMinimized]);
 
   const handleOpenChat = () => {
     setIsOpen(true);
     setIsMinimized(false);
     setHasNewMessage(false);
 
-    // Request notification permission if not already granted
+    // Request notification permission when the user opens the chat for the first time.
     if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "default") {
       Notification.requestPermission();
     }
@@ -104,18 +82,21 @@ export default function ChatWidget() {
     setHasNewMessage(false);
   };
 
+  // This function is called when the user sends a message.
   const sendMessage = () => {
-    if (!socketService || !inputMessage.trim() || !roomName) return;
+    // Basic validation: don't send empty messages.
+    if (!inputMessage.trim()) return;
 
-    console.log("Sending message to room:", roomName, "Message:", inputMessage);
-
-    socketService.sendMessage(roomName, inputMessage.trim());
+    // Use the sendMessage function provided by the useSocket hook.
+    sendSocketMessage(inputMessage.trim());
+    // Clear the input field after sending.
     setInputMessage("");
   };
 
+  // Handle the "Enter" key press to send a message.
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
+      e.preventDefault(); // Prevents adding a new line
       sendMessage();
     }
   };
@@ -127,6 +108,7 @@ export default function ChatWidget() {
     });
   };
 
+  // Don't render the widget if the user is not logged in.
   if (!session) return null;
 
   return (
@@ -203,7 +185,7 @@ export default function ChatWidget() {
                     <div className="text-xs mt-2 text-gray-400">Nhập tin nhắn để bắt đầu cuộc trò chuyện</div>
                   </div>
                 )}
-                {messages.map((msg, index) => (
+                {messages.map((msg: IChatMessage, index) => (
                   <div key={index} className={`flex ${msg.senderRole === "user" ? "justify-end" : "justify-start"}`}>
                     <div className={`flex items-end space-x-2 max-w-[75%]`}>
                       {msg.senderRole === "admin" && (

@@ -135,10 +135,19 @@ const UserDetailPage = () => {
           <h3 className="fw-bold mb-1">Chi tiết người dùng</h3>
           <p className="text-muted mb-0">Thông tin chi tiết và lịch sử đơn hàng</p>
         </div>
-        <Button variant="outline-secondary" onClick={() => navigate('/users')}>
-          <i className="bi bi-arrow-left me-2"></i>
-          Quay lại
-        </Button>
+        <div className="d-flex gap-2">
+          <Button
+            variant="primary"
+            onClick={() => window.open(`/chat?userId=${user._id}`, '_blank')}
+          >
+            <i className="bi bi-chat-dots me-2"></i>
+            Nhắn tin
+          </Button>
+          <Button variant="outline-secondary" onClick={() => navigate('/users')}>
+            <i className="bi bi-arrow-left me-2"></i>
+            Quay lại
+          </Button>
+        </div>
       </div>
 
       <Row>

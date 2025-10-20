@@ -7,9 +7,27 @@ import * as orderService from "../services/order.service.js";
 import * as adminService from '../services/admin.service.js';
 import * as loyaltyService from '../services/loyalty.service.js';
 import voucherService from '../services/voucher.service.js';
+import { getAllUsersForChat } from "../services/user.service.js";
 
 export const adminController = {
   // User Management
+  getUsersForChat: async (req, res, next) => {
+    try {
+      const { page = 1, limit = 15 } = req.query;
+      const result = await getAllUsersForChat({ 
+        page: parseInt(page),
+        limit: parseInt(limit)
+      });
+      res.json({
+        success: true,
+        message: "Lấy danh sách người dùng cho chat thành công",
+        data: result.data,
+        pagination: result.pagination
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
   getAllUsers: async (req, res, next) => {
     try {
       const { page = 1, limit = 10, search, role } = req.query;
@@ -471,6 +489,20 @@ export const adminController = {
         success: true,
         message: "Đã chấp nhận yêu cầu hủy đơn hàng thành công.",
         data: updatedOrder,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  searchUsers: async (req, res, next) => {
+    try {
+      const { q } = req.query;
+      const users = await adminService.searchUsers(q);
+      res.json({
+        success: true,
+        message: "Search successful",
+        data: users,
       });
     } catch (error) {
       next(error);

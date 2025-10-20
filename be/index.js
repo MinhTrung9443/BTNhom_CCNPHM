@@ -26,9 +26,7 @@ import paymentRoutes from "./src/routes/payment.route.js";
 dotenv.config();
 const app = express();
 
-// In-memory storage for chat
-let activeRooms = new Set();
-let chatMessages = {};
+import { chatService } from './src/services/chat.service.js'; // Import service mới
 
 // Tạo HTTP server và Socket.IO
 const server = createServer(app);
@@ -107,60 +105,123 @@ io.use((socket, next) => {
 });
 
 io.on("connection", (socket) => {
-  logger.info(`User ${socket.userId} connected with role ${socket.userRole}`);
+  const userId = socket.userId;
+  const userRole = socket.userRole;
+  logger.info(`User ${userId} (${userRole}) connected`);
 
-  if (socket.userRole === "user") {
-    // Don't create room yet, wait for first message
-    logger.info(`user ${socket.userId} connected`);
-  } else if (socket.userRole === "admin") {
-    socket.join("admin");
-    logger.info(`Admin ${socket.userId} joined admin room`);
+  const userRoomIdentifier = `chat_${userId}`;
+
+  if (userRole === 'user') {
+    // User connects: Get or create their room, join the socket room, and get initial messages.
+    chatService.getOrCreateRoomForUser(userId)
+      .then(async (room) => {
+        socket.join(userRoomIdentifier);
+        logger.info(`User ${userId} joined their dedicated room ${userRoomIdentifier}`);
+
+        // Also send the first page of messages
+        const messages = await chatService.getRoomMessages(room._id, { limit: 30 });
+        const formattedMessages = messages.map(msg => ({
+            _id: msg._id,
+            sender: msg.senderId ? msg.senderId._id : null,
+            senderRole: msg.senderRole,
+            message: msg.message,
+            room: userRoomIdentifier,
+            timestamp: msg.createdAt.toISOString(),
+        }));
+        socket.emit("roomMessages", { room: userRoomIdentifier, messages: formattedMessages });
+        logger.info(`Sent initial message history to user ${userId} for room ${userRoomIdentifier}`);
+      })
+      .catch(err => logger.error(`Error getting/creating room for user ${userId}: ${err.message}`));
+
+  } else if (userRole === 'admin') {
+    // Admin connects: Join the 'admin' room to receive broadcasts.
+    socket.join('admin');
+    logger.info(`Admin ${userId} joined the main admin room`);
+
+    // Also join all active user rooms to listen to all conversations.
+    chatService.getActiveRooms()
+      .then(rooms => {
+         const roomIdentifiers = rooms.map(room => `chat_${room.userId?._id}`);
+         roomIdentifiers.forEach(id => socket.join(id));
+         logger.info(`Admin ${userId} has joined all active rooms: ${roomIdentifiers.join(', ')}`);
+      })
+      .catch(err => logger.error(`Error getting active rooms for admin ${userId}: ${err.message}`));
   }
 
-  // Handle sendMessage event
-  socket.on("sendMessage", (data) => {
-    const { room, message } = data;
-    if (!room || !message) return;
+  // Handles a new message from any client
+  socket.on('sendMessage', async (data) => {
+    const { room: roomIdentifier, message } = data;
+    if (!roomIdentifier || !message || !message.trim()) return;
 
-    logger.info(`Message from ${socket.userRole} ${socket.userId} to room ${room}: ${message}`);
+    const targetUserId = roomIdentifier.split('_')[1];
+    if (!targetUserId) {
+        return logger.warn(`sendMessage: Invalid roomIdentifier received: ${roomIdentifier}`);
+    }
 
-    // For customer, room is chat_${userId}, join if not already
-    if (socket.userRole === "user") {
-      socket.join(room);
-      if (!activeRooms.has(room)) {
-        logger.info(`Creating new room ${room} for user ${socket.userId}`);
-        activeRooms.add(room);
-        chatMessages[room] = [];
-        io.to("admin").emit("newChatRoom", { room, userId: socket.userId });
-        // Update all admins with new active rooms list
-        logger.info(`Emitting active rooms to admins: ${Array.from(activeRooms)}`);
-        io.to("admin").emit("activeChatRooms", Array.from(activeRooms));
+    try {
+      // Find the room in the DB.
+      const room = await chatService.findRoomByUserId(targetUserId);
+
+      if (!room) {
+        return logger.error(`sendMessage: Could not find a chat room in DB for identifier ${roomIdentifier}`);
       }
+
+      // Save the message to the database
+      const savedMessage = await chatService.addMessage(room._id, userId, userRole, message);
+
+      const messageToSend = {
+        _id: savedMessage._id,
+        sender: userId,
+        senderRole: userRole,
+        message: savedMessage.message,
+        room: roomIdentifier,
+        timestamp: savedMessage.createdAt.toISOString(),
+      };
+
+      // Broadcast the message to the room (which includes the user and all listening admins)
+      io.to(roomIdentifier).emit('message', messageToSend);
+      logger.info(`Broadcasted message from ${userRole} ${userId} to room ${roomIdentifier}`);
+
+      // If a user sends the first message, it makes the room "active". Notify admins.
+      if (savedMessage.isFirstMessage) {
+           io.to('admin').emit('newChatRoom', { room: roomIdentifier, userId: targetUserId });
+      }
+
+    } catch (error) {
+      logger.error(`Error processing sendMessage from ${userId} to ${roomIdentifier}: ${error.message}`);
     }
-
-    const msg = {
-      sender: socket.userId,
-      senderRole: socket.userRole,
-      message,
-      room,
-      timestamp: new Date().toISOString(),
-    };
-
-    if (!chatMessages[room]) {
-      chatMessages[room] = [];
-    }
-    chatMessages[room].push(msg);
-
-    // Emit to the room
-    io.to(room).emit("message", msg);
   });
 
   // Handle joinRoom for admin (to listen to specific room)
-  socket.on("joinRoom", (room) => {
-    if (socket.userRole === "admin" && activeRooms.has(room)) {
-      socket.join(room);
-      // Send existing messages
-      socket.emit("roomMessages", { room, messages: chatMessages[room] || [] });
+  socket.on("joinRoom", async (roomIdentifier) => {
+    if (socket.userRole !== "admin") return;
+
+    const targetUserId = roomIdentifier.split('_')[1];
+    if (!targetUserId) {
+        return logger.warn(`joinRoom: Invalid room identifier: ${roomIdentifier}`);
+    }
+
+    try {
+        const room = await chatService.findRoomByUserId(targetUserId);
+        if (room) {
+            socket.join(roomIdentifier);
+            const messages = await chatService.getRoomMessages(room._id, { limit: 30 });
+            const formattedMessages = messages.map(msg => ({
+                _id: msg._id,
+                sender: msg.senderId ? msg.senderId._id : null,
+                senderRole: msg.senderRole,
+                message: msg.message,
+                room: roomIdentifier,
+                timestamp: msg.createdAt.toISOString(),
+            }));
+            socket.emit("roomMessages", { room: roomIdentifier, messages: formattedMessages });
+            logger.info(`Admin ${socket.userId} joined room ${roomIdentifier} and received history.`);
+        } else {
+            logger.warn(`Admin tried to join a room that does not exist in DB: ${roomIdentifier}`);
+            socket.emit("roomMessages", { room: roomIdentifier, messages: [] });
+        }
+    } catch (error) {
+        logger.error(`Error in joinRoom for ${roomIdentifier}: ${error.message}`);
     }
   });
 
@@ -171,23 +232,101 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("getActiveRooms", () => {
-    socket.emit("activeChatRooms", Array.from(activeRooms));
+  // Handle getOlderMessages for pagination
+  socket.on('getOlderMessages', async ({ roomIdentifier, before }) => {
+    const targetUserId = roomIdentifier.split('_')[1];
+    if (!targetUserId) {
+        return logger.warn(`getOlderMessages: Invalid roomIdentifier: ${roomIdentifier}`);
+    }
+
+    // Security Check: A user can only request older messages for their own room.
+    if (socket.userRole === 'user' && socket.userId !== targetUserId) {
+        return logger.warn(`User ${socket.userId} attempted to get messages for another user's room ${targetUserId}.`);
+    }
+
+    if (!roomIdentifier || !before) {
+        logger.warn(`getOlderMessages: Missing parameters from user ${socket.userId}`);
+        return;
+    }
+
+    try {
+        const room = await chatService.findRoomByUserId(targetUserId);
+        if (room) {
+            const olderMessages = await chatService.getRoomMessages(room._id, { limit: 20, before });
+
+            const formattedMessages = olderMessages.map(msg => ({
+                _id: msg._id,
+                sender: msg.senderId ? msg.senderId._id : null,
+                senderRole: msg.senderRole,
+                message: msg.message,
+                room: roomIdentifier,
+                timestamp: msg.createdAt.toISOString(),
+            }));
+
+            socket.emit('olderMessages', { room: roomIdentifier, messages: formattedMessages });
+            logger.info(`Sent ${olderMessages.length} older messages for room ${roomIdentifier} to user ${socket.userId}`);
+        } else {
+            logger.warn(`getOlderMessages: Room not found in DB for identifier ${roomIdentifier}`);
+        }
+    } catch (error) {
+        logger.error(`Error in getOlderMessages for room ${roomIdentifier}: ${error.message}`);
+    }
+  });
+
+  socket.on("getActiveRooms", async () => {
+      if (socket.userRole !== 'admin') return;
+      try {
+        const rooms = await chatService.getActiveRooms();
+        const roomIdentifiers = rooms.map(room => `chat_${room.userId?._id}`);
+        socket.emit("activeChatRooms", roomIdentifiers);
+      } catch(error) {
+        logger.error(`Error in getActiveRooms for admin ${socket.userId}: ${error.message}`);
+      }
+  });
+
+  socket.on('adminInitiateChat', async ({ targetUserId }) => {
+    if (socket.userRole !== 'admin') {
+        return logger.warn(`User ${socket.userId} (not admin) attempted to initiate chat.`);
+    }
+    if (!targetUserId) {
+        return logger.warn(`adminInitiateChat: a targetUserId must be provided by admin ${socket.userId}.`);
+    }
+
+    try {
+        // This function already handles creating a room if it doesn't exist
+        const room = await chatService.getOrCreateRoomForUser(targetUserId);
+        const roomIdentifier = `chat_${targetUserId}`;
+
+        // Make the initiating admin join the socket room
+        socket.join(roomIdentifier);
+        logger.info(`Admin ${socket.userId} initiated and joined room ${roomIdentifier}`);
+
+        // Also notify other admins that this room is now active
+        io.to('admin').emit('newChatRoom', { room: roomIdentifier, userId: targetUserId });
+
+        // Get chat history for the admin
+        const messages = await chatService.getRoomMessages(room._id, { limit: 30 });
+        const formattedMessages = messages.map(msg => ({
+            _id: msg._id,
+            sender: msg.senderId ? msg.senderId._id : null,
+            senderRole: msg.senderRole,
+            message: msg.message,
+            room: roomIdentifier,
+            timestamp: msg.createdAt.toISOString(),
+        }));
+
+        // Send room info and history back to the initiating admin
+        socket.emit("roomMessages", { room: roomIdentifier, messages: formattedMessages });
+
+    } catch (error) {
+        logger.error(`Error during adminInitiateChat for target ${targetUserId}: ${error.message}`);
+        socket.emit('chatError', { message: 'Could not initiate chat with user.' });
+    }
   });
 
   socket.on("disconnect", () => {
     logger.info(`User ${socket.userId} disconnected`);
-    if (socket.userRole === "user") {
-      const room = `chat_${socket.userId}`;
-      socket.leave(room);
-      const roomSockets = io.sockets.adapter.rooms.get(room);
-      if (!roomSockets || roomSockets.size === 0) {
-        activeRooms.delete(room);
-        delete chatMessages[room];
-        io.to("admin").emit("chatRoomClosed", { room });
-        io.to("admin").emit("activeChatRooms", Array.from(activeRooms));
-      }
-    }
+    // No need to manage rooms on disconnect, they are persistent.
   });
 });
 

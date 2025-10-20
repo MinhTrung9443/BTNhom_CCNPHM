@@ -272,6 +272,16 @@ const OrderDetailPage = () => {
                     <strong>Địa chỉ:</strong>{" "}
                     {`${order.shippingAddress.street}, ${order.shippingAddress.ward}, ${order.shippingAddress.district}, ${order.shippingAddress.province}`}
                   </div>
+                  {order.userId && (
+                    <Button
+                      variant="outline-primary"
+                      size="sm"
+                      onClick={() => window.open(`/chat?userId=${order.userId._id}`, '_blank')}
+                    >
+                      <i className="bi bi-chat-dots me-2"></i>
+                      Nhắn tin với khách hàng
+                    </Button>
+                  )}
                   {order.notes && (
                     <div className="mb-3">
                       <strong>Ghi chú:</strong> {order.notes}

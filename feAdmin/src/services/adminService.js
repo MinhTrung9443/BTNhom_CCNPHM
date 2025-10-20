@@ -55,6 +55,10 @@ const adminService = {
   getUserCheckinHistory: (userId, params = {}) => {
     return api.get(`/admin/users/${userId}/checkin-history`, { params })
   },
+
+  getUsersForChat: (params = {}) => {
+    return api.get('/admin/users-for-chat', { params });
+  },
 }
 
 export default adminService

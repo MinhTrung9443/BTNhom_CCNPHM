@@ -35,8 +35,10 @@ router.get("/dashboard/delivered-orders", adminController.getDeliveredOrders);
 router.get("/users/stats", adminController.getUserStats);
 
 // === USER MANAGEMENT ROUTES ===
+router.get("/users-for-chat", adminController.getUsersForChat);
 
 router.get("/users", adminController.getAllUsers);
+router.get("/users/search", adminController.searchUsers); // New route for searching users
 router.get("/users/:userId", adminController.getUserById);
 router.patch("/users/:userId/role", adminController.updateUserRole);
 router.patch("/users/:userId/toggle-status", adminController.toggleUserStatus);

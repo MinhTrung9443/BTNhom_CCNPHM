@@ -168,4 +168,89 @@ const getLoyaltyPoints = async (userId) => {
   return user.loyaltyPoints;
 };
 
-export { updateUserProfile, toggleFavorite, getFavorites, getRecentlyViewed, getLoyaltyPoints };
+const getAllUsersForChat = async ({ page = 1, limit = 15 } = {}) => {
+  const skip = (page - 1) * limit;
+
+  const aggregation = [
+    // 1. Lọc những user có vai trò 'user'
+    { $match: { role: 'user' } },
+
+    // 2. Join với collection chatrooms để lấy thông tin chat
+    {
+      $lookup: {
+        from: 'chatrooms',
+        localField: '_id',
+        foreignField: 'userId',
+        as: 'chatRoomInfo'
+      }
+    },
+
+    // 3. Tách mảng chatRoomInfo, giữ lại user dù không có phòng chat
+    { 
+      $unwind: {
+        path: '$chatRoomInfo',
+        preserveNullAndEmptyArrays: true
+      }
+    },
+
+    // 4. Thêm các trường cần thiết để sắp xếp và hiển thị
+    {
+      $addFields: {
+        lastMessageTimestamp: { $ifNull: ['$chatRoomInfo.lastMessageTimestamp', new Date(0)] },
+        lastMessage: '$chatRoomInfo.lastMessage',
+        hasChatRoom: { $cond: { if: '$chatRoomInfo', then: true, else: false } }
+      }
+    },
+
+    // 5. SẮP XẾP TRƯỚC KHI PHÂN TRANG
+    { 
+      $sort: {
+        lastMessageTimestamp: -1, // Tin nhắn mới nhất lên đầu
+        name: 1 // Sắp xếp theo tên cho những người chưa chat
+      }
+    },
+
+    // 6. Sử dụng $facet để lấy cả dữ liệu đã phân trang và tổng số lượng
+    {
+      $facet: {
+        data: [
+          { $skip: skip },
+          { $limit: limit },
+          {
+            $project: {
+              _id: 1,
+              name: 1,
+              email: 1,
+              avatar: 1,
+              hasChatRoom: 1,
+              lastMessage: 1,
+              lastMessageTimestamp: { 
+                $cond: { if: '$hasChatRoom', then: '$lastMessageTimestamp', else: null } 
+              }
+            }
+          }
+        ],
+        metadata: [
+          { $count: 'totalUsers' }
+        ]
+      }
+    }
+  ];
+
+  const result = await User.aggregate(aggregation);
+
+  const data = result[0].data;
+  const totalUsers = result[0].metadata[0]?.totalUsers || 0;
+
+  return {
+    data,
+    pagination: {
+      currentPage: page,
+      limit,
+      totalPages: Math.ceil(totalUsers / limit),
+      totalUsers
+    }
+  };
+};
+
+export { updateUserProfile, toggleFavorite, getFavorites, getRecentlyViewed, getLoyaltyPoints, getAllUsersForChat };

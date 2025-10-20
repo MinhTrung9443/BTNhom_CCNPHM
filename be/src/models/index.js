@@ -12,6 +12,9 @@ import Favorite from "./Favorite.js";
 import LoyaltyPoints from "./LoyaltyPoints.js";
 import Notification from "./Notification.js";
 import ViewHistory from "./ViewHistory.js";
+import ChatRoom from './ChatRoom.js';
+import ChatMessage from './ChatMessage.js';
+
 export {
   User,
   OTP,
@@ -27,4 +30,6 @@ export {
   Favorite,
   Notification,
   ViewHistory,
+  ChatRoom,
+  ChatMessage,
 };
