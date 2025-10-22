@@ -15,6 +15,6 @@ router.get("/top-discounts", productController.getTopDiscountProducts);
 router.get("/", productController.getAllProducts);
 router.post("/by-ids", productController.getProductsByIds);
 router.get("/slug/:slug", optionalAuth, productController.getProductBySlug); // Route slug phải đặt trước /:id
-router.get("/:id/related", productController.getRelatedProducts);
+router.get("/:id/similar", productController.getSimilarProducts);
 router.get("/:id", optionalAuth, productController.getProductDetail);
 export default router;

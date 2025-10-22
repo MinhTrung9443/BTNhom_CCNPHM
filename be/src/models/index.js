@@ -17,6 +17,8 @@ import Comment from "./Comment.js";
 import ArticleLike from "./ArticleLike.js";
 import CommentLike from "./CommentLike.js";
 import ArticleShare from "./ArticleShare.js";
+import ChatRoom from './ChatRoom.js';
+import ChatMessage from './ChatMessage.js';
 
 export {
   User,
@@ -38,4 +40,6 @@ export {
   ArticleLike,
   CommentLike,
   ArticleShare,
+  ChatRoom,
+  ChatMessage,
 };

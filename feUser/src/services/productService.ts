@@ -73,6 +73,11 @@ class ProductService {
     return await apiFetch<ApiResponse<ProductListResponse>>(endpoint, accessToken);
   }
 
+  // Lấy sản phẩm tương tự
+  async getSimilarProducts(productId: string, accessToken?: string): Promise<ApiResponse<Product[]>> {
+    return await apiFetch<ApiResponse<Product[]>>(`/products/${productId}/similar`, accessToken);
+  }
+
   // Tìm kiếm sản phẩm
   async searchProducts(filters: SearchFilters, accessToken?: string): Promise<SearchResponse> {
     const searchParams = new URLSearchParams();

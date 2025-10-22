@@ -261,3 +261,31 @@ export const getSalesChartData = async (period) => {
     ],
   };
 };
+
+/**
+ * Search for users by name or email.
+ * @param {string} searchTerm - The term to search for.
+ * @returns {Promise<User[]>}
+ */
+export const searchUsers = async (searchTerm) => {
+  if (!searchTerm || searchTerm.trim() === '') {
+    return [];
+  }
+  // Using 'i' for case-insensitive search
+  const regex = new RegExp(searchTerm, 'i');
+  const users = await User.find({
+    $and: [
+      { role: 'user' }, // Only search for customers
+      {
+        $or: [
+          { name: { $regex: regex } },
+          { email: { $regex: regex } },
+        ],
+      },
+    ],
+  })
+  .select('name email _id')
+  .limit(10)
+  .lean(); // Select basic fields and limit results
+  return users;
+};

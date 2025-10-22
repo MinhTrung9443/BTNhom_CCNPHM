@@ -11,6 +11,7 @@ import { auth } from "@/auth";
 import { Product } from "@/types/product";
 import { ApiResponse } from "@/types/api";
 import { ReviewsSection } from "@/components/reviews-section";
+import { SimilarProducts } from "@/components/similar-products"; // Import mới
 import { ViewHistoryTracker } from "@/components/view-history-tracker";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -47,6 +48,10 @@ async function ProductDetail({ slug }: { slug: string }) {
   }
 
   const product = response.data;
+
+  // Fetch sản phẩm tương tự
+  const similarProductsResponse = await productService.getSimilarProducts(product._id, accessToken);
+  const similarProducts = similarProductsResponse.data || [];
 
   // Kiểm tra trạng thái sản phẩm
   const isInactive = !product.isActive;
@@ -194,6 +199,11 @@ async function ProductDetail({ slug }: { slug: string }) {
         {/* Section đánh giá sản phẩm */}
         <div className="col-span-1 lg:col-span-2 mt-12">
           <ReviewsSection productId={product._id} />
+        </div>
+
+        {/* Section sản phẩm tương tự */}
+        <div className="col-span-1 lg:col-span-2">
+          <SimilarProducts products={similarProducts} />
         </div>
       </div>
     </>
