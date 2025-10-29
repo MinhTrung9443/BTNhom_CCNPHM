@@ -157,8 +157,8 @@ export const previewOrder = async (userId, { orderLines, shippingAddress, vouche
   if (shippingMethod === "express" && shippingAddress) {
     const province = shippingAddress.province?.trim().toLowerCase();
     const socTrangVariants = ["sóc trăng", "soc trang", "tỉnh sóc trăng", "tinh soc trang"];
-    
-    if (!province || !socTrangVariants.some(variant => province.includes(variant))) {
+
+    if (!province || !socTrangVariants.some((variant) => province.includes(variant))) {
       throw new AppError("Phương thức giao hỏa tốc chỉ áp dụng cho địa chỉ tại tỉnh Sóc Trăng", 400);
     }
   }
@@ -272,15 +272,15 @@ export const previewOrder = async (userId, { orderLines, shippingAddress, vouche
               discount = voucher.maxDiscountAmount;
             }
           }
-          
+
           // Đảm bảo discount không vượt quá subtotal
           if (discount > subtotal) {
             discount = subtotal;
           }
-          
+
           appliedVoucherCode = voucher.code;
         } else {
-          throw new AppError(`Đơn hàng tối thiểu để áp dụng voucher này là ${voucher.minPurchaseAmount.toLocaleString('vi-VN')} VNĐ`, 400);
+          throw new AppError(`Đơn hàng tối thiểu để áp dụng voucher này là ${voucher.minPurchaseAmount.toLocaleString("vi-VN")} VNĐ`, 400);
         }
       } else {
         throw new AppError("Bạn không có quyền sử dụng voucher này hoặc đã sử dụng rồi", 400);
@@ -397,10 +397,10 @@ const _verifyOrderPreview = async (userId, clientPreview) => {
 };
 
 const _executePostOrderActions = async (order) => {
-  // 1. Update stock
+  // 1. Update stock & soldCount
   for (const line of order.orderLines) {
     await Product.findByIdAndUpdate(line.productId, {
-      $inc: { stock: -line.quantity },
+      $inc: { stock: -line.quantity, soldCount: line.quantity },
     });
   }
 
@@ -418,7 +418,7 @@ const _executePostOrderActions = async (order) => {
     await User.findByIdAndUpdate(order.userId, {
       $inc: { loyaltyPoints: -order.pointsApplied },
     });
-    
+
     // Tạo giao dịch điểm tích lũy (redeemed)
     await LoyaltyPoints.create({
       userId: order.userId,
@@ -429,7 +429,7 @@ const _executePostOrderActions = async (order) => {
       pointsValue: order.pointsApplied, // Giá trị quy đổi (1 điểm = 1 VNĐ)
       expiryDate: null, // Giao dịch sử dụng điểm không có ngày hết hạn
     });
-    
+
     logger.info(`Deducted ${order.pointsApplied} points from user ${order.userId} and created redeemed transaction`);
   }
 };
@@ -438,11 +438,11 @@ const _revertOrderSideEffects = async (order) => {
   const session = await mongoose.startSession();
   session.startTransaction();
   try {
-    // 1. Revert stock
+    // 1. Revert stock & soldCount
     for (const line of order.orderLines) {
-      await Product.findByIdAndUpdate(line.productId, { $inc: { stock: line.quantity } }, { session });
+      await Product.findByIdAndUpdate(line.productId, { $inc: { stock: line.quantity, soldCount: -line.quantity } }, { session });
     }
-    logger.info(`Reverted stock for order ${order._id}`);
+    logger.info(`Reverted stock and soldCount for order ${order._id}`);
 
     // 2. Revert voucher
     if (order.voucherCode) {
@@ -460,18 +460,23 @@ const _revertOrderSideEffects = async (order) => {
     // 3. Revert loyalty points and create refund transaction
     if (order.pointsApplied > 0) {
       await User.findByIdAndUpdate(order.userId, { $inc: { loyaltyPoints: order.pointsApplied } }, { session });
-      
+
       // Tạo giao dịch hoàn điểm (refund)
-      await LoyaltyPoints.create([{
-        userId: order.userId,
-        points: order.pointsApplied, // Số dương để thể hiện điểm được hoàn lại
-        transactionType: "refund",
-        description: `Hoàn ${order.pointsApplied} điểm từ đơn hàng bị hủy #${order._id}`,
-        orderId: order._id,
-        pointsValue: order.pointsApplied,
-        expiryDate: null, // Điểm hoàn lại không hết hạn (hoặc có thể set expiry date nếu cần)
-      }], { session });
-      
+      await LoyaltyPoints.create(
+        [
+          {
+            userId: order.userId,
+            points: order.pointsApplied, // Số dương để thể hiện điểm được hoàn lại
+            transactionType: "refund",
+            description: `Hoàn ${order.pointsApplied} điểm từ đơn hàng bị hủy #${order._id}`,
+            orderId: order._id,
+            pointsValue: order.pointsApplied,
+            expiryDate: null, // Điểm hoàn lại không hết hạn (hoặc có thể set expiry date nếu cần)
+          },
+        ],
+        { session }
+      );
+
       logger.info(`Reverted ${order.pointsApplied} points for user ${order.userId} and created refund transaction`);
     }
 
@@ -516,7 +521,7 @@ export const placeOrder = async (userId, { previewOrder: clientPreview }) => {
   await _executePostOrderActions(newOrder);
 
   // Step 4: Remove ordered items from cart
-  const orderedProductIds = newOrder.orderLines.map(line => line.productId);
+  const orderedProductIds = newOrder.orderLines.map((line) => line.productId);
   await cartService.removeOrderedItemsFromCart(userId, orderedProductIds);
   logger.info(`Removed ${orderedProductIds.length} items from cart for user ${userId}`);
 
@@ -584,7 +589,7 @@ export const placeMomoOrder = async (userId, { previewOrder: clientPreview }) =>
   await _executePostOrderActions(newOrder);
 
   // Step 4: Remove ordered items from cart
-  const orderedProductIds = newOrder.orderLines.map(line => line.productId);
+  const orderedProductIds = newOrder.orderLines.map((line) => line.productId);
   await cartService.removeOrderedItemsFromCart(userId, orderedProductIds);
   logger.info(`Removed ${orderedProductIds.length} items from cart for user ${userId}`);
 
