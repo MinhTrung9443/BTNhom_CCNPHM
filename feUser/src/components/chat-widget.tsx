@@ -114,18 +114,18 @@ export default function ChatWidget() {
   return (
     <>
       {/* Chat Toggle Button */}
-      <div className="fixed bottom-20 right-6 z-50">
+      <div className="fixed bottom-24 right-10 z-[9999]">
         {!isOpen && (
           <Button
             onClick={handleOpenChat}
             size="lg"
-            className={`rounded-full h-14 w-14 bg-blue-600 hover:bg-blue-700 shadow-lg relative transition-all duration-200 ${
+            className={`rounded-full h-16 w-16 bg-blue-600 hover:bg-blue-700 shadow-2xl relative transition-all duration-200 ${
               hasNewMessage ? "chat-button-pulse" : ""
             }`}
             suppressHydrationWarning
           >
             <div className="relative">
-              <Headphones className="h-6 w-6" />
+              <Headphones className="h-7 w-7" />
               <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
             </div>
             {hasNewMessage && <div className="new-message-indicator"></div>}
@@ -135,8 +135,8 @@ export default function ChatWidget() {
 
       {/* Minimized Chat Window */}
       {isOpen && isMinimized && (
-        <Card className="fixed bottom-20 right-6 w-80 h-12 z-50 shadow-2xl cursor-pointer" onClick={handleOpenChat}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 py-2 px-4">
+        <Card className="fixed bottom-24 right-10 w-80 h-14 z-[9999] shadow-2xl cursor-pointer border-2" onClick={handleOpenChat}>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 py-3 px-4">
             <CardTitle className="text-sm font-medium">
               Hỗ trợ khách hàng
               {hasNewMessage && <span className="ml-2 text-xs text-red-600">● Tin nhắn mới</span>}
@@ -158,7 +158,7 @@ export default function ChatWidget() {
 
       {/* Full Chat Window */}
       {isOpen && !isMinimized && (
-        <Card className="fixed bottom-20 right-6 w-80 h-96 z-50 shadow-2xl chat-widget-enter-active">
+        <Card className="fixed bottom-24 right-10 w-[400px] h-[650px] z-[9999] shadow-2xl chat-widget-enter-active border-2 flex flex-col">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
             <CardTitle className="text-sm font-medium">
               Hỗ trợ khách hàng
@@ -174,9 +174,10 @@ export default function ChatWidget() {
               </Button>
             </div>
           </CardHeader>
-          <CardContent className="flex flex-col h-full p-3">
+          {/* Main content: messages + input, use flex-col and grow */}
+          <div className="flex flex-col flex-1 min-h-0">
             {/* Messages Area */}
-            <ScrollArea className="flex-1 pr-3">
+            <div className="flex-1 overflow-y-auto pr-3 mb-2" style={{ minHeight: 0 }}>
               <div className="space-y-3">
                 {messages.length === 0 && (
                   <div className="text-center text-gray-500 text-sm py-8">
@@ -226,10 +227,9 @@ export default function ChatWidget() {
                 ))}
                 <div ref={messagesEndRef} />
               </div>
-            </ScrollArea>
-
+            </div>
             {/* Input Area */}
-            <div className="flex space-x-2 pt-3 border-t bg-gray-50/50">
+            <div className="flex space-x-2 pt-3 border-t bg-white px-1 pb-1">
               <div className="flex-1 relative">
                 <Input
                   placeholder={isConnected ? "Nhập tin nhắn..." : "Đang kết nối..."}
@@ -256,7 +256,7 @@ export default function ChatWidget() {
                 <Send className="h-4 w-4" />
               </Button>
             </div>
-          </CardContent>
+          </div>
         </Card>
       )}
     </>
