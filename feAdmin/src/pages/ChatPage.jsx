@@ -11,15 +11,7 @@ function useQuery() {
 }
 
 const ChatPage = () => {
-  const {
-    usersForChat,
-    chatPagination,
-    isFetchingUsers,
-    loadMoreUsers,
-    refreshUserList,
-    unreadMessages,
-    markRoomAsRead,
-  } = useChatContext();
+  const { usersForChat, chatPagination, isFetchingUsers, loadMoreUsers, refreshUserList, unreadMessages, markRoomAsRead } = useChatContext();
 
   const [selectedUser, setSelectedUser] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -45,7 +37,7 @@ const ChatPage = () => {
   useEffect(() => {
     const userIdFromQuery = query.get("userId");
     if (userIdFromQuery && usersForChat.length > 0) {
-      const userToSelect = usersForChat.find(u => u._id === userIdFromQuery);
+      const userToSelect = usersForChat.find((u) => u._id === userIdFromQuery);
       if (userToSelect) {
         handleSelectUser(userToSelect);
       }
@@ -62,11 +54,13 @@ const ChatPage = () => {
 
     const handleMessage = (msg) => {
       if (msg.room === selectedRoom) {
-        setMessages(prev => {
-          const exists = prev.some(m => m._id === msg._id);
+        setMessages((prev) => {
+          const exists = prev.some((m) => m._id === msg._id);
           return exists ? prev : [...prev, msg];
         });
       }
+      // Luôn cập nhật lại danh sách user để cột bên trái hiển thị đúng preview
+      refreshUserList();
     };
     socketService.socket?.on("message", handleMessage);
 
@@ -111,9 +105,7 @@ const ChatPage = () => {
   const filteredUsers = useMemo(() => {
     if (!searchQuery) return usersForChat;
     return usersForChat.filter(
-      (user) =>
-        user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchQuery.toLowerCase())
+      (user) => user.name.toLowerCase().includes(searchQuery.toLowerCase()) || user.email.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [usersForChat, searchQuery]);
 
@@ -159,7 +151,11 @@ const ChatPage = () => {
                 <div className="user-info">
                   <div className="user-name">{user.name}</div>
                   <div className={`last-message ${unreadCount > 0 ? "fw-bold" : ""}`}>
-                    {user.lastMessage ? (user.lastMessage.length > 25 ? `${user.lastMessage.substring(0, 25)}...` : user.lastMessage) : "Chưa có tin nhắn"}
+                    {user.lastMessage
+                      ? user.lastMessage.length > 25
+                        ? `${user.lastMessage.substring(0, 25)}...`
+                        : user.lastMessage
+                      : "Chưa có tin nhắn"}
                   </div>
                 </div>
                 <div className="message-meta">
@@ -189,7 +185,7 @@ const ChatPage = () => {
               {messages.map((msg, index) => (
                 <div key={msg._id || index} className={`message ${msg.senderRole === "admin" ? "admin" : "user"}`}>
                   <div className="message-content">{msg.message}</div>
-                  <div className="message-time">{moment(msg.createdAt).format("HH:mm")}</div>
+                  <div className="message-time">{msg.timestamp ? moment(msg.timestamp).format("HH:mm") : ""}</div>
                 </div>
               ))}
               <div ref={messagesEndRef} />
