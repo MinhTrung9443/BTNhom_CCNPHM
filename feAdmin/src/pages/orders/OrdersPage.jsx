@@ -1,12 +1,70 @@
 import React, { useEffect, useState } from 'react'
-import { Container, Row, Col, Card, Table, Button, Form, Badge, InputGroup } from 'react-bootstrap'
+import { Container, Row, Col, Card, Table, Button, Form, Badge, InputGroup, Nav, Tab } from 'react-bootstrap'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
-import { fetchOrders, updateOrderStatus } from '../../redux/slices/ordersSlice'
+import { fetchOrders } from '../../redux/slices/ordersSlice'
 import { SkeletonOrderRow } from '../../components/common/Skeleton'
 import Pagination from '../../components/common/Pagination'
+import UpdateStatusModal from '../../components/orders/UpdateStatusModal'
 import { toast } from 'react-toastify'
 import moment from 'moment'
+
+// Mapping giữa general status và detailed status
+const STATUS_MAPPING = {
+  'all': {
+    label: 'Tất cả',
+    icon: '📋',
+    detailedStatuses: []
+  },
+  'pending': {
+    label: 'Chờ xác nhận',
+    icon: '🕐',
+    detailedStatuses: [
+      { value: 'new', label: '🆕 Mới' },
+      { value: 'confirmed', label: '✅ Đã xác nhận' }
+    ]
+  },
+  'processing': {
+    label: 'Vận chuyển',
+    icon: '📦',
+    detailedStatuses: [
+      { value: 'preparing', label: '📦 Đang chuẩn bị' }
+    ]
+  },
+  'shipping': {
+    label: 'Đang giao',
+    icon: '🚚',
+    detailedStatuses: [
+      { value: 'shipping_in_progress', label: '🚚 Đang giao hàng' },
+      { value: 'delivered', label: '✅ Đã giao' },
+      { value: 'delivery_failed', label: '🔴 Giao thất bại' }
+    ]
+  },
+  'completed': {
+    label: 'Hoàn thành',
+    icon: '✔️',
+    detailedStatuses: [
+      { value: 'completed', label: '✔️ Hoàn thành' }
+    ]
+  },
+  'cancelled': {
+    label: 'Đã hủy',
+    icon: '❌',
+    detailedStatuses: [
+      { value: 'cancellation_requested', label: '⚠️ Yêu cầu hủy' },
+      { value: 'cancelled', label: '❌ Đã hủy' }
+    ]
+  },
+  'return_refund': {
+    label: 'Trả hàng/Hoàn tiền',
+    icon: '🔄',
+    detailedStatuses: [
+      { value: 'return_requested', label: '🔄 Yêu cầu trả hàng' },
+      { value: 'refunded', label: '💰 Đã hoàn tiền' }
+    ]
+  }
+};
+
 const OrdersPage = () => {
   const dispatch = useDispatch()
   const { orders, meta, loading, error } = useSelector((state) => state.orders);
@@ -15,14 +73,28 @@ const OrdersPage = () => {
     page: 1,
     limit: 10,
     search: '',
-    status: '',
+    detailedStatus: '',
     sortBy: "createdAt",
     sortOrder: "desc",
   })
 
+  const [activeTab, setActiveTab] = useState('all')
+  const [showUpdateModal, setShowUpdateModal] = useState(false)
+  const [selectedOrder, setSelectedOrder] = useState(null)
+
   useEffect(() => {
     dispatch(fetchOrders(filters))
   }, [dispatch, filters])
+
+  const handleTabChange = (tab) => {
+    setActiveTab(tab)
+    // Reset detailed status khi đổi tab
+    setFilters(prev => ({
+      ...prev,
+      detailedStatus: '',
+      page: 1,
+    }))
+  }
 
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
@@ -47,11 +119,37 @@ const OrdersPage = () => {
     setFilters(prev => ({ ...prev, page }))
   }
 
+  const handleOpenUpdateModal = (order) => {
+    setSelectedOrder(order)
+    setShowUpdateModal(true)
+  }
+
+  const handleCloseUpdateModal = () => {
+    setShowUpdateModal(false)
+    setSelectedOrder(null)
+  }
+
+  const handleUpdateSuccess = () => {
+    dispatch(fetchOrders(filters))
+    toast.success('Cập nhật trạng thái thành công')
+  }
+
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('vi-VN', {
       style: 'currency',
       currency: 'VND',
     }).format(amount)
+  }
+
+  const getDetailedStatusLabel = (detailedStatus) => {
+    // Tìm trong STATUS_MAPPING
+    for (const generalStatus in STATUS_MAPPING) {
+      const found = STATUS_MAPPING[generalStatus].detailedStatuses.find(
+        ds => ds.value === detailedStatus
+      );
+      if (found) return found.label;
+    }
+    return detailedStatus;
   }
 
   const getStatusBadge = (status) => {
@@ -116,8 +214,9 @@ const OrdersPage = () => {
       {/* Filters */}
       <Card className="border-0 shadow-sm mb-4">
         <Card.Body>
-          <Row>
-            <Col md={4}>
+          {/* Search, Sort, Limit */}
+          <Row className="g-3 mb-3">
+            <Col lg={5}>
               <InputGroup>
                 <InputGroup.Text>
                   <i className="bi bi-search"></i>
@@ -131,22 +230,7 @@ const OrdersPage = () => {
                 />
               </InputGroup>
             </Col>
-            <Col md={3}>
-              <Form.Select
-                name="status"
-                value={filters.status}
-                onChange={handleFilterChange}
-              >
-                <option value="">Tất cả trạng thái</option>
-                <option value="pending">Chờ xác nhận</option>
-                <option value="processing">Vận chuyển</option>
-                <option value="shipping">Đang giao</option>
-                <option value="completed">Hoàn thành</option>
-                <option value="cancelled">Đã hủy</option>
-                <option value="return_refund">Trả hàng/Hoàn tiền</option>
-              </Form.Select>
-            </Col>
-            <Col md={3}>
+            <Col lg={5}>
               <Form.Select
                 value={`${filters.sortBy},${filters.sortOrder}`}
                 onChange={(e) => handleSortChange(e.target.value)}
@@ -157,7 +241,7 @@ const OrdersPage = () => {
                 <option value="totalAmount,asc">Giá trị thấp nhất</option>
               </Form.Select>
             </Col>
-            <Col md={2}>
+            <Col lg={2}>
               <Form.Select
                 value={filters.limit}
                 name="limit"
@@ -169,6 +253,41 @@ const OrdersPage = () => {
               </Form.Select>
             </Col>
           </Row>
+
+          {/* Tabs for General Status */}
+          <Nav variant="pills" className="mb-3">
+            {Object.keys(STATUS_MAPPING).map(statusKey => (
+              <Nav.Item key={statusKey}>
+                <Nav.Link 
+                  active={activeTab === statusKey}
+                  onClick={() => handleTabChange(statusKey)}
+                  className="px-3"
+                >
+                  {STATUS_MAPPING[statusKey].icon} {STATUS_MAPPING[statusKey].label}
+                </Nav.Link>
+              </Nav.Item>
+            ))}
+          </Nav>
+
+          {/* Detailed Status Filter (only show if not "all" tab and has detailed statuses) */}
+          {activeTab !== 'all' && STATUS_MAPPING[activeTab].detailedStatuses.length > 0 && (
+            <Row className="g-3">
+              <Col lg={4}>
+                <Form.Select
+                  name="detailedStatus"
+                  value={filters.detailedStatus}
+                  onChange={handleFilterChange}
+                >
+                  <option value="">Tất cả trạng thái chi tiết</option>
+                  {STATUS_MAPPING[activeTab].detailedStatuses.map(ds => (
+                    <option key={ds.value} value={ds.value}>
+                      {ds.label}
+                    </option>
+                  ))}
+                </Form.Select>
+              </Col>
+            </Row>
+          )}
         </Card.Body>
       </Card>
 
@@ -248,8 +367,14 @@ const OrdersPage = () => {
                         {formatCurrency(order.totalAmount)}
                       </td>
                       <td>
-                        <div className="mb-2">
+                        <div>
                           {getStatusBadge(order.status)}
+                          {order.timeline && order.timeline.length > 0 && (
+                            <div className="small text-muted mt-1">
+                              <i className="bi bi-info-circle me-1"></i>
+                              {getDetailedStatusLabel(order.timeline[order.timeline.length - 1]?.status)}
+                            </div>
+                          )}
                         </div>
                       </td>
                       <td>
@@ -267,6 +392,14 @@ const OrdersPage = () => {
                             title="Xem chi tiết"
                           >
                             <i className="bi bi-eye"></i>
+                          </Button>
+                          <Button
+                            variant="outline-success"
+                            size="sm"
+                            title="Cập nhật trạng thái"
+                            onClick={() => handleOpenUpdateModal(order)}
+                          >
+                            <i className="bi bi-arrow-repeat"></i>
                           </Button>
                         </div>
                       </td>
@@ -292,6 +425,16 @@ const OrdersPage = () => {
           )}
         </Card.Body>
       </Card>
+
+      {/* Update Status Modal */}
+      {selectedOrder && (
+        <UpdateStatusModal
+          show={showUpdateModal}
+          onHide={handleCloseUpdateModal}
+          order={selectedOrder}
+          onSuccess={handleUpdateSuccess}
+        />
+      )}
     </Container>
   )
 }

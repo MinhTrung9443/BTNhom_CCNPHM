@@ -59,12 +59,17 @@ export const getUserOrders = async (userId, page = 1, limit = 10, status = null,
   };
 };
 
-export const getAllOrders = async (page = 1, limit = 10, status = null, search = null, sortBy = "createdAt", sortOrder = "desc") => {
+export const getAllOrders = async (page = 1, limit = 10, status = null, detailedStatus = null, search = null, sortBy = "createdAt", sortOrder = "desc") => {
   const filter = {};
 
-  // Lọc theo trạng thái
+  // Lọc theo trạng thái chung
   if (status) {
     filter.status = { $in: status };
+  }
+
+  // Lọc theo trạng thái chi tiết (từ timeline)
+  if (detailedStatus) {
+    filter["timeline.status"] = { $in: Array.isArray(detailedStatus) ? detailedStatus : [detailedStatus] };
   }
 
   // Tìm kiếm
@@ -73,6 +78,7 @@ export const getAllOrders = async (page = 1, limit = 10, status = null, search =
     filter.$or = [
       { "shippingAddress.recipientName": searchRegex },
       { "shippingAddress.phoneNumber": searchRegex },
+      { orderCode: searchRegex }, // Tìm theo orderCode
       { _id: mongoose.isValidObjectId(search) ? search : null }, // Tìm theo ID đơn hàng
       { "orderLines.productName": searchRegex },
     ].filter(Boolean); // Loại bỏ các điều kiện null
@@ -926,6 +932,111 @@ const ADMIN_MANUAL_DETAILED_STATUSES = [
   DETAILED_ORDER_STATUS.DELIVERY_FAILED,
   DETAILED_ORDER_STATUS.REFUNDED,
 ];
+
+// --- Valid Status Transitions Map ---
+const VALID_TRANSITIONS = {
+  [DETAILED_ORDER_STATUS.NEW]: [DETAILED_ORDER_STATUS.CONFIRMED, DETAILED_ORDER_STATUS.CANCELLED],
+  [DETAILED_ORDER_STATUS.CONFIRMED]: [DETAILED_ORDER_STATUS.PREPARING, DETAILED_ORDER_STATUS.CANCELLED],
+  [DETAILED_ORDER_STATUS.PREPARING]: [DETAILED_ORDER_STATUS.SHIPPING_IN_PROGRESS, DETAILED_ORDER_STATUS.CANCELLED],
+  [DETAILED_ORDER_STATUS.SHIPPING_IN_PROGRESS]: [
+    DETAILED_ORDER_STATUS.DELIVERED,
+    DETAILED_ORDER_STATUS.DELIVERY_FAILED,
+    DETAILED_ORDER_STATUS.CANCELLATION_REQUESTED,
+  ],
+  [DETAILED_ORDER_STATUS.DELIVERED]: [
+    DETAILED_ORDER_STATUS.COMPLETED,
+    DETAILED_ORDER_STATUS.RETURN_REQUESTED,
+  ],
+  [DETAILED_ORDER_STATUS.DELIVERY_FAILED]: [
+    DETAILED_ORDER_STATUS.SHIPPING_IN_PROGRESS, // Thử giao lại
+    DETAILED_ORDER_STATUS.CANCELLED, // Hủy đơn
+    DETAILED_ORDER_STATUS.REFUNDED, // Hoàn tiền
+  ],
+  [DETAILED_ORDER_STATUS.CANCELLATION_REQUESTED]: [
+    DETAILED_ORDER_STATUS.CANCELLED, // Admin approve
+  ],
+  [DETAILED_ORDER_STATUS.RETURN_REQUESTED]: [
+    DETAILED_ORDER_STATUS.REFUNDED, // Admin approve
+  ],
+  [DETAILED_ORDER_STATUS.COMPLETED]: [],
+  [DETAILED_ORDER_STATUS.CANCELLED]: [],
+  [DETAILED_ORDER_STATUS.REFUNDED]: [],
+  [DETAILED_ORDER_STATUS.PAYMENT_OVERDUE]: [],
+};
+
+/**
+ * Get valid status transitions for an order
+ * @param {String} orderId - Order ID
+ * @returns {Object} Valid transitions with metadata
+ */
+export const getValidTransitions = async (orderId) => {
+  const order = await Order.findById(orderId).lean();
+  if (!order) {
+    throw new AppError("Không tìm thấy đơn hàng", 404);
+  }
+
+  // Lấy detailed status mới nhất từ timeline
+  const latestDetailedStatus = order.timeline[order.timeline.length - 1]?.status;
+  
+  // Lấy danh sách các status có thể chuyển
+  const validNextStatuses = VALID_TRANSITIONS[latestDetailedStatus] || [];
+  
+  // Chỉ lấy các status mà admin có thể cập nhật thủ công
+  const adminEditableStatuses = validNextStatuses.filter(status => 
+    ADMIN_MANUAL_DETAILED_STATUSES.includes(status)
+  );
+
+  return {
+    currentStatus: {
+      general: order.status,
+      detailed: latestDetailedStatus,
+    },
+    validTransitions: adminEditableStatuses.map(status => ({
+      value: status,
+      label: getStatusLabel(status),
+      requiresMetadata: requiresMetadataForStatus(status),
+    })),
+    allStatuses: Object.values(DETAILED_ORDER_STATUS).map(status => ({
+      value: status,
+      label: getStatusLabel(status),
+      enabled: adminEditableStatuses.includes(status),
+      requiresMetadata: requiresMetadataForStatus(status),
+    })),
+  };
+};
+
+/**
+ * Get display label for detailed status
+ */
+const getStatusLabel = (status) => {
+  const labels = {
+    [DETAILED_ORDER_STATUS.NEW]: "Mới",
+    [DETAILED_ORDER_STATUS.CONFIRMED]: "Đã xác nhận",
+    [DETAILED_ORDER_STATUS.PREPARING]: "Đang chuẩn bị",
+    [DETAILED_ORDER_STATUS.SHIPPING_IN_PROGRESS]: "Đang giao hàng",
+    [DETAILED_ORDER_STATUS.DELIVERED]: "Đã giao hàng",
+    [DETAILED_ORDER_STATUS.COMPLETED]: "Hoàn thành",
+    [DETAILED_ORDER_STATUS.CANCELLED]: "Đã hủy",
+    [DETAILED_ORDER_STATUS.DELIVERY_FAILED]: "Giao hàng thất bại",
+    [DETAILED_ORDER_STATUS.CANCELLATION_REQUESTED]: "Yêu cầu hủy",
+    [DETAILED_ORDER_STATUS.RETURN_REQUESTED]: "Yêu cầu trả hàng",
+    [DETAILED_ORDER_STATUS.REFUNDED]: "Đã hoàn tiền",
+    [DETAILED_ORDER_STATUS.PAYMENT_OVERDUE]: "Quá hạn thanh toán",
+  };
+  return labels[status] || status;
+};
+
+/**
+ * Check if status requires metadata
+ */
+const requiresMetadataForStatus = (status) => {
+  const metadataRequired = {
+    [DETAILED_ORDER_STATUS.SHIPPING_IN_PROGRESS]: ['trackingNumber', 'carrier'],
+    [DETAILED_ORDER_STATUS.CANCELLED]: ['reason'],
+    [DETAILED_ORDER_STATUS.DELIVERY_FAILED]: ['reason'],
+  };
+  return metadataRequired[status] || [];
+};
 
 export const updateOrderStatusByAdmin = async (orderId, newDetailedStatus, metadata = {}) => {
   if (!ADMIN_MANUAL_DETAILED_STATUSES.includes(newDetailedStatus)) {

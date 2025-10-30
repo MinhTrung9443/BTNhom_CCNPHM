@@ -101,9 +101,17 @@ export const getOrderDetail = async (req, res, next) => {
 };
 
 export const getAllOrdersByAdmin = async (req, res) => {
-  const { page = 1, limit = 10, status, search, sortBy, sortOrder } = req.query;
+  const { page = 1, limit = 10, status, detailedStatus, search, sortBy, sortOrder } = req.query;
 
-  const result = await OrderService.getAllOrders(parseInt(page, 10), parseInt(limit, 10), status, search, sortBy, sortOrder);
+  const result = await OrderService.getAllOrders(
+    parseInt(page, 10), 
+    parseInt(limit, 10), 
+    status, 
+    detailedStatus,
+    search, 
+    sortBy, 
+    sortOrder
+  );
 
   res.json({
     success: true,
@@ -123,6 +131,18 @@ export const updateOrderStatusByAdmin = async (req, res) => {
     success: true,
     message: "Cập nhật trạng thái đơn hàng thành công.",
     data: updatedOrder,
+  });
+};
+
+export const getValidTransitions = async (req, res) => {
+  const { orderId } = req.params;
+
+  const transitions = await OrderService.getValidTransitions(orderId);
+
+  res.json({
+    success: true,
+    message: "Lấy danh sách trạng thái hợp lệ thành công.",
+    data: transitions,
   });
 };
 

@@ -99,6 +99,7 @@ router.get("/users/:userId/orders", orderController.getUserOrdersByAdmin);
 router.get("/orders/:orderId", validate(getOrderById), orderController.getOrderByAdmin);
 
 // === ORDER STATUS MANAGEMENT ===
+router.get("/orders/:orderId/valid-transitions", orderController.getValidTransitions);
 router.patch("/orders/:orderId/status", validate(updateOrderStatus), orderController.updateOrderStatusByAdmin);
 router.patch("/orders/:orderId/approve-cancellation", adminController.approveCancellationRequest);
 

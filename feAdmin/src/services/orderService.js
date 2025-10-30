@@ -47,6 +47,10 @@ const orderService = {
   approveReturn: (orderId) => {
     return api.patch(`/admin/orders/${orderId}/approve-return`)
   },
+
+  getValidTransitions: (orderId) => {
+    return api.get(`/admin/orders/${orderId}/valid-transitions`)
+  },
 }
 
 export default orderService

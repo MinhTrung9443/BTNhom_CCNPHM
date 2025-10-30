@@ -103,6 +103,18 @@ export const approveReturn = createAsyncThunk(
   }
 )
 
+export const getValidTransitions = createAsyncThunk(
+  'orders/getValidTransitions',
+  async (orderId, { rejectWithValue }) => {
+    try {
+      const response = await orderService.getValidTransitions(orderId)
+      return response.data.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || error.message)
+    }
+  }
+)
+
 const initialState = {
   orders: [],
   order: null, // Đổi tên cho nhất quán
