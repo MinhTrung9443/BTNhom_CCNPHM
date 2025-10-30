@@ -1,7 +1,17 @@
 import Comment from '../models/Comment.js';
 import CommentLike from '../models/CommentLike.js';
 import Article from '../models/Article.js';
+import Notification from '../models/Notification.js';
 import { NotFoundError, BadRequestError, UnauthorizedError } from '../utils/AppError.js';
+import articleNotificationService from './articleNotification.service.js';
+
+// Helper function to get unread count
+const getUnreadCount = async (userId) => {
+  return await Notification.countDocuments({
+    recipientUserId: userId,
+    isRead: false
+  });
+};
 
 export const commentService = {
   /**
@@ -58,6 +68,34 @@ export const commentService = {
 
     // Populate author info
     await comment.populate('author', 'name avatar role');
+
+    // Tạo thông báo
+    let notification = null;
+    if (parentComment) {
+      // Thông báo reply comment
+      notification = await articleNotificationService.handleCommentReply(
+        parentComment,
+        comment._id,
+        userId,
+        content
+      );
+    } else {
+      // Thông báo comment bài viết
+      notification = await articleNotificationService.handleArticleComment(
+        article,
+        comment._id,
+        userId,
+        content
+      );
+    }
+
+    // Gửi thông báo real-time đến người nhận
+    if (notification && global.io) {
+      global.io.to(`user_${notification.recipientUserId}`).emit('newNotification', {
+        notification: notification.toObject(),
+        unreadCount: await getUnreadCount(notification.recipientUserId)
+      });
+    }
 
     // Emit real-time event for new comment
     if (global.io) {
@@ -346,6 +384,8 @@ export const commentService = {
       user: userId
     });
 
+    let notification = null;
+
     if (existingLike) {
       // Unlike
       await CommentLike.deleteOne({ _id: existingLike._id });
@@ -354,6 +394,13 @@ export const commentService = {
       });
 
       const newLikes = Math.max(0, comment.likes - 1);
+
+      // Xóa actor khỏi thông báo
+      notification = await articleNotificationService.removeActorFromNotification(
+        commentId,
+        userId,
+        'like'
+      );
 
       // Emit real-time event for comment like update
       if (global.io) {
@@ -380,6 +427,17 @@ export const commentService = {
       });
 
       const newLikes = comment.likes + 1;
+
+      // Tạo/cập nhật thông báo
+      notification = await articleNotificationService.handleCommentLike(commentId, userId);
+
+      // Gửi thông báo real-time đến người nhận
+      if (notification && global.io) {
+        global.io.to(`user_${notification.recipientUserId}`).emit('newNotification', {
+          notification: notification.toObject(),
+          unreadCount: await getUnreadCount(notification.recipientUserId)
+        });
+      }
 
       // Emit real-time event for comment like update
       if (global.io) {

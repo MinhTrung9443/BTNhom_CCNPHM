@@ -134,6 +134,12 @@ const orderSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
+    orderCode: {
+      type: String,
+      unique: true,
+      trim: true,
+      maxlength: 20,
+    },
     status: {
       type: String,
       enum: Object.values(ORDER_STATUS),
@@ -200,6 +206,7 @@ const orderSchema = new mongoose.Schema(
 
 // Indexes for better performance
 orderSchema.index({ userId: 1 });
+orderSchema.index({ orderCode: 1 });
 orderSchema.index({ status: 1 });
 orderSchema.index({ createdAt: -1 });
 orderSchema.index({ deliveryId: 1 });
@@ -210,6 +217,47 @@ orderSchema.index({ userId: 1, status: 1 });
 orderSchema.index({ userId: 1, createdAt: -1 });
 orderSchema.index({ status: 1, createdAt: -1 });
 orderSchema.index({ userId: 1, status: 1, createdAt: -1 });
+
+// Hàm helper để tạo orderCode ngẫu nhiên
+function generateOrderCode() {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let code = 'ORDER_';
+  for (let i = 0; i < 9; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return code;
+}
+
+// Sinh orderCode tự động trước khi lưu
+orderSchema.pre("save", async function (next) {
+  try {
+    // Sinh orderCode tự động nếu là document mới và chưa có orderCode
+    if (this.isNew && !this.orderCode) {
+      let orderCode;
+      let isUnique = false;
+      
+      // Thử tạo orderCode unique (tối đa 10 lần thử)
+      for (let attempt = 0; attempt < 10; attempt++) {
+        orderCode = generateOrderCode();
+        const existingOrder = await this.constructor.findOne({ orderCode }).lean();
+        if (!existingOrder) {
+          isUnique = true;
+          break;
+        }
+      }
+      
+      if (!isUnique) {
+        throw new Error('Không thể tạo orderCode unique sau 10 lần thử');
+      }
+      
+      this.orderCode = orderCode;
+    }
+
+    next();
+  } catch (error) {
+    next(error);
+  }
+});
 
 export default mongoose.model("Order", orderSchema);
 export { ORDER_STATUS, DETAILED_ORDER_STATUS, STATUS_MAP };

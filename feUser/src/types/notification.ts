@@ -1,16 +1,31 @@
 export interface Notification {
   _id: string;
-  user: string;
-  type: 'comment_reply' | 'comment_like' | 'article_like';
   title: string;
   message: string;
-  data: {
-    articleId?: string;
-    articleSlug?: string;
-    commentId?: string;
-    actorName?: string;
+  type: 'order' | 'user' | 'product' | 'system' | 'loyalty' | 'article';
+  subType?: 'like' | 'comment' | 'reply';
+  referenceId: string;
+  articleId?: {
+    _id: string;
+    title: string;
+    slug: string;
   };
-  read: boolean;
+  actors?: Array<{
+    _id: string;
+    fullName: string;
+    avatar?: string;
+  }>;
+  recipient: 'admin' | 'user';
+  recipientUserId?: string;
+  userId?: string;
+  isRead: boolean;
+  metadata?: {
+    orderAmount?: number;
+    userName?: string;
+    articleTitle?: string;
+    commentContent?: string;
+    actorCount?: number;
+  };
   createdAt: string;
   updatedAt: string;
 }

@@ -335,7 +335,7 @@ const DashboardPage = () => {
                       <tr key={order._id}>
                         <td>
                           <a href={`/orders/${order._id}`} className="text-decoration-none fw-semibold">
-                            #{order._id.slice(-8)}
+                            {order.orderCode || `#${order._id.slice(-8)}`}
                           </a>
                         </td>
                         <td>{order.userId?.name || 'N/A'}</td>

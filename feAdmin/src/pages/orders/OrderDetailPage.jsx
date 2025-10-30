@@ -191,7 +191,7 @@ const OrderDetailPage = () => {
           <Link to="/orders" className="text-decoration-none text-muted me-3">
             <i className="bi bi-arrow-left"></i> Quay lại
           </Link>
-          <h2 className="fw-bold d-inline">Chi tiết đơn hàng #{order._id.slice(-8)}</h2>
+          <h2 className="fw-bold d-inline">Chi tiết đơn hàng {order.orderCode || `#${order._id.slice(-8)}`}</h2>
         </div>
         <div className="d-flex gap-2">
           {isCancellationRequested() && (
@@ -248,7 +248,7 @@ const OrderDetailPage = () => {
               <Row>
                 <Col md={6}>
                   <div className="mb-3">
-                    <strong>Mã đơn hàng:</strong> #{order._id.slice(-8)}
+                    <strong>Mã đơn hàng:</strong> {order.orderCode || `#${order._id.slice(-8)}`}
                   </div>
                   <div className="mb-3">
                     <strong>Trạng thái:</strong> {getStatusBadge(order.status)}
@@ -471,7 +471,7 @@ const OrderDetailPage = () => {
             <p>Bạn có chắc chắn muốn chấp nhận yêu cầu hủy đơn hàng này không?</p>
             <div className="bg-light p-3 rounded">
               <div className="mb-2">
-                <strong>Mã đơn hàng:</strong> #{order._id.slice(-8)}
+                <strong>Mã đơn hàng:</strong> {order.orderCode || `#${order._id.slice(-8)}`}
               </div>
               <div className="mb-2">
                 <strong>Tổng tiền:</strong> {formatCurrency(order.totalAmount)}

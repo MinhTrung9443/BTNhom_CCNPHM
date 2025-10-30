@@ -33,17 +33,19 @@ export const adminController = {
       const { page = 1, limit = 10, search, role } = req.query;
       const skip = (page - 1) * limit;
 
-      let filter = {};
+      // Luôn loại bỏ admin khỏi danh sách quản lý
+      let filter = { role: { $ne: "admin" } };
+      
       if (search) {
-        filter = {
-          $or: [
-            { name: { $regex: search, $options: "i" } },
-            { email: { $regex: search, $options: "i" } },
-            { phone: { $regex: search, $options: "i" } },
-          ],
-        };
+        filter.$or = [
+          { name: { $regex: search, $options: "i" } },
+          { email: { $regex: search, $options: "i" } },
+          { phone: { $regex: search, $options: "i" } },
+        ];
       }
-      if (role) {
+      
+      // Nếu có filter role cụ thể và không phải admin
+      if (role && role !== "admin") {
         filter.role = role;
       }
 
@@ -158,13 +160,14 @@ export const adminController = {
 
   getUserStats: async (req, res, next) => {
     try {
-      const [totalUsers, adminUsers, regularUsers] = await Promise.all([
-        User.countDocuments(),
-        User.countDocuments({ role: "admin" }),
+      // Chỉ thống kê user thường, không bao gồm admin
+      const [totalUsers, regularUsers] = await Promise.all([
+        User.countDocuments({ role: { $ne: "admin" } }),
         User.countDocuments({ role: "user" }),
       ]);
 
       const recentUsers = await User.countDocuments({
+        role: { $ne: "admin" },
         createdAt: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
       });
 
@@ -173,7 +176,6 @@ export const adminController = {
         message: "Lấy thống kê người dùng thành công",
         data: {
           totalUsers,
-          adminUsers,
           regularUsers,
           recentUsers,
         },

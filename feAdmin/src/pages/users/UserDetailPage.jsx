@@ -252,7 +252,7 @@ const UserDetailPage = () => {
                       {orders.map((order) => (
                         <tr key={order._id}>
                           <td>
-                            <span className="fw-semibold">#{order._id.slice(-8)}</span>
+                            <span className="fw-semibold">{order.orderCode || `#${order._id.slice(-8)}`}</span>
                           </td>
                           <td>
                             <small className="text-muted">

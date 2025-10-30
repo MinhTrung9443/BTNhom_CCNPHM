@@ -19,6 +19,7 @@ import loyaltyRoutes from "./src/routes/loyalty.route.js";
 import articleRoutes from "./src/routes/article.route.js";
 import commentRoutes from "./src/routes/comment.route.js";
 import articleInteractionRoutes from './src/routes/article-interaction.route.js';
+import notificationRoutes from './src/routes/notification.route.js';
 import logger from "./src/utils/logger.js";
 import { notFound, errorHandler } from "./src/middlewares/error.js";
 import cartRoutes from "./src/routes/cart.route.js";
@@ -89,6 +90,7 @@ app.use("/api/loyalty", loyaltyRoutes);
 app.use("/api/articles", articleRoutes);
 app.use("/api/comments", commentRoutes);
 app.use('/api/article-interactions', articleInteractionRoutes);
+app.use('/api/v1/notifications', notificationRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
@@ -122,6 +124,10 @@ io.on("connection", (socket) => {
   const userRoomIdentifier = `chat_${userId}`;
 
   if (userRole === 'user') {
+    // User joins their notification room
+    socket.join(`user_${userId}`);
+    logger.info(`User ${userId} joined notification room user_${userId}`);
+    
     // User connects: Get or create their room, join the socket room, and get initial messages.
     chatService.getOrCreateRoomForUser(userId)
       .then(async (room) => {

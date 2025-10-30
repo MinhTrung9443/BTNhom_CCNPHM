@@ -12,6 +12,7 @@ class SocketService {
     this.onCancellationApprovedCallback = null;
     this.onReturnRequestedCallback = null;
     this.onReturnApprovedCallback = null;
+    this.onNewArticleNotificationCallback = null; // Callback cho thông báo bài viết
     this.lastToastTimes = {}; // Track last toast time per event type
     this.listenersRegistered = false; // Track if listeners are already registered
   }
@@ -120,6 +121,15 @@ class SocketService {
         this.onReturnApprovedCallback(data);
       }
     });
+
+    // Listen for article notifications (like, comment, reply)
+    this.socket.on("newNotification", (data) => {
+      console.log("New article notification received:", data);
+      this.handleArticleNotification(data);
+      if (this.onNewArticleNotificationCallback) {
+        this.onNewArticleNotificationCallback(data);
+      }
+    });
   }
 
   disconnect() {
@@ -172,7 +182,7 @@ class SocketService {
       return;
     }
 
-    const message = `Đơn hàng mới: #${orderData.orderId.slice(-8)} - ${orderData.orderLines
+    const message = `Đơn hàng mới: ${orderData.orderCode || `#${orderData.orderId.slice(-8)}`} - ${orderData.orderLines
       } sản phẩm - ${new Intl.NumberFormat("vi-VN", {
         style: "currency",
         currency: "VND",
@@ -285,6 +295,37 @@ class SocketService {
     });
   }
 
+  handleArticleNotification(data) {
+    const notification = data.notification;
+    if (!notification) return;
+
+    // Tạo unique key cho notification
+    const notificationKey = `${notification.type}_${notification.subType}_${notification.referenceId}`;
+    
+    if (!this.shouldShowToast('articleNotification', notificationKey)) {
+      return;
+    }
+
+    // Xác định icon và màu dựa trên subType
+    let toastType = 'info';
+    if (notification.subType === 'like') {
+      toastType = 'success';
+    } else if (notification.subType === 'comment' || notification.subType === 'reply') {
+      toastType = 'info';
+    }
+
+    // Hiển thị toast
+    const toastMethod = toast[toastType] || toast.info;
+    toastMethod(notification.message, {
+      position: "bottom-right",
+      autoClose: 8000,
+      onClick: () => {
+        // Điều hướng đến trang thông báo hoặc bài viết
+        window.location.href = `/notifications`;
+      },
+    });
+  }
+
   setOnNewOrderCallback(callback) {
     this.onNewOrderCallback = callback;
   }
@@ -307,6 +348,10 @@ class SocketService {
 
   setOnReturnRequestedCallback(callback) {
     this.onReturnRequestedCallback = callback;
+  }
+
+  setOnNewArticleNotificationCallback(callback) {
+    this.onNewArticleNotificationCallback = callback;
   }
 
   setOnReturnApprovedCallback(callback) {

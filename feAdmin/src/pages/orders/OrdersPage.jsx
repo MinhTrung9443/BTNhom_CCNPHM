@@ -216,7 +216,7 @@ const OrdersPage = () => {
                           to={`/orders/${order._id}`} 
                           className="text-decoration-none fw-semibold"
                         >
-                          #{order._id.slice(-8)}
+                          {order.orderCode || `#${order._id.slice(-8)}`}
                         </Link>
                       </td>
                       <td>

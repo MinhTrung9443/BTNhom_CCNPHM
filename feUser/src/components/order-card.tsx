@@ -148,7 +148,7 @@ export function OrderCard({ order, onOrderUpdate }: OrderCardProps) {
           <div className="flex-1 space-y-1.5">
             <div className="flex items-center gap-2">
               <Package className="h-5 w-5 text-primary" />
-              <h3 className="font-bold text-base">#{order._id.slice(-8).toUpperCase()}</h3>
+              <h3 className="font-bold text-base">{order.orderCode || `#${order._id.slice(-8).toUpperCase()}`}</h3>
             </div>
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <Clock className="h-3.5 w-3.5" />

@@ -45,7 +45,7 @@ export const addLoyaltyPoints = async (userId, orderAmount, orderId, orderNumber
     userId: userId,
     points: earnedPoints,
     transactionType: "earned",
-    description: `Nhận điểm từ đơn hàng #${orderNumber}`,
+    description: `Nhận điểm từ đơn hàng ${orderNumber}`,
     orderId: orderId,
     expiryDate: expiresAt
   });

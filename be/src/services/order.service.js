@@ -424,7 +424,7 @@ const _executePostOrderActions = async (order) => {
       userId: order.userId,
       points: -order.pointsApplied, // Số âm để thể hiện điểm bị trừ
       transactionType: "redeemed",
-      description: `Sử dụng ${order.pointsApplied} điểm cho đơn hàng #${order._id}`,
+      description: `Sử dụng ${order.pointsApplied} điểm cho đơn hàng ${order.orderCode}`,
       orderId: order._id,
       pointsValue: order.pointsApplied, // Giá trị quy đổi (1 điểm = 1 VNĐ)
       expiryDate: null, // Giao dịch sử dụng điểm không có ngày hết hạn
@@ -468,7 +468,7 @@ const _revertOrderSideEffects = async (order) => {
             userId: order.userId,
             points: order.pointsApplied, // Số dương để thể hiện điểm được hoàn lại
             transactionType: "refund",
-            description: `Hoàn ${order.pointsApplied} điểm từ đơn hàng bị hủy #${order._id}`,
+            description: `Hoàn ${order.pointsApplied} điểm từ đơn hàng bị hủy ${order.orderCode}`,
             orderId: order._id,
             pointsValue: order.pointsApplied,
             expiryDate: null, // Điểm hoàn lại không hết hạn (hoặc có thể set expiry date nếu cần)
@@ -529,7 +529,7 @@ export const placeOrder = async (userId, { previewOrder: clientPreview }) => {
   const user = await User.findById(userId).select("name").lean();
   const notification = await Notification.create({
     title: "Đơn hàng mới",
-    message: `Khách hàng ${user?.name || "N/A"} đã đặt đơn hàng #${newOrder._id} với tổng giá trị ${newOrder.totalAmount.toLocaleString(
+    message: `Khách hàng ${user?.name || "N/A"} đã đặt đơn hàng ${newOrder.orderCode} với tổng giá trị ${newOrder.totalAmount.toLocaleString(
       "vi-VN"
     )} VNĐ`,
     type: "order",
@@ -549,6 +549,7 @@ export const placeOrder = async (userId, { previewOrder: clientPreview }) => {
   if (global.io) {
     global.io.to("admin").emit("newOrder", {
       orderId: newOrder._id,
+      orderCode: newOrder.orderCode,
       userId: newOrder.userId,
       totalAmount: newOrder.totalAmount,
       orderLines: newOrder.orderLines.length,
@@ -599,7 +600,7 @@ export const placeMomoOrder = async (userId, { previewOrder: clientPreview }) =>
   const user = await User.findById(userId).select("name").lean();
   const notification = await Notification.create({
     title: "Đơn hàng mới (MoMo)",
-    message: `Khách hàng ${user?.name || "N/A"} đã đặt đơn hàng MoMo #${newOrder._id} với tổng giá trị ${newOrder.totalAmount.toLocaleString(
+    message: `Khách hàng ${user?.name || "N/A"} đã đặt đơn hàng MoMo ${newOrder.orderCode} với tổng giá trị ${newOrder.totalAmount.toLocaleString(
       "vi-VN"
     )} VNĐ`,
     type: "order",
@@ -620,6 +621,7 @@ export const placeMomoOrder = async (userId, { previewOrder: clientPreview }) =>
   if (global.io) {
     global.io.to("admin").emit("newOrder", {
       orderId: newOrder._id,
+      orderCode: newOrder.orderCode,
       userId: newOrder.userId,
       totalAmount: newOrder.totalAmount,
       orderLines: newOrder.orderLines.length,
@@ -968,15 +970,15 @@ export const updateOrderStatusByAdmin = async (orderId, newDetailedStatus, metad
   const notificationMessages = {
     [DETAILED_ORDER_STATUS.SHIPPING_IN_PROGRESS]: {
       title: "Đơn hàng đang được giao",
-      message: `Đơn hàng #${orderId} của bạn đang trên đường giao`,
+      message: `Đơn hàng ${order.orderCode} của bạn đang trên đường giao`,
     },
     [DETAILED_ORDER_STATUS.DELIVERED]: {
       title: "Đơn hàng đã được giao",
-      message: `Đơn hàng #${orderId} đã được giao thành công. Vui lòng xác nhận đã nhận hàng.`,
+      message: `Đơn hàng ${order.orderCode} đã được giao thành công. Vui lòng xác nhận đã nhận hàng.`,
     },
     [DETAILED_ORDER_STATUS.CANCELLED]: {
       title: "Đơn hàng đã bị hủy",
-      message: `Đơn hàng #${orderId} của bạn đã bị hủy`,
+      message: `Đơn hàng ${order.orderCode} của bạn đã bị hủy`,
     },
   };
 
@@ -1032,7 +1034,7 @@ export const cancelOrderByUser = async (userId, orderId, reason) => {
     // Notify admin about cancellation
     await Notification.create({
       title: "Đơn hàng đã bị hủy",
-      message: `Khách hàng ${user?.name || "N/A"} đã hủy đơn hàng #${order._id}. Lý do: ${order.cancelledReason}`,
+      message: `Khách hàng ${user?.name || "N/A"} đã hủy đơn hàng ${order.orderCode}. Lý do: ${order.cancelledReason}`,
       type: "order",
       referenceId: order._id,
       recipient: "admin",
@@ -1066,7 +1068,7 @@ export const cancelOrderByUser = async (userId, orderId, reason) => {
       // Notify admin about cancellation request
       await Notification.create({
         title: "Yêu cầu hủy đơn hàng",
-        message: `Khách hàng ${user?.name || "N/A"} yêu cầu hủy đơn hàng #${order._id}. Lý do: ${order.cancellationRequestReason}`,
+        message: `Khách hàng ${user?.name || "N/A"} yêu cầu hủy đơn hàng ${order.orderCode}. Lý do: ${order.cancellationRequestReason}`,
         type: "order",
         referenceId: order._id,
         recipient: "admin",
@@ -1101,7 +1103,7 @@ export const cancelOrderByUser = async (userId, orderId, reason) => {
       // Notify admin about cancellation
       await Notification.create({
         title: "Đơn hàng đã bị hủy",
-        message: `Khách hàng ${user?.name || "N/A"} đã hủy đơn hàng #${order._id}. Lý do: ${order.cancelledReason}`,
+        message: `Khách hàng ${user?.name || "N/A"} đã hủy đơn hàng ${order.orderCode}. Lý do: ${order.cancelledReason}`,
         type: "order",
         referenceId: order._id,
         recipient: "admin",
@@ -1188,7 +1190,7 @@ export const approveCancellationRequest = async (orderId, adminId) => {
   // Notify user that their cancellation request was approved
   await Notification.create({
     title: "Yêu cầu hủy đơn đã được chấp thuận",
-    message: `Yêu cầu hủy đơn hàng #${orderId} của bạn đã được chấp thuận. Đơn hàng đã được hủy thành công.`,
+    message: `Yêu cầu hủy đơn hàng ${order.orderCode} của bạn đã được chấp thuận. Đơn hàng đã được hủy thành công.`,
     type: "order",
     referenceId: orderId,
     recipient: "user",
@@ -1234,7 +1236,7 @@ export const requestReturn = async (userId, orderId, reason) => {
   const user = await User.findById(userId).select("name").lean();
   await Notification.create({
     title: "Yêu cầu trả hàng/hoàn tiền",
-    message: `Khách hàng ${user?.name || "N/A"} yêu cầu trả hàng cho đơn #${orderId}. Lý do: ${reason}`,
+    message: `Khách hàng ${user?.name || "N/A"} yêu cầu trả hàng cho đơn ${order.orderCode}. Lý do: ${reason}`,
     type: "order",
     referenceId: orderId,
     recipient: "admin",
@@ -1302,7 +1304,7 @@ export const approveReturn = async (orderId) => {
   // Notify user that their return request was approved and refunded
   await Notification.create({
     title: "Yêu cầu trả hàng đã được chấp thuận",
-    message: `Yêu cầu trả hàng cho đơn #${orderId} đã được chấp thuận. Số tiền ${order.totalAmount.toLocaleString(
+    message: `Yêu cầu trả hàng cho đơn ${order.orderCode} đã được chấp thuận. Số tiền ${order.totalAmount.toLocaleString(
       "vi-VN"
     )} VNĐ sẽ được hoàn lại cho bạn.`,
     type: "order",
@@ -1350,7 +1352,7 @@ export const confirmOrderReceived = async (userId, orderId) => {
   // Cộng điểm tích lũy khi khách bấm "Đã nhận hàng"
   try {
     const orderAmount = order.subtotal; // Giá trị đơn hàng trước khuyến mãi
-    const orderNumber = order._id.toString().slice(-8).toUpperCase();
+    const orderNumber = order.orderCode;
 
     const loyaltyResult = await addLoyaltyPoints(userId, orderAmount, orderId, orderNumber);
 
@@ -1360,7 +1362,7 @@ export const confirmOrderReceived = async (userId, orderId) => {
       // Gửi thông báo về xu nhận được
       await Notification.create({
         title: "Nhận điểm tích lũy",
-        message: `Bạn đã nhận ${loyaltyResult.earnedPoints} điểm từ đơn hàng #${orderNumber}. Xu sẽ hết hạn vào ${new Date(
+        message: `Bạn đã nhận ${loyaltyResult.earnedPoints} điểm từ đơn hàng ${orderNumber}. Xu sẽ hết hạn vào ${new Date(
           loyaltyResult.expiresAt
         ).toLocaleDateString("vi-VN")}.`,
         type: "loyalty",

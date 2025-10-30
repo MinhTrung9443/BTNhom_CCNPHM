@@ -139,7 +139,7 @@ const ReturnRefundRequestsPage = () => {
                         to={`/orders/${order._id}`}
                         className="text-decoration-none fw-semibold"
                       >
-                        #{order._id.slice(-8)}
+                        {order.orderCode || `#${order._id.slice(-8)}`}
                       </Link>
                     </td>
                     <td>
@@ -247,7 +247,7 @@ const ReturnRefundRequestsPage = () => {
               <p>Bạn có chắc chắn muốn chấp nhận yêu cầu trả hàng/hoàn tiền cho đơn hàng này không?</p>
               <div className="bg-light p-3 rounded">
                 <div className="mb-2">
-                  <strong>Mã đơn hàng:</strong> #{selectedOrder._id.slice(-8)}
+                  <strong>Mã đơn hàng:</strong> {selectedOrder.orderCode || `#${selectedOrder._id.slice(-8)}`}
                 </div>
                 <div className="mb-2">
                   <strong>Khách hàng:</strong> {selectedOrder.userId.name}

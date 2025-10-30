@@ -7,7 +7,7 @@ import { useSession, signOut } from "next-auth/react";
 import { useCart } from "@/contexts/cart-context";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, ShoppingCart, Heart, Search, User, LogOut, Package, Eye, MessageSquare, Gift, Calendar, Coins, Newspaper } from "lucide-react";
+import { Menu, ShoppingCart, Heart, Search, User, LogOut, Package, Eye, MessageSquare, Gift, Calendar, Coins, Newspaper, Bell } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
@@ -20,6 +20,7 @@ import {
 import { UserAvatar } from "@/components/user-avatar";
 import { UserInfo } from "@/components/user-info";
 import { HeaderSearch } from "@/components/header-search";
+import { NotificationCenter } from "@/components/notifications/notification-center";
 
 const navigation = [
   { name: "Trang Chủ", href: "/" },
@@ -144,6 +145,13 @@ export default function Header() {
                 )}
               </Button>
             </Link>
+
+            {/* Notification Center */}
+            {isLoggedIn && (
+              <div className={isHomePage && !isScrolled ? "[&_button]:text-white [&_button]:hover:bg-white/10" : ""}>
+                <NotificationCenter />
+              </div>
+            )}
 
             {/* Profile Section */}
             {isLoggedIn ? (

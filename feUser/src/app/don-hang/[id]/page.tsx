@@ -106,7 +106,7 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
             <div>
               <h1 className="text-2xl lg:text-3xl font-bold">Chi tiết Đơn hàng</h1>
               <p className="text-muted-foreground">
-                Mã đơn: <span className="font-medium text-foreground">#{order._id.slice(-8).toUpperCase()}</span>
+                Mã đơn: <span className="font-medium text-foreground">{order.orderCode || `#${order._id.slice(-8).toUpperCase()}`}</span>
               </p>
               <p className="text-sm text-muted-foreground">Đặt hàng lúc: {formatDate(order.createdAt)}</p>
             </div>

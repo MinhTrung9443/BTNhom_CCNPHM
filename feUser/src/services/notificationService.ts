@@ -10,14 +10,14 @@ class NotificationService {
     page: number = 1,
     limit: number = 20,
     accessToken: string
-  ): Promise<ApiResponse<{ meta: NotificationListResponse; data: Notification[] }>> {
+  ): Promise<ApiResponse<{ notifications: Notification[]; unreadCount: number; pagination: any }>> {
     const searchParams = new URLSearchParams({
       page: page.toString(),
       limit: limit.toString(),
     });
 
-    return await apiFetch<ApiResponse<{ meta: NotificationListResponse; data: Notification[] }>>(
-      `/notifications?${searchParams.toString()}`,
+    return await apiFetch<ApiResponse<{ notifications: Notification[]; unreadCount: number; pagination: any }>>(
+      `/v1/notifications?${searchParams.toString()}`,
       accessToken
     );
   }
@@ -30,9 +30,9 @@ class NotificationService {
     accessToken: string
   ): Promise<ApiResponse<Notification>> {
     return await apiFetch<ApiResponse<Notification>>(
-      `/notifications/${notificationId}/read`,
+      `/v1/notifications/${notificationId}/read`,
       accessToken,
-      { method: "PUT" }
+      { method: "PATCH" }
     );
   }
 
@@ -41,11 +41,11 @@ class NotificationService {
    */
   async markAllAsRead(
     accessToken: string
-  ): Promise<ApiResponse<{ modifiedCount: number }>> {
-    return await apiFetch<ApiResponse<{ modifiedCount: number }>>(
-      `/notifications/read-all`,
+  ): Promise<ApiResponse<null>> {
+    return await apiFetch<ApiResponse<null>>(
+      `/v1/notifications/mark-all-read`,
       accessToken,
-      { method: "PUT" }
+      { method: "PATCH" }
     );
   }
 
@@ -57,7 +57,7 @@ class NotificationService {
     accessToken: string
   ): Promise<ApiResponse<null>> {
     return await apiFetch<ApiResponse<null>>(
-      `/notifications/${notificationId}`,
+      `/v1/notifications/${notificationId}`,
       accessToken,
       { method: "DELETE" }
     );
@@ -70,7 +70,7 @@ class NotificationService {
     accessToken: string
   ): Promise<ApiResponse<{ unreadCount: number }>> {
     return await apiFetch<ApiResponse<{ unreadCount: number }>>(
-      `/notifications/unread-count`,
+      `/v1/notifications/unread-count`,
       accessToken
     );
   }

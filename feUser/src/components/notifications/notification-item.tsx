@@ -38,14 +38,21 @@ export function NotificationItem({
   };
 
   const getNotificationLink = () => {
-    if (notification.data.articleSlug) {
-      return `/bai-viet/${notification.data.articleSlug}`;
+    // Nếu là thông báo bài viết
+    if (notification.type === 'article' && notification.articleId) {
+      if (typeof notification.articleId === 'object' && notification.articleId.slug) {
+        return `/bai-viet/${notification.articleId.slug}`;
+      }
+    }
+    // Nếu là thông báo đơn hàng
+    if (notification.type === 'order') {
+      return `/don-hang`;
     }
     return "#";
   };
 
   const handleClick = () => {
-    if (!notification.read) {
+    if (!notification.isRead) {
       onMarkAsRead(notification._id);
     }
   };
@@ -54,14 +61,14 @@ export function NotificationItem({
     <div
       className={cn(
         "relative p-4 border-b hover:bg-muted/50 transition-colors",
-        !notification.read && "bg-blue-50/50 dark:bg-blue-950/20"
+        !notification.isRead && "bg-blue-50/50 dark:bg-blue-950/20"
       )}
     >
       <Link href={getNotificationLink()} onClick={handleClick}>
         <div className="pr-8">
           <div className="flex items-start justify-between gap-2 mb-1">
             <h4 className="font-semibold text-sm">{notification.title}</h4>
-            {!notification.read && (
+            {!notification.isRead && (
               <div className="w-2 h-2 bg-blue-500 rounded-full mt-1 flex-shrink-0" />
             )}
           </div>

@@ -27,7 +27,7 @@ export const loyaltyPointsService = {
         userId,
         points: pointsToEarn,
         transactionType: 'earned',
-        description: description || `Điểm tích lũy cho đơn hàng #${orderId}`,
+        description: description || `Điểm tích lũy cho đơn hàng ${orderId}`,
         orderId,
         metadata: { orderAmount },
         expiryDate,
@@ -201,7 +201,7 @@ export const loyaltyPointsService = {
         userId,
         points: pointsToRefund,
         transactionType: 'refund',
-        description: reason || `Hoàn điểm cho đơn hàng #${orderId}`,
+        description: reason || `Hoàn điểm cho đơn hàng ${orderId}`,
         orderId,
         metadata: { refund: true }
       });

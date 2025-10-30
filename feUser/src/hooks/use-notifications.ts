@@ -29,13 +29,13 @@ export function useNotifications() {
         );
 
         if (response.success && response.data) {
-          const newNotifications = response.data.data;
+          const newNotifications = response.data.notifications;
           setNotifications((prev) =>
             append ? [...prev, ...newNotifications] : newNotifications
           );
-          setUnreadCount(response.data.meta.unreadCount);
+          setUnreadCount(response.data.unreadCount);
           setHasMore(
-            response.data.meta.currentPage < response.data.meta.totalPages
+            response.data.pagination.page < response.data.pagination.pages
           );
         }
       } catch (err: any) {
@@ -72,7 +72,7 @@ export function useNotifications() {
 
         setNotifications((prev) =>
           prev.map((notif) =>
-            notif._id === notificationId ? { ...notif, read: true } : notif
+            notif._id === notificationId ? { ...notif, isRead: true } : notif
           )
         );
         setUnreadCount((prev) => Math.max(0, prev - 1));
@@ -89,7 +89,7 @@ export function useNotifications() {
     try {
       await notificationService.markAllAsRead(session.user.accessToken);
       setNotifications((prev) =>
-        prev.map((notif) => ({ ...notif, read: true }))
+        prev.map((notif) => ({ ...notif, isRead: true }))
       );
       setUnreadCount(0);
     } catch (err: any) {
@@ -109,7 +109,7 @@ export function useNotifications() {
 
         setNotifications((prev) => {
           const notification = prev.find((n) => n._id === notificationId);
-          if (notification && !notification.read) {
+          if (notification && !notification.isRead) {
             setUnreadCount((count) => Math.max(0, count - 1));
           }
           return prev.filter((notif) => notif._id !== notificationId);
@@ -125,15 +125,15 @@ export function useNotifications() {
   useEffect(() => {
     if (!socket) return;
 
-    const handleNewNotification = (notification: Notification) => {
-      setNotifications((prev) => [notification, ...prev]);
-      setUnreadCount((prev) => prev + 1);
+    const handleNewNotification = (data: { notification: Notification; unreadCount: number }) => {
+      setNotifications((prev) => [data.notification, ...prev]);
+      setUnreadCount(data.unreadCount);
     };
 
-    socket.on("notification", handleNewNotification);
+    socket.on("newNotification", handleNewNotification);
 
     return () => {
-      socket.off("notification", handleNewNotification);
+      socket.off("newNotification", handleNewNotification);
     };
   }, [socket]);
 

@@ -1,8 +1,18 @@
 import Article from '../models/Article.js';
 import ArticleLike from '../models/ArticleLike.js';
 import ArticleShare from '../models/ArticleShare.js';
+import Notification from '../models/Notification.js';
 import { NotFoundError } from '../utils/AppError.js';
 import { emitArticleUpdate } from '../utils/socket.js';
+import articleNotificationService from './articleNotification.service.js';
+
+// Helper function to get unread count
+const getUnreadCount = async (userId) => {
+  return await Notification.countDocuments({
+    recipientUserId: userId,
+    isRead: false
+  });
+};
 
 export const articleInteractionService = {
   /**
@@ -20,12 +30,32 @@ export const articleInteractionService = {
     const like = await ArticleLike.findOne({ article: articleId, user: userId });
 
     let liked;
+    let notification = null;
+    
     if (like) {
       await like.deleteOne();
       liked = false;
+      
+      // Xóa actor khỏi thông báo khi unlike
+      notification = await articleNotificationService.removeActorFromNotification(
+        articleId,
+        userId,
+        'like'
+      );
     } else {
       await ArticleLike.create({ article: articleId, user: userId });
       liked = true;
+      
+      // Tạo/cập nhật thông báo khi like
+      notification = await articleNotificationService.handleArticleLike(articleId, userId);
+      
+      // Gửi thông báo real-time đến người nhận
+      if (notification && global.io) {
+        global.io.to(`user_${notification.recipientUserId}`).emit('newNotification', {
+          notification: notification.toObject(),
+          unreadCount: await getUnreadCount(notification.recipientUserId)
+        });
+      }
     }
 
     // Update article's like count
