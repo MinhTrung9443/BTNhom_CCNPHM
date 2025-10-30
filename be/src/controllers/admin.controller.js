@@ -13,10 +13,11 @@ export const adminController = {
   // User Management
   getUsersForChat: async (req, res, next) => {
     try {
-      const { page = 1, limit = 15 } = req.query;
+      const { page = 1, limit = 15, search = '' } = req.query;
       const result = await getAllUsersForChat({ 
         page: parseInt(page),
-        limit: parseInt(limit)
+        limit: parseInt(limit),
+        search: search.trim()
       });
       res.json({
         success: true,

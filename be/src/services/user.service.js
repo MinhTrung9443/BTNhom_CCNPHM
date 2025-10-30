@@ -168,14 +168,24 @@ const getLoyaltyPoints = async (userId) => {
   return user.loyaltyPoints;
 };
 
-const getAllUsersForChat = async ({ page = 1, limit = 15 } = {}) => {
+const getAllUsersForChat = async ({ page = 1, limit = 15, search = '' } = {}) => {
   const skip = (page - 1) * limit;
 
   const aggregation = [
     // 1. Lọc những user có vai trò 'user'
     { $match: { role: 'user' } },
 
-    // 2. Join với collection chatrooms để lấy thông tin chat
+    // 2. Thêm tìm kiếm nếu có
+    ...(search ? [{
+      $match: {
+        $or: [
+          { name: { $regex: search, $options: 'i' } },
+          { email: { $regex: search, $options: 'i' } }
+        ]
+      }
+    }] : []),
+
+    // 3. Join với collection chatrooms để lấy thông tin chat
     {
       $lookup: {
         from: 'chatrooms',
@@ -185,15 +195,15 @@ const getAllUsersForChat = async ({ page = 1, limit = 15 } = {}) => {
       }
     },
 
-    // 3. Tách mảng chatRoomInfo, giữ lại user dù không có phòng chat
-    { 
+    // 4. Tách mảng chatRoomInfo, giữ lại user dù không có phòng chat
+    {
       $unwind: {
         path: '$chatRoomInfo',
         preserveNullAndEmptyArrays: true
       }
     },
 
-    // 4. Thêm các trường cần thiết để sắp xếp và hiển thị
+    // 5. Thêm các trường cần thiết để sắp xếp và hiển thị
     {
       $addFields: {
         lastMessageTimestamp: { $ifNull: ['$chatRoomInfo.lastMessageTimestamp', new Date(0)] },
@@ -202,15 +212,15 @@ const getAllUsersForChat = async ({ page = 1, limit = 15 } = {}) => {
       }
     },
 
-    // 5. SẮP XẾP TRƯỚC KHI PHÂN TRANG
-    { 
+    // 6. SẮP XẾP TRƯỚC KHI PHÂN TRANG
+    {
       $sort: {
         lastMessageTimestamp: -1, // Tin nhắn mới nhất lên đầu
         name: 1 // Sắp xếp theo tên cho những người chưa chat
       }
     },
 
-    // 6. Sử dụng $facet để lấy cả dữ liệu đã phân trang và tổng số lượng
+    // 7. Sử dụng $facet để lấy cả dữ liệu đã phân trang và tổng số lượng
     {
       $facet: {
         data: [
@@ -224,8 +234,8 @@ const getAllUsersForChat = async ({ page = 1, limit = 15 } = {}) => {
               avatar: 1,
               hasChatRoom: 1,
               lastMessage: 1,
-              lastMessageTimestamp: { 
-                $cond: { if: '$hasChatRoom', then: '$lastMessageTimestamp', else: null } 
+              lastMessageTimestamp: {
+                $cond: { if: '$hasChatRoom', then: '$lastMessageTimestamp', else: null }
               }
             }
           }

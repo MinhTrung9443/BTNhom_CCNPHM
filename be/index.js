@@ -135,7 +135,7 @@ io.on("connection", (socket) => {
         logger.info(`User ${userId} joined their dedicated room ${userRoomIdentifier}`);
 
         // Also send the first page of messages
-        const messages = await chatService.getRoomMessages(room._id, { limit: 30 });
+        const messages = await chatService.getRoomMessages(room._id, { limit: 10 });
         const formattedMessages = messages.map(msg => ({
             _id: msg._id,
             sender: msg.senderId ? msg.senderId._id : null,
@@ -221,7 +221,7 @@ io.on("connection", (socket) => {
         const room = await chatService.findRoomByUserId(targetUserId);
         if (room) {
             socket.join(roomIdentifier);
-            const messages = await chatService.getRoomMessages(room._id, { limit: 30 });
+            const messages = await chatService.getRoomMessages(room._id, { limit: 10 });
             const formattedMessages = messages.map(msg => ({
                 _id: msg._id,
                 sender: msg.senderId ? msg.senderId._id : null,
@@ -268,7 +268,7 @@ io.on("connection", (socket) => {
     try {
         const room = await chatService.findRoomByUserId(targetUserId);
         if (room) {
-            const olderMessages = await chatService.getRoomMessages(room._id, { limit: 20, before });
+            const olderMessages = await chatService.getRoomMessages(room._id, { limit: 5, before });
 
             const formattedMessages = olderMessages.map(msg => ({
                 _id: msg._id,
@@ -321,7 +321,7 @@ io.on("connection", (socket) => {
         io.to('admin').emit('newChatRoom', { room: roomIdentifier, userId: targetUserId });
 
         // Get chat history for the admin
-        const messages = await chatService.getRoomMessages(room._id, { limit: 30 });
+        const messages = await chatService.getRoomMessages(room._id, { limit: 10 });
         const formattedMessages = messages.map(msg => ({
             _id: msg._id,
             sender: msg.senderId ? msg.senderId._id : null,

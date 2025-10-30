@@ -437,6 +437,24 @@ class SocketService {
       }
     }
   }
+
+  setOnOlderMessagesCallback(callback) {
+    if (this.socket) {
+      this.socket.off("olderMessages");
+      if (callback) {
+        this.socket.on("olderMessages", callback);
+      }
+    }
+  }
+
+  getOlderMessages(roomIdentifier, beforeTimestamp) {
+    if (this.socket && this.isConnected) {
+      console.log(`[SocketService] Requesting older messages for room ${roomIdentifier} before ${beforeTimestamp}`);
+      this.emit("getOlderMessages", { roomIdentifier, before: beforeTimestamp });
+    } else {
+      console.warn(`[SocketService] Cannot get older messages - socket not connected`);
+    }
+  }
 }
 
 const socketService = new SocketService();

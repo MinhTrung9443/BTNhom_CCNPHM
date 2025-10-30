@@ -31,6 +31,9 @@ export const useSocket = () => {
   const socketRef = useRef<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [messages, setMessages] = useState<IChatMessage[]>([]);
+  const [isLoadingOlderMessages, setIsLoadingOlderMessages] = useState(false);
+  const [hasMoreMessages, setHasMoreMessages] = useState(true);
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     // Only attempt to connect when the session is authenticated and has a valid token.
@@ -82,7 +85,40 @@ export const useSocket = () => {
       // Event listener for receiving the initial batch of messages for the room.
       newSocket.on('roomMessages', (data: { messages: IChatMessage[] }) => {
         console.log('Received initial room messages:', data);
-        setMessages(data.messages || []);
+        const msgs = data.messages || [];
+        setMessages(msgs);
+        setHasMoreMessages(msgs.length >= 10); // Nếu nhận đủ 10 tin nhắn, có thể còn tin cũ hơn
+      });
+
+      // Event listener for receiving older messages (lazy loading).
+      newSocket.on('olderMessages', (data: { room: string; messages: IChatMessage[] }) => {
+        console.log('Received older messages:', data);
+        
+        // Lưu scroll position trước khi thêm tin nhắn
+        const container = scrollContainerRef.current;
+        const previousScrollHeight = container?.scrollHeight || 0;
+        const previousScrollTop = container?.scrollTop || 0;
+        
+        // Đảm bảo loading tối thiểu 1 giây để hiệu ứng mượt mà
+        const loadStartTime = (window as any).__loadStartTime || Date.now();
+        const minLoadingTime = 1000; // 1 giây
+        const elapsedTime = Date.now() - loadStartTime;
+        const remainingTime = Math.max(0, minLoadingTime - elapsedTime);
+        
+        setTimeout(() => {
+          setMessages((prevMessages) => [...data.messages, ...prevMessages]);
+          setHasMoreMessages(data.messages.length >= 5); // Nếu nhận đủ 5 tin nhắn, có thể còn tin cũ hơn
+          setIsLoadingOlderMessages(false);
+          
+          // Khôi phục scroll position sau khi render
+          setTimeout(() => {
+            if (container) {
+              const newScrollHeight = container.scrollHeight;
+              const addedHeight = newScrollHeight - previousScrollHeight;
+              container.scrollTop = previousScrollTop + addedHeight;
+            }
+          }, 0);
+        }, remainingTime);
       });
 
       // Event listener for receiving a new message in real-time.
@@ -114,6 +150,7 @@ export const useSocket = () => {
         socketRef.current.off('disconnect');
         socketRef.current.off('connect_error');
         socketRef.current.off('roomMessages');
+        socketRef.current.off('olderMessages');
         socketRef.current.off('message');
         socketRef.current.disconnect();
         socketRef.current = null;
@@ -137,5 +174,29 @@ export const useSocket = () => {
     }
   };
 
-  return { socket: socketRef.current, isConnected, messages, setMessages, sendMessage };
+  /**
+   * Loads older messages for lazy loading.
+   * @param beforeTimestamp The timestamp to load messages before.
+   */
+  const loadOlderMessages = (beforeTimestamp: string) => {
+    if (socketRef.current && isConnected && session?.user?.id && !isLoadingOlderMessages && hasMoreMessages) {
+      const roomIdentifier = `chat_${session.user.id}`;
+      setIsLoadingOlderMessages(true);
+      // Lưu thời điểm bắt đầu load
+      (window as any).__loadStartTime = Date.now();
+      socketRef.current.emit("getOlderMessages", { roomIdentifier, before: beforeTimestamp });
+    }
+  };
+
+  return { 
+    socket: socketRef.current, 
+    isConnected, 
+    messages, 
+    setMessages, 
+    sendMessage,
+    loadOlderMessages,
+    isLoadingOlderMessages,
+    hasMoreMessages,
+    scrollContainerRef
+  };
 };

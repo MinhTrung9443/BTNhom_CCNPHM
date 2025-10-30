@@ -106,6 +106,7 @@ export interface Timeline {
 
 export interface Order {
   _id: string;
+  orderCode?: string;
   userId: OrderUser;
   status: OrderStatus;
   orderLines: OrderLine[];

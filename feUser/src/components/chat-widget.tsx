@@ -27,19 +27,100 @@ export default function ChatWidget() {
   const [inputMessage, setInputMessage] = useState("");
   const [hasNewMessage, setHasNewMessage] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const previousMessagesLengthRef = useRef(0);
+  const shouldScrollToBottomRef = useRef(true);
+  const lastScrollTopRef = useRef(0);
+  const isInitialLoadRef = useRef(false);
   const { data: session } = useSession();
 
   // The useSocket hook now provides everything needed for the chat functionality.
-  const { isConnected, messages, sendMessage: sendSocketMessage } = useSocket();
+  const { isConnected, messages, sendMessage: sendSocketMessage, loadOlderMessages, isLoadingOlderMessages, hasMoreMessages, scrollContainerRef: socketScrollRef } = useSocket();
+  
+  // Kết nối ref từ useSocket với ref local
+  useEffect(() => {
+    if (messagesContainerRef.current && socketScrollRef) {
+      socketScrollRef.current = messagesContainerRef.current;
+    }
+  }, [socketScrollRef]);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  const scrollToBottom = (instant = false) => {
+    if (instant) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "auto" });
+    } else {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
   };
 
   // Scroll to the bottom of the chat whenever new messages arrive.
   useEffect(() => {
-    scrollToBottom();
+    // Chỉ scroll xuống cuối khi có tin nhắn mới (không phải load older messages)
+    if (shouldScrollToBottomRef.current && messages.length > previousMessagesLengthRef.current) {
+      scrollToBottom();
+    }
+    previousMessagesLengthRef.current = messages.length;
   }, [messages]);
+
+  // Scroll to bottom immediately when chat is opened and has messages
+  useEffect(() => {
+    if (isOpen && !isMinimized && messages.length > 0) {
+      // Use setTimeout to ensure DOM is rendered
+      setTimeout(() => {
+        scrollToBottom(true); // Instant scroll on open
+        if (messagesContainerRef.current) {
+          lastScrollTopRef.current = messagesContainerRef.current.scrollTop;
+        }
+      }, 100);
+    }
+  }, [isOpen, isMinimized]);
+
+  // Scroll to bottom immediately when first messages are loaded
+  useEffect(() => {
+    if (messages.length > 0 && previousMessagesLengthRef.current === 0) {
+      isInitialLoadRef.current = true;
+      // First load of messages, scroll instantly
+      setTimeout(() => {
+        scrollToBottom(true);
+        if (messagesContainerRef.current) {
+          lastScrollTopRef.current = messagesContainerRef.current.scrollTop;
+        }
+        // Sau khi scroll xong, set flag để cho phép load older messages
+        setTimeout(() => {
+          isInitialLoadRef.current = false;
+        }, 500);
+      }, 100);
+    }
+  }, [messages.length]);
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const { scrollTop } = e.currentTarget;
+    const currentScrollTop = scrollTop;
+    const isScrollingUp = currentScrollTop < lastScrollTopRef.current;
+    
+    // Chỉ load tin nhắn cũ khi:
+    // 1. Đang scroll lên (không phải xuống)
+    // 2. Gần đến đầu (scrollTop < 100)
+    // 3. Không đang load
+    // 4. Còn tin nhắn cũ hơn
+    // 5. Không phải lần load đầu tiên
+    if (isScrollingUp && scrollTop < 100 && !isLoadingOlderMessages && hasMoreMessages && !isInitialLoadRef.current && messages.length > 0) {
+      shouldScrollToBottomRef.current = false; // Không scroll xuống cuối
+      const oldestMessage = messages[0];
+      loadOlderMessages(oldestMessage.timestamp);
+    }
+    
+    lastScrollTopRef.current = currentScrollTop;
+  };
+
+  // Reset shouldScrollToBottomRef when loading older messages completes
+  useEffect(() => {
+    if (!isLoadingOlderMessages && messages.length > 0) {
+      // Reset after a delay to allow for scroll position restoration
+      setTimeout(() => {
+        shouldScrollToBottomRef.current = true;
+      }, 500);
+    }
+  }, [isLoadingOlderMessages]);
 
   // This effect handles showing a notification when a new message arrives
   // and the chat window is either closed or minimized.
@@ -177,9 +258,33 @@ export default function ChatWidget() {
           {/* Main content: messages + input, use flex-col and grow */}
           <div className="flex flex-col flex-1 min-h-0">
             {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto pr-3 mb-2" style={{ minHeight: 0 }}>
+            <div 
+              ref={messagesContainerRef}
+              className="flex-1 overflow-y-auto pr-3 mb-2" 
+              style={{ minHeight: 0 }}
+              onScroll={handleScroll}
+            >
               <div className="space-y-3">
-                {messages.length === 0 && (
+                {isLoadingOlderMessages && (
+                  <div className="loading-older-messages-widget">
+                    <div className="flex items-center justify-center gap-2 py-2">
+                      <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                      <span className="text-xs text-gray-500">Đang tải tin nhắn cũ...</span>
+                    </div>
+                    {/* Skeleton loading messages */}
+                    <div className="space-y-2 mb-3">
+                      {[1, 2, 3].map((i) => (
+                        <div key={i} className={`flex ${i % 2 === 0 ? 'justify-end' : 'justify-start'}`}>
+                          <div className="skeleton-message-widget max-w-[75%]">
+                            <div className="skeleton-content-widget"></div>
+                            <div className="skeleton-time-widget"></div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {messages.length === 0 && !isLoadingOlderMessages && (
                   <div className="text-center text-gray-500 text-sm py-8">
                     <div className="mb-2">👋</div>
                     <div>Xin chào! Tôi có thể giúp gì cho bạn?</div>

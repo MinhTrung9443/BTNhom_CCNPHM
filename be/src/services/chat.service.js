@@ -11,7 +11,7 @@ export const chatService = {
    */
   async getOrCreateRoomForUser(userId) {
     if (!mongoose.Types.ObjectId.isValid(userId)) {
-        throw new AppError('User ID không hợp lệ', 400);
+      throw new AppError('User ID không hợp lệ', 400);
     }
 
     let room = await ChatRoom.findOne({ userId, status: 'active' });
@@ -23,10 +23,10 @@ export const chatService = {
       logger.info(`Đã tạo phòng chat mới ${room._id} cho user ${userId}`);
       // Thông báo cho admin về phòng mới (qua global.io)
       if (global.io) {
-          global.io.to('admin').emit('newChatRoom', { room: `chat_${userId}`, userId });
-          // Cập nhật danh sách phòng active cho admin
-           const activeRooms = await this.getActiveRooms();
-           global.io.to('admin').emit('activeChatRooms', activeRooms.map(r => `chat_${r.userId}`));
+        global.io.to('admin').emit('newChatRoom', { room: `chat_${userId}`, userId });
+        // Cập nhật danh sách phòng active cho admin
+        const activeRooms = await this.getActiveRooms();
+        global.io.to('admin').emit('activeChatRooms', activeRooms.map(r => `chat_${r.userId}`));
       }
     }
     return room;
@@ -41,11 +41,11 @@ export const chatService = {
    * @returns {Promise<ChatMessage>} Tin nhắn đã lưu
    */
   async addMessage(roomId, senderId, senderRole, message) {
-     if (!mongoose.Types.ObjectId.isValid(roomId) || !mongoose.Types.ObjectId.isValid(senderId)) {
-        throw new AppError('Room ID hoặc Sender ID không hợp lệ', 400);
+    if (!mongoose.Types.ObjectId.isValid(roomId) || !mongoose.Types.ObjectId.isValid(senderId)) {
+      throw new AppError('Room ID hoặc Sender ID không hợp lệ', 400);
     }
     if (!message || message.trim() === '') {
-         throw new AppError('Nội dung tin nhắn không được rỗng', 400);
+      throw new AppError('Nội dung tin nhắn không được rỗng', 400);
     }
 
     // Check if this is the first message
@@ -62,13 +62,13 @@ export const chatService = {
 
     // Update lastMessage and timestamp in ChatRoom
     await ChatRoom.findByIdAndUpdate(roomId, {
-        lastMessage: message.trim(),
-        lastMessageTimestamp: chatMessage.createdAt,
-        updatedAt: Date.now() // Update manually to trigger index/sort if needed
+      lastMessage: message.trim(),
+      lastMessageTimestamp: chatMessage.createdAt,
+      updatedAt: Date.now() // Update manually to trigger index/sort if needed
     });
 
     logger.debug(`Đã lưu tin nhắn mới vào phòng ${roomId}`);
-    
+
     const savedMsgObject = chatMessage.toObject();
     savedMsgObject.isFirstMessage = isFirstMessage;
 
@@ -78,21 +78,21 @@ export const chatService = {
   /**
    * Lấy lịch sử tin nhắn của một phòng chat (có thể thêm phân trang sau).
    * @param {string} roomId - ID của phòng chat
-   * @param {number} limit - Số lượng tin nhắn muốn lấy (mặc định 50)
+   * @param {number} limit - Số lượng tin nhắn muốn lấy (mặc định 10)
    * @returns {Promise<ChatMessage[]>} Mảng các tin nhắn
    */
-  async getRoomMessages(roomId, { limit = 20, before = null } = {}) {
-     if (!mongoose.Types.ObjectId.isValid(roomId)) {
-        throw new AppError('Room ID không hợp lệ', 400);
+  async getRoomMessages(roomId, { limit = 10, before = null } = {}) {
+    if (!mongoose.Types.ObjectId.isValid(roomId)) {
+      throw new AppError('Room ID không hợp lệ', 400);
     }
 
     const query = { roomId };
     if (before) {
-        // Validate 'before' is a valid date string
-        if (isNaN(new Date(before).getTime())) {
-             throw new AppError('Tham số `before` không phải là ngày hợp lệ', 400);
-        }
-        query.createdAt = { $lt: new Date(before) };
+      // Validate 'before' is a valid date string
+      if (isNaN(new Date(before).getTime())) {
+        throw new AppError('Tham số `before` không phải là ngày hợp lệ', 400);
+      }
+      query.createdAt = { $lt: new Date(before) };
     }
 
     const messages = await ChatMessage.find(query)
@@ -118,14 +118,14 @@ export const chatService = {
     return rooms;
   },
 
-   /**
-   * (Tùy chọn) Tìm phòng chat bằng userId
-   * @param {string} userId
-   * @returns {Promise<ChatRoom | null>}
-   */
+  /**
+  * (Tùy chọn) Tìm phòng chat bằng userId
+  * @param {string} userId
+  * @returns {Promise<ChatRoom | null>}
+  */
   async findRoomByUserId(userId) {
-     if (!mongoose.Types.ObjectId.isValid(userId)) {
-        return null;
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return null;
     }
     return await ChatRoom.findOne({ userId, status: 'active' }).lean();
   }

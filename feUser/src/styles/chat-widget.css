@@ -122,3 +122,50 @@
     transform: translate3d(0, -2px, 0);
   }
 }
+
+/* Loading Older Messages Skeleton for Chat Widget */
+.loading-older-messages-widget {
+  margin-bottom: 12px;
+}
+
+.skeleton-message-widget {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  animation: skeleton-pulse-widget 1.5s ease-in-out infinite;
+}
+
+.skeleton-content-widget {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer-widget 1.5s infinite;
+  height: 36px;
+  border-radius: 8px;
+}
+
+.skeleton-time-widget {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer-widget 1.5s infinite;
+  height: 10px;
+  width: 60px;
+  border-radius: 4px;
+}
+
+@keyframes skeleton-shimmer-widget {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes skeleton-pulse-widget {
+  0%, 100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}

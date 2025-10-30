@@ -27,12 +27,16 @@ export const ChatProvider = ({ children }) => {
   const [unreadMessages, setUnreadMessages] = useState({});
   const [isInitialized, setIsInitialized] = useState(false);
 
-  const fetchUsersForChat = useCallback(async (page = 1, refresh = false) => {
+  const fetchUsersForChat = useCallback(async (page = 1, refresh = false, searchQuery = '') => {
     if (isFetchingUsers) return;
     setIsFetchingUsers(true);
 
     try {
-      const response = await adminService.getUsersForChat({ page, limit: CHAT_USER_PAGE_LIMIT });
+      const response = await adminService.getUsersForChat({
+        page,
+        limit: CHAT_USER_PAGE_LIMIT,
+        search: searchQuery
+      });
       const { data, pagination } = response.data;
 
       if (refresh) {
@@ -45,7 +49,7 @@ export const ChatProvider = ({ children }) => {
           return [...prev, ...newUsers];
         });
       }
-      
+
       setChatPagination({
         currentPage: pagination.currentPage,
         totalPages: pagination.totalPages,
@@ -60,16 +64,22 @@ export const ChatProvider = ({ children }) => {
     }
   }, [isFetchingUsers]);
 
-  const loadMoreUsers = useCallback(() => {
+  const loadMoreUsers = useCallback((searchQuery = '') => {
     if (chatPagination.hasMore && !isFetchingUsers) {
-      fetchUsersForChat(chatPagination.currentPage + 1);
+      fetchUsersForChat(chatPagination.currentPage + 1, false, searchQuery);
     }
   }, [chatPagination, isFetchingUsers, fetchUsersForChat]);
 
-  const refreshUserList = useCallback(() => {
+  const refreshUserList = useCallback((searchQuery = '') => {
     setUsersForChat([]);
     setChatPagination({ currentPage: 0, totalPages: 1, hasMore: true });
-    fetchUsersForChat(1, true);
+    fetchUsersForChat(1, true, searchQuery);
+  }, [fetchUsersForChat]);
+
+  const searchUsers = useCallback((searchQuery) => {
+    setUsersForChat([]);
+    setChatPagination({ currentPage: 0, totalPages: 1, hasMore: true });
+    fetchUsersForChat(1, true, searchQuery);
   }, [fetchUsersForChat]);
 
   useEffect(() => {
@@ -130,6 +140,7 @@ export const ChatProvider = ({ children }) => {
     isFetchingUsers,
     loadMoreUsers,
     refreshUserList,
+    searchUsers,
     unreadMessages,
     markRoomAsRead,
     getTotalUnreadCount,
