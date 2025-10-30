@@ -71,14 +71,45 @@ const createReview = async (userId, orderId, productId, rating, comment) => {
     comment,
   });
 
-  const voucher = await generateReviewVoucher(userId, review._id);
-  review.voucherGenerated = true;
-  review.voucherCode = voucher.code;
+  // 3. Kiểm tra thời gian nhận hàng để xác định có được nhận mã giảm giá không
+  // Ưu tiên lấy từ deliveredAt, nếu không có thì lấy từ timeline
+  let deliveryDate = order.deliveredAt;
+  
+  if (!deliveryDate && order.timeline && order.timeline.length > 0) {
+    // Tìm entry DELIVERED hoặc COMPLETED trong timeline
+    const deliveredEntry = order.timeline.find(
+      entry => entry.status === 'delivered' || entry.status === 'completed'
+    );
+    if (deliveredEntry) {
+      deliveryDate = deliveredEntry.timestamp;
+    }
+  }
+
+  let voucher = null;
+  let voucherEligibilityMessage = "";
+  const isEligibleForVoucher = deliveryDate && (Date.now() - new Date(deliveryDate).getTime()) <= 30 * 24 * 60 * 60 * 1000;
+
+  if (isEligibleForVoucher) {
+    // Đánh giá trong vòng 30 ngày - được nhận mã giảm giá
+    voucher = await generateReviewVoucher(userId, review._id);
+    review.voucherGenerated = true;
+    review.voucherCode = voucher.code;
+    voucherEligibilityMessage = "Bạn đã nhận được mã giảm giá vì đánh giá trong vòng 30 ngày kể từ khi nhận hàng!";
+  } else {
+    // Đánh giá sau 30 ngày hoặc không xác định được ngày giao hàng - không được nhận mã
+    review.voucherGenerated = false;
+    if (deliveryDate) {
+      const daysElapsed = Math.floor((Date.now() - new Date(deliveryDate).getTime()) / (24 * 60 * 60 * 1000));
+      voucherEligibilityMessage = `Rất tiếc, bạn không được nhận mã giảm giá vì đã quá 30 ngày kể từ khi nhận hàng (đã ${daysElapsed} ngày).`;
+    } else {
+      voucherEligibilityMessage = "Rất tiếc, không thể xác định thời gian nhận hàng để cấp mã giảm giá.";
+    }
+  }
 
   await review.save();
   await calculateProductRating(productId);
 
-  return { review, voucher };
+  return { review, voucher, voucherEligibilityMessage, isEligibleForVoucher };
 };
 
 const getProductReviews = async (productId, page = 1, limit = 10) => {

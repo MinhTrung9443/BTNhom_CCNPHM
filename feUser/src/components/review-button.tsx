@@ -14,9 +14,10 @@ interface ReviewButtonProps {
     image: string;
   };
   orderId: string;
+  deliveredAt?: string;
 }
 
-export function ReviewButton({ product, orderId }: ReviewButtonProps) {
+export function ReviewButton({ product, orderId, deliveredAt }: ReviewButtonProps) {
   const { data: session } = useSession();
   const [isReviewFormOpen, setIsReviewFormOpen] = useState(false);
   const [existingReview, setExistingReview] = useState<ExistingReview | null>(null);
@@ -142,6 +143,7 @@ export function ReviewButton({ product, orderId }: ReviewButtonProps) {
           onClose={() => setIsReviewFormOpen(false)}
           product={product}
           orderId={orderId}
+          deliveredAt={deliveredAt}
           existingReview={existingReview}
           onReviewUpdated={handleReviewUpdated}
         />

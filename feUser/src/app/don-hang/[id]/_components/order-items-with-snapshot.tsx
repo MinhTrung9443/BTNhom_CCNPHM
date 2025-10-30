@@ -78,6 +78,7 @@ export function OrderItemsWithSnapshot({ order }: OrderItemsWithSnapshotProps) {
                       image: item.productImage,
                     }}
                     orderId={order._id}
+                    deliveredAt={order.deliveredAt}
                   />
                 </div>
               )}
