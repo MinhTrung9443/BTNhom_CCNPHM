@@ -36,8 +36,15 @@ export const articleInteractionService = {
       await like.deleteOne();
       liked = false;
       
-      // Xóa actor khỏi thông báo khi unlike
+      // Xóa actor khỏi thông báo user khi unlike
       notification = await articleNotificationService.removeActorFromNotification(
+        articleId,
+        userId,
+        'like'
+      );
+      
+      // Xóa actor khỏi thông báo admin khi unlike (nếu có)
+      await articleNotificationService.removeActorFromAdminNotification(
         articleId,
         userId,
         'like'

@@ -124,8 +124,9 @@ export const getAllOrdersByAdmin = async (req, res) => {
 export const updateOrderStatusByAdmin = async (req, res) => {
   const { orderId } = req.params;
   const { status, ...metadata } = req.body;
+  const adminId = req.user._id;
 
-  const updatedOrder = await OrderService.updateOrderStatusByAdmin(orderId, status, metadata);
+  const updatedOrder = await OrderService.updateOrderStatusByAdmin(orderId, status, adminId, metadata);
 
   res.json({
     success: true,

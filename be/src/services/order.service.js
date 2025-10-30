@@ -13,6 +13,7 @@ import LoyaltyPoints from "../models/LoyaltyPoints.js";
 import { createMomoPaymentUrl } from "./momo.service.js";
 import { addLoyaltyPoints } from "./loyaltyService.js";
 import { cartService } from "./cart.service.js";
+import orderNotificationService from "./orderNotification.service.js";
 import mongoose from "mongoose";
 
 const calculateShippingFee = async (shippingMethod) => {
@@ -1038,7 +1039,7 @@ const requiresMetadataForStatus = (status) => {
   return metadataRequired[status] || [];
 };
 
-export const updateOrderStatusByAdmin = async (orderId, newDetailedStatus, metadata = {}) => {
+export const updateOrderStatusByAdmin = async (orderId, newDetailedStatus, adminId, metadata = {}) => {
   if (!ADMIN_MANUAL_DETAILED_STATUSES.includes(newDetailedStatus)) {
     throw new AppError(`Admin không thể tự cập nhật trạng thái thành '${newDetailedStatus}'.`, 403);
   }
@@ -1112,27 +1113,16 @@ export const updateOrderStatusByAdmin = async (orderId, newDetailedStatus, metad
   if (notificationMessages[newDetailedStatus]) {
     const userId = order.userId._id || order.userId;
     
-    const notification = await Notification.create({
-      title: notificationMessages[newDetailedStatus].title,
-      message: notificationMessages[newDetailedStatus].message,
-      type: "order",
-      referenceId: orderId,
-      recipient: "user",
-      recipientUserId: userId,
-      metadata: {
-        orderAmount: order.totalAmount,
-        orderCode: order.orderCode,
-        status: newDetailedStatus,
-      },
-    });
+    // Use aggregated notification service
+    await orderNotificationService.handleOrderStatusUpdate(
+      orderId,
+      adminId,
+      newDetailedStatus,
+      notificationMessages[newDetailedStatus].title,
+      notificationMessages[newDetailedStatus].message
+    );
 
-    // Get updated unread count for user
-    const unreadCount = await Notification.countDocuments({
-      recipientUserId: userId,
-      isRead: false
-    });
-
-    // Send real-time notification to user
+    // Send real-time order status update event
     if (global.io) {
       const userSocketId = userId.toString();
       
@@ -1146,13 +1136,7 @@ export const updateOrderStatusByAdmin = async (orderId, newDetailedStatus, metad
         message: notificationMessages[newDetailedStatus].message,
       });
       
-      // Emit newNotification for notification center
-      global.io.to(userSocketId).emit("newNotification", {
-        notification: notification.toObject(),
-        unreadCount
-      });
-      
-      logger.info(`Successfully emitted notification to user ${userSocketId}`);
+      logger.info(`Successfully emitted order status update to user ${userSocketId}`);
     } else {
       logger.warn('Socket.IO not available, cannot send real-time notification');
     }

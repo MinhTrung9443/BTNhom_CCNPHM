@@ -395,8 +395,15 @@ export const commentService = {
 
       const newLikes = Math.max(0, comment.likes - 1);
 
-      // Xóa actor khỏi thông báo
+      // Xóa actor khỏi thông báo user
       notification = await articleNotificationService.removeActorFromNotification(
+        commentId,
+        userId,
+        'like'
+      );
+      
+      // Xóa actor khỏi thông báo admin (nếu có)
+      await articleNotificationService.removeActorFromAdminNotification(
         commentId,
         userId,
         'like'

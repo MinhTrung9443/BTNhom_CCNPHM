@@ -18,9 +18,9 @@ const notificationSchema = new mongoose.Schema({
   },
   subType: {
     type: String,
-    enum: ['like', 'comment', 'reply'],
+    enum: ['like', 'comment', 'reply', 'status_update', 'new_order', 'cancellation', 'return_request'],
     required: function() {
-      return this.type === 'article';
+      return this.type === 'article' || this.type === 'order';
     }
   },
   referenceId: {
