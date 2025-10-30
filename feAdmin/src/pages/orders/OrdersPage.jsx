@@ -9,7 +9,7 @@ import UpdateStatusModal from '../../components/orders/UpdateStatusModal'
 import { toast } from 'react-toastify'
 import moment from 'moment'
 
-// Mapping giữa general status và detailed status
+// Mapping giữa general status và detailed status (ĐỒNG BỘ VỚI BACKEND)
 const STATUS_MAPPING = {
   'all': {
     label: 'Tất cả',
@@ -20,14 +20,14 @@ const STATUS_MAPPING = {
     label: 'Chờ xác nhận',
     icon: '🕐',
     detailedStatuses: [
-      { value: 'new', label: '🆕 Mới' },
-      { value: 'confirmed', label: '✅ Đã xác nhận' }
+      { value: 'new', label: '🆕 Mới' }
     ]
   },
   'processing': {
-    label: 'Vận chuyển',
+    label: 'Đang xử lý',
     icon: '📦',
     detailedStatuses: [
+      { value: 'confirmed', label: '✅ Đã xác nhận' },
       { value: 'preparing', label: '📦 Đang chuẩn bị' }
     ]
   },
@@ -37,6 +37,7 @@ const STATUS_MAPPING = {
     detailedStatuses: [
       { value: 'shipping_in_progress', label: '🚚 Đang giao hàng' },
       { value: 'delivered', label: '✅ Đã giao' },
+      { value: 'cancellation_requested', label: '⚠️ Yêu cầu hủy' },
       { value: 'delivery_failed', label: '🔴 Giao thất bại' }
     ]
   },
@@ -51,7 +52,7 @@ const STATUS_MAPPING = {
     label: 'Đã hủy',
     icon: '❌',
     detailedStatuses: [
-      { value: 'cancellation_requested', label: '⚠️ Yêu cầu hủy' },
+      { value: 'payment_overdue', label: '⏰ Quá hạn thanh toán' },
       { value: 'cancelled', label: '❌ Đã hủy' }
     ]
   },
@@ -73,6 +74,7 @@ const OrdersPage = () => {
     page: 1,
     limit: 10,
     search: '',
+    status: null, // General status từ activeTab
     detailedStatus: '',
     sortBy: "createdAt",
     sortOrder: "desc",
@@ -88,9 +90,10 @@ const OrdersPage = () => {
 
   const handleTabChange = (tab) => {
     setActiveTab(tab)
-    // Reset detailed status khi đổi tab
+    // Cập nhật general status và reset detailed status khi đổi tab
     setFilters(prev => ({
       ...prev,
+      status: tab === 'all' ? null : tab, // Gửi general status lên backend
       detailedStatus: '',
       page: 1,
     }))

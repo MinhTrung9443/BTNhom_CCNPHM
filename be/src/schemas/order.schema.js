@@ -92,7 +92,11 @@ export const updateOrderStatus = {
     status: Joi.string()
       .valid("preparing", "shipping_in_progress", "delivered", "cancelled", "delivery_failed", "refunded", "return_requested")
       .required(),
-    reason: Joi.string().optional(),
+    // Tất cả metadata đều optional
+    reason: Joi.string().optional().allow(''),
+    trackingNumber: Joi.string().optional().allow(''),
+    carrier: Joi.string().optional().allow(''),
+    estimatedDelivery: Joi.date().optional(),
   }),
 };
 

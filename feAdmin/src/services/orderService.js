@@ -2,7 +2,14 @@ import api from './apiService'
 
 const orderService = {
   getAllOrders: (params = {}) => {
-    return api.get('/admin/orders', { params })
+    // Clean up null/empty values from params
+    const cleanParams = Object.entries(params).reduce((acc, [key, value]) => {
+      if (value !== null && value !== undefined && value !== '') {
+        acc[key] = value;
+      }
+      return acc;
+    }, {});
+    return api.get('/admin/orders', { params: cleanParams })
   },
 
   getOrderById: (orderId) => {

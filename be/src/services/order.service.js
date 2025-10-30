@@ -61,37 +61,104 @@ export const getUserOrders = async (userId, page = 1, limit = 10, status = null,
 };
 
 export const getAllOrders = async (page = 1, limit = 10, status = null, detailedStatus = null, search = null, sortBy = "createdAt", sortOrder = "desc") => {
-  const filter = {};
+  const skip = (page - 1) * limit;
+  const sort = { [sortBy]: sortOrder === "asc" ? 1 : -1 };
+
+  // Build aggregation pipeline
+  const pipeline = [];
+
+  // Stage 1: Add field for latest detailed status
+  pipeline.push({
+    $addFields: {
+      latestDetailedStatus: {
+        $cond: {
+          if: { $gt: [{ $size: "$timeline" }, 0] },
+          then: { $arrayElemAt: ["$timeline.status", -1] },
+          else: null
+        }
+      }
+    }
+  });
+
+  // Stage 2: Match filters
+  const matchStage = {};
 
   // Lọc theo trạng thái chung
   if (status) {
-    filter.status = { $in: status };
+    matchStage.status = { $in: Array.isArray(status) ? status : [status] };
   }
 
-  // Lọc theo trạng thái chi tiết (từ timeline)
+  // Lọc theo trạng thái chi tiết MỚI NHẤT (không phải toàn bộ timeline)
   if (detailedStatus) {
-    filter["timeline.status"] = { $in: Array.isArray(detailedStatus) ? detailedStatus : [detailedStatus] };
+    matchStage.latestDetailedStatus = { $in: Array.isArray(detailedStatus) ? detailedStatus : [detailedStatus] };
   }
 
   // Tìm kiếm
   if (search) {
     const searchRegex = new RegExp(search, "i");
-    filter.$or = [
+    matchStage.$or = [
       { "shippingAddress.recipientName": searchRegex },
       { "shippingAddress.phoneNumber": searchRegex },
-      { orderCode: searchRegex }, // Tìm theo orderCode
-      { _id: mongoose.isValidObjectId(search) ? search : null }, // Tìm theo ID đơn hàng
+      { orderCode: searchRegex },
+      { _id: mongoose.isValidObjectId(search) ? new mongoose.Types.ObjectId(search) : null },
       { "orderLines.productName": searchRegex },
-    ].filter(Boolean); // Loại bỏ các điều kiện null
+    ].filter(item => item._id !== null);
   }
 
-  const skip = (page - 1) * limit;
-  const sort = { [sortBy]: sortOrder === "asc" ? 1 : -1 };
+  if (Object.keys(matchStage).length > 0) {
+    pipeline.push({ $match: matchStage });
+  }
 
-  const [orders, total] = await Promise.all([
-    Order.find(filter).populate("userId", "name email").sort(sort).skip(skip).limit(limit).lean(),
-    Order.countDocuments(filter),
+  // Stage 3: Lookup userId to populate user info
+  pipeline.push({
+    $lookup: {
+      from: "users",
+      localField: "userId",
+      foreignField: "_id",
+      as: "userInfo"
+    }
+  });
+
+  pipeline.push({
+    $addFields: {
+      userId: {
+        $cond: {
+          if: { $gt: [{ $size: "$userInfo" }, 0] },
+          then: {
+            _id: { $arrayElemAt: ["$userInfo._id", 0] },
+            name: { $arrayElemAt: ["$userInfo.name", 0] },
+            email: { $arrayElemAt: ["$userInfo.email", 0] }
+          },
+          else: "$userId"
+        }
+      }
+    }
+  });
+
+  pipeline.push({
+    $project: {
+      userInfo: 0,
+      latestDetailedStatus: 0 // Remove the temporary field from final output
+    }
+  });
+
+  // Create pipeline for counting
+  const countPipeline = [...pipeline];
+  countPipeline.push({ $count: "total" });
+
+  // Add sort, skip, limit for data pipeline
+  pipeline.push({ $sort: sort });
+  pipeline.push({ $skip: skip });
+  pipeline.push({ $limit: limit });
+
+  // Execute both pipelines
+  const [ordersResult, countResult] = await Promise.all([
+    Order.aggregate(pipeline),
+    Order.aggregate(countPipeline)
   ]);
+
+  const orders = ordersResult;
+  const total = countResult.length > 0 ? countResult[0].total : 0;
 
   return {
     data: orders,
@@ -1031,12 +1098,9 @@ const getStatusLabel = (status) => {
  * Check if status requires metadata
  */
 const requiresMetadataForStatus = (status) => {
-  const metadataRequired = {
-    [DETAILED_ORDER_STATUS.SHIPPING_IN_PROGRESS]: ['trackingNumber', 'carrier'],
-    [DETAILED_ORDER_STATUS.CANCELLED]: ['reason'],
-    [DETAILED_ORDER_STATUS.DELIVERY_FAILED]: ['reason'],
-  };
-  return metadataRequired[status] || [];
+  // Tất cả metadata đều là OPTIONAL - không bắt buộc
+  // Trả về array rỗng cho tất cả status
+  return [];
 };
 
 export const updateOrderStatusByAdmin = async (orderId, newDetailedStatus, adminId, metadata = {}) => {

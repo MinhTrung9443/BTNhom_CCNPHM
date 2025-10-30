@@ -4,25 +4,25 @@ import { useDispatch } from 'react-redux';
 import { getValidTransitions, updateOrderStatus } from '../../redux/slices/ordersSlice';
 import { toast } from 'react-toastify';
 
-// Mapping giữa general status và detailed status
+// Mapping giữa general status và detailed status (ĐỒNG BỘ VỚI BACKEND)
 const STATUS_MAPPING = {
   'pending': {
     label: 'Chờ xác nhận',
     icon: '🕐',
     variant: 'primary',
-    detailedStatuses: ['new', 'confirmed']
+    detailedStatuses: ['new']
   },
   'processing': {
-    label: 'Vận chuyển',
+    label: 'Đang xử lý',
     icon: '📦',
     variant: 'info',
-    detailedStatuses: ['preparing']
+    detailedStatuses: ['confirmed', 'preparing']
   },
   'shipping': {
     label: 'Đang giao',
     icon: '🚚',
     variant: 'warning',
-    detailedStatuses: ['shipping_in_progress', 'delivered', 'delivery_failed']
+    detailedStatuses: ['shipping_in_progress', 'delivered', 'cancellation_requested', 'delivery_failed']
   },
   'completed': {
     label: 'Hoàn thành',
@@ -34,7 +34,7 @@ const STATUS_MAPPING = {
     label: 'Đã hủy',
     icon: '❌',
     variant: 'danger',
-    detailedStatuses: ['cancellation_requested', 'cancelled']
+    detailedStatuses: ['payment_overdue', 'cancelled']
   },
   'return_refund': {
     label: 'Trả hàng/Hoàn tiền',
@@ -103,31 +103,16 @@ const UpdateStatusModal = ({ show, onHide, order, onSuccess }) => {
       return;
     }
 
-    // Validate metadata requirements
-    const selectedOption = validTransitions?.validTransitions.find(
-      t => t.value === selectedStatus
-    );
-    
-    if (selectedOption?.requiresMetadata) {
-      if (selectedOption.requiresMetadata.includes('reason') && !metadata.reason.trim()) {
-        setError('Vui lòng nhập lý do');
-        return;
-      }
-      if (selectedOption.requiresMetadata.includes('trackingNumber') && !metadata.trackingNumber.trim()) {
-        setError('Vui lòng nhập mã vận đơn');
-        return;
-      }
-    }
-
+    // Không validate metadata - tất cả đều optional
     try {
       setUpdating(true);
       setError('');
 
-      // Prepare metadata payload
+      // Prepare metadata payload - chỉ gửi các field có giá trị
       const metadataPayload = {};
-      if (metadata.reason.trim()) metadataPayload.reason = metadata.reason.trim();
-      if (metadata.trackingNumber.trim()) metadataPayload.trackingNumber = metadata.trackingNumber.trim();
-      if (metadata.carrier.trim()) metadataPayload.carrier = metadata.carrier.trim();
+      if (metadata.reason?.trim()) metadataPayload.reason = metadata.reason.trim();
+      if (metadata.trackingNumber?.trim()) metadataPayload.trackingNumber = metadata.trackingNumber.trim();
+      if (metadata.carrier?.trim()) metadataPayload.carrier = metadata.carrier.trim();
       if (metadata.estimatedDelivery) metadataPayload.estimatedDelivery = metadata.estimatedDelivery;
 
       await dispatch(updateOrderStatus({
@@ -174,67 +159,69 @@ const UpdateStatusModal = ({ show, onHide, order, onSuccess }) => {
   const renderMetadataFields = () => {
     if (!selectedStatus) return null;
 
-    const selectedOption = validTransitions?.validTransitions.find(
-      t => t.value === selectedStatus
-    );
-    
-    if (!selectedOption || selectedOption.requiresMetadata.length === 0) return null;
+    // Hiện các field metadata phù hợp với status, nhưng TẤT CẢ đều OPTIONAL
+    const showTrackingFields = ['shipping_in_progress'].includes(selectedStatus);
+    const showReasonField = ['cancelled', 'delivery_failed'].includes(selectedStatus);
+
+    if (!showTrackingFields && !showReasonField) return null;
 
     return (
-      <Card className="mt-3">
+      <Card className="mt-3 border-info">
         <Card.Body>
-          <h6 className="mb-3">
+          <h6 className="mb-3 text-info">
             <i className="bi bi-info-circle me-2"></i>
-            Thông tin bổ sung
+            Thông tin bổ sung (không bắt buộc)
           </h6>
           
-          {selectedOption.requiresMetadata.includes('trackingNumber') && (
-            <Form.Group className="mb-3">
-              <Form.Label>
-                Mã vận đơn <span className="text-danger">*</span>
-              </Form.Label>
-              <Form.Control
-                type="text"
-                placeholder="Nhập mã vận đơn"
-                value={metadata.trackingNumber}
-                onChange={(e) => setMetadata({
-                  ...metadata, 
-                  trackingNumber: e.target.value
-                })}
-              />
-            </Form.Group>
+          {showTrackingFields && (
+            <>
+              <Form.Group className="mb-3">
+                <Form.Label>Mã vận đơn</Form.Label>
+                <Form.Control
+                  type="text"
+                  placeholder="Nhập mã vận đơn (tùy chọn)"
+                  value={metadata.trackingNumber}
+                  onChange={(e) => setMetadata({
+                    ...metadata, 
+                    trackingNumber: e.target.value
+                  })}
+                />
+                <Form.Text className="text-muted">
+                  Nhập mã vận đơn để khách hàng theo dõi đơn hàng (không bắt buộc)
+                </Form.Text>
+              </Form.Group>
+              
+              <Form.Group className="mb-3">
+                <Form.Label>Đơn vị vận chuyển</Form.Label>
+                <Form.Control
+                  type="text"
+                  placeholder="VD: GHTK, GHN, Viettel Post... (tùy chọn)"
+                  value={metadata.carrier}
+                  onChange={(e) => setMetadata({
+                    ...metadata, 
+                    carrier: e.target.value
+                  })}
+                />
+              </Form.Group>
+            </>
           )}
           
-          {selectedOption.requiresMetadata.includes('carrier') && (
+          {showReasonField && (
             <Form.Group className="mb-3">
-              <Form.Label>Đơn vị vận chuyển</Form.Label>
-              <Form.Control
-                type="text"
-                placeholder="VD: GHTK, GHN, Viettel Post..."
-                value={metadata.carrier}
-                onChange={(e) => setMetadata({
-                  ...metadata, 
-                  carrier: e.target.value
-                })}
-              />
-            </Form.Group>
-          )}
-          
-          {selectedOption.requiresMetadata.includes('reason') && (
-            <Form.Group className="mb-3">
-              <Form.Label>
-                Lý do <span className="text-danger">*</span>
-              </Form.Label>
+              <Form.Label>Lý do</Form.Label>
               <Form.Control
                 as="textarea"
                 rows={3}
-                placeholder="Nhập lý do chi tiết..."
+                placeholder="Nhập lý do chi tiết (tùy chọn)..."
                 value={metadata.reason}
                 onChange={(e) => setMetadata({
                   ...metadata, 
                   reason: e.target.value
                 })}
               />
+              <Form.Text className="text-muted">
+                Nhập lý do để khách hàng hiểu rõ hơn (không bắt buộc)
+              </Form.Text>
             </Form.Group>
           )}
         </Card.Body>
@@ -347,11 +334,6 @@ const UpdateStatusModal = ({ show, onHide, order, onSuccess }) => {
                                 } me-2`}></i>
                                 {getStatusIcon(statusInfo.value)} {statusInfo.label}
                               </span>
-                              {statusInfo.requiresMetadata.length > 0 && statusInfo.enabled && (
-                                <Badge bg="warning" text="dark" className="ms-2">
-                                  <i className="bi bi-pencil-square"></i> Cần thông tin
-                                </Badge>
-                              )}
                               {!statusInfo.enabled && (
                                 <Badge bg="secondary" className="ms-2">
                                   Không khả dụng
