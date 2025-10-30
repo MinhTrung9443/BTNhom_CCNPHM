@@ -124,9 +124,9 @@ io.on("connection", (socket) => {
   const userRoomIdentifier = `chat_${userId}`;
 
   if (userRole === 'user') {
-    // User joins their notification room
-    socket.join(`user_${userId}`);
-    logger.info(`User ${userId} joined notification room user_${userId}`);
+    // User joins their notification room (using userId as room name)
+    socket.join(userId);
+    logger.info(`User ${userId} joined notification room ${userId}`);
     
     // User connects: Get or create their room, join the socket room, and get initial messages.
     chatService.getOrCreateRoomForUser(userId)

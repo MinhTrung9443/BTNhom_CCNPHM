@@ -82,6 +82,8 @@ export function CommentItem({
     setIsEditing(false);
   };
 
+  const isAdminComment = comment.author.isAdmin || comment.author.role === 'admin';
+
   return (
     <div className="flex space-x-4">
       <UserAvatar
@@ -96,15 +98,24 @@ export function CommentItem({
           },
           expires: '',
         }}
-        className="w-10 h-10"
+        className={`w-10 h-10 ${isAdminComment ? 'ring-2 ring-blue-500 ring-offset-2' : ''}`}
       />
       <div className="flex-1">
-        <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-3">
+        <div className={`rounded-lg p-3 ${
+          isAdminComment 
+            ? 'bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border-2 border-blue-200 dark:border-blue-800' 
+            : 'bg-gray-100 dark:bg-gray-800'
+        }`}>
           <div className="flex items-center justify-between">
             <span className="font-semibold text-sm text-gray-900 dark:text-gray-100">
               {comment.author.name}
-              {comment.author.isAdmin && (
-                <span className="ml-2 text-xs text-primary font-bold">[Admin]</span>
+              {isAdminComment && (
+                <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-blue-600 text-white">
+                  <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
+                  </svg>
+                  ADMIN
+                </span>
               )}
             </span>
             <span className="text-xs text-gray-500 dark:text-gray-400">
@@ -182,14 +193,15 @@ export function CommentItem({
         )}
         <div className="mt-4 space-y-4 pl-8 border-l-2 border-gray-200 dark:border-gray-700">
           {comment.replies?.map((reply) => (
-            <CommentItem
-              key={reply._id}
-              comment={reply}
-              articleId={articleId}
-              onCommentUpdated={onCommentUpdated}
-              onCommentDeleted={onCommentDeleted}
-              onReplyAdded={onReplyAdded}
-            />
+            <div key={reply._id} id={`comment-${reply._id}`}>
+              <CommentItem
+                comment={reply}
+                articleId={articleId}
+                onCommentUpdated={onCommentUpdated}
+                onCommentDeleted={onCommentDeleted}
+                onReplyAdded={onReplyAdded}
+              />
+            </div>
           ))}
         </div>
       </div>

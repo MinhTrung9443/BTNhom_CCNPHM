@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
+import { useSearchParams } from 'next/navigation';
 import { useSocket } from '@/hooks/useSocket';
 import { useInfiniteScroll } from '@/hooks/use-infinite-scroll';
 import { articleService } from '@/services/articleService';
@@ -65,6 +66,36 @@ export function CommentSection({ articleId }: CommentSectionProps) {
   useEffect(() => {
     fetchComments(1);
   }, [articleId, session]);
+
+  // Handler cho highlight và scroll
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    const commentId = searchParams.get('commentId');
+    const highlight = searchParams.get('highlight');
+    
+    if (commentId && comments.length > 0) {
+      // Đợi một chút để DOM render xong
+      setTimeout(() => {
+        const commentElement = document.getElementById(`comment-${commentId}`);
+        
+        if (commentElement) {
+          // Scroll đến comment
+          commentElement.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'center' 
+          });
+          
+          // Thêm class highlight
+          commentElement.classList.add('highlight-comment');
+          
+          // Xóa class sau 3 giây
+          setTimeout(() => {
+            commentElement.classList.remove('highlight-comment');
+          }, 3000);
+        }
+      }, 500);
+    }
+  }, [comments, searchParams]);
 
   const loadMoreComments = () => {
     const nextPage = page + 1;
@@ -148,7 +179,11 @@ export function CommentSection({ articleId }: CommentSectionProps) {
           Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-24 w-full" />)
         ) : (
           comments.map((comment, index) => (
-            <div key={comment._id} ref={index === comments.length - 1 ? loadMoreRef : null}>
+            <div 
+              key={comment._id} 
+              id={`comment-${comment._id}`}
+              ref={index === comments.length - 1 ? loadMoreRef : null}
+            >
               <CommentItem
                 articleId={articleId}
                 comment={comment}

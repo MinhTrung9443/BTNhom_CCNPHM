@@ -59,14 +59,37 @@ const Notifications = () => {
   };
 
   const handleNotificationClick = async (notification) => {
+    console.log('Notification clicked:', notification);
+    
     if (!notification.isRead) {
       await handleMarkAsRead(notification._id);
     }
 
     if (notification.type === 'order') {
       navigate(`/orders/${notification.referenceId}`);
+    } else if (notification.type === 'article' && notification.articleId) {
+      // Điều hướng đến trang chi tiết bài viết với highlight
+      const articleId = typeof notification.articleId === 'object' 
+        ? notification.articleId._id 
+        : notification.articleId;
+      
+      // Truyền thông tin highlight qua query params
+      const params = new URLSearchParams();
+      if (notification.subType && notification.referenceId) {
+        console.log('Adding highlight params:', {
+          subType: notification.subType,
+          commentId: notification.referenceId
+        });
+        params.set('highlight', notification.subType); // 'like', 'comment', 'reply'
+        params.set('commentId', notification.referenceId);
+      }
+      
+      const url = `/articles/view/${articleId}${
+        params.toString() ? `?${params.toString()}` : ''
+      }`;
+      console.log('Navigating to:', url);
+      navigate(url);
     }
-    // Add more navigation logic for other types
   };
 
   const formatTimeAgo = (date) => {
@@ -144,7 +167,14 @@ const Notifications = () => {
                           <p className="mb-2 notification-message">{notification.message}</p>
                           <div className="d-flex justify-content-between">
                             <small className="text-muted">
-                              Loại: {notification.type === 'order' ? 'Đơn hàng' : 'Khác'}
+                              Loại: {
+                                notification.type === 'order' ? 'Đơn hàng' :
+                                notification.type === 'article' ? 'Bài viết' :
+                                notification.type === 'user' ? 'Người dùng' :
+                                notification.type === 'product' ? 'Sản phẩm' :
+                                notification.type === 'loyalty' ? 'Tích điểm' :
+                                notification.type === 'system' ? 'Hệ thống' : 'Khác'
+                              }
                             </small>
                             {!notification.isRead && <Badge bg="primary">Mới</Badge>}
                           </div>

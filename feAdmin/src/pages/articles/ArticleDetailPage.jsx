@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import { Container, Row, Col, Card, Button, Badge, Spinner, Form, Alert } from 'react-bootstrap'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 import { toast } from 'react-toastify'
 import moment from 'moment'
@@ -10,8 +10,10 @@ import { getImageSrc } from '../../utils/imageUtils'
 
 const ArticleDetailPage = () => {
   const { articleId } = useParams()
+  const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const { user } = useSelector((state) => state.auth)
+  const highlightedCommentRef = useRef(null)
 
   const [article, setArticle] = useState(null)
   const [comments, setComments] = useState([])
@@ -29,8 +31,62 @@ const ArticleDetailPage = () => {
 
   useEffect(() => {
     fetchArticleDetail()
-    fetchComments()
-  }, [articleId])
+    // Kiểm tra xem có cần highlight comment không
+    const commentId = searchParams.get('commentId')
+    if (commentId) {
+      // Load nhiều comments hơn để đảm bảo tìm thấy comment cần highlight
+      fetchComments(1, 50)
+    } else {
+      fetchComments()
+    }
+  }, [articleId, searchParams])
+
+  // Handler cho highlight và scroll
+  useEffect(() => {
+    const commentId = searchParams.get('commentId')
+    const highlight = searchParams.get('highlight')
+    
+    if (commentId && comments.length > 0) {
+      console.log('Attempting to highlight comment:', commentId)
+      
+      // Đợi một chút để DOM render xong
+      const attemptHighlight = (retries = 0) => {
+        const commentElement = document.getElementById(`comment-${commentId}`)
+        
+        if (commentElement) {
+          console.log('Comment element found, highlighting...')
+          
+          // Scroll đến comment với offset cho fixed header
+          const yOffset = -100; 
+          const y = commentElement.getBoundingClientRect().top + window.pageYOffset + yOffset;
+          
+          window.scrollTo({ 
+            top: y, 
+            behavior: 'smooth' 
+          })
+          
+          // Đợi scroll hoàn thành rồi mới highlight
+          setTimeout(() => {
+            // Thêm class highlight
+            commentElement.classList.add('highlight-comment')
+            
+            // Xóa class sau 3 giây
+            setTimeout(() => {
+              commentElement.classList.remove('highlight-comment')
+            }, 3000)
+          }, 300)
+        } else if (retries < 5) {
+          // Thử lại sau 500ms nếu chưa tìm thấy element (tối đa 5 lần)
+          console.log(`Comment not found, retry ${retries + 1}/5`)
+          setTimeout(() => attemptHighlight(retries + 1), 500)
+        } else {
+          console.warn('Comment element not found after 5 retries:', commentId)
+        }
+      }
+      
+      setTimeout(() => attemptHighlight(), 500)
+    }
+  }, [comments, searchParams])
 
   const fetchArticleDetail = async () => {
     try {
@@ -45,12 +101,12 @@ const ArticleDetailPage = () => {
     }
   }
 
-  const fetchComments = async (page = 1) => {
+  const fetchComments = async (page = 1, limit = 10) => {
     try {
       setCommentsLoading(true)
       const response = await articleService.getArticleComments(articleId, {
         page,
-        limit: 10,
+        limit,
         status: 'approved'
       })
       setComments(response.data)
@@ -177,20 +233,55 @@ const ArticleDetailPage = () => {
     const canDelete = user?.role === 'admin' || comment.author?._id === user?._id
 
     return (
-      <div key={comment._id} className={`mb-3 ${level > 0 ? 'ms-4' : ''}`}>
-        <Card className="border-0 shadow-sm">
-          <Card.Body>
+      <div 
+        key={comment._id} 
+        id={`comment-${comment._id}`}
+        className={`mb-3 ${level > 0 ? 'ms-4' : ''}`}
+      >
+        <Card className={`shadow-sm ${isAdmin ? 'border-primary' : 'border-0'}`} style={{ borderWidth: isAdmin ? '2px' : '0' }}>
+          <Card.Body style={{ backgroundColor: isAdmin ? 'rgba(13, 110, 253, 0.05)' : 'transparent' }}>
             <div className="d-flex justify-content-between align-items-start mb-2">
               <div className="d-flex align-items-center">
-                <div className="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2"
-                  style={{ width: '40px', height: '40px', fontSize: '1.2rem' }}>
-                  {comment.author?.name?.charAt(0).toUpperCase() || 'U'}
-                </div>
+                {comment.author?.avatar ? (
+                  <img
+                    src={getImageSrc(comment.author.avatar)}
+                    alt={comment.author.name}
+                    className="rounded-circle me-2"
+                    style={{ 
+                      width: '40px', 
+                      height: '40px', 
+                      objectFit: 'cover',
+                      border: isAdmin ? '2px solid var(--admin-primary)' : 'none'
+                    }}
+                    onError={(e) => {
+                      // Thay ảnh bằng div chữ cái khi lỗi
+                      const fallbackDiv = document.createElement('div');
+                      fallbackDiv.className = 'bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2';
+                      fallbackDiv.style.width = '40px';
+                      fallbackDiv.style.height = '40px';
+                      fallbackDiv.style.fontSize = '1.2rem';
+                      fallbackDiv.textContent = comment.author?.name?.charAt(0).toUpperCase() || 'U';
+                      e.target.parentNode.replaceChild(fallbackDiv, e.target);
+                    }}
+                  />
+                ) : (
+                  <div 
+                    className="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2"
+                    style={{ 
+                      width: '40px', 
+                      height: '40px', 
+                      fontSize: '1.2rem'
+                    }}
+                  >
+                    {comment.author?.name?.charAt(0).toUpperCase() || 'U'}
+                  </div>
+                )}
                 <div>
                   <div className="fw-semibold">
                     {comment.author?.name || 'User'}
                     {isAdmin && (
-                      <Badge bg="primary" className="ms-2" style={{ fontSize: '0.7rem' }}>
+                      <Badge bg="primary" className="ms-2 d-inline-flex align-items-center" style={{ fontSize: '0.7rem' }}>
+                        <i className="bi bi-shield-check me-1"></i>
                         Admin
                       </Badge>
                     )}

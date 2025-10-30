@@ -92,6 +92,29 @@ const createOrUpdateArticleNotification = async ({
 
   // Populate thông tin actors để gửi qua socket
   await notification.populate('actors', 'name avatar');
+  await notification.populate('articleId', 'title slug');
+
+  // Emit real-time notification to user
+  if (global.io && recipientUserId) {
+    // Get unread count for user
+    const unreadCount = await Notification.countDocuments({
+      recipientUserId,
+      isRead: false
+    });
+
+    const userSocketId = recipientUserId.toString();
+    
+    console.log(`[ArticleNotification] Emitting notification to user ${userSocketId}, unreadCount: ${unreadCount}`);
+    
+    global.io.to(userSocketId).emit('newNotification', {
+      notification: notification.toObject(),
+      unreadCount
+    });
+    
+    console.log(`[ArticleNotification] Successfully emitted notification to user ${userSocketId}`);
+  } else {
+    console.log(`[ArticleNotification] Cannot emit notification - io available: ${!!global.io}, recipientUserId: ${recipientUserId}`);
+  }
 
   return notification;
 };
@@ -228,7 +251,7 @@ const handleArticleComment = async (articleId, commentId, actorId, commentConten
         message: `${actor.name} đã bình luận về bài viết "${article.title}": "${commentContent.substring(0, 50)}${commentContent.length > 50 ? '...' : ''}"`,
         type: 'article',
         subType: 'comment',
-        referenceId: articleId,
+        referenceId: commentId,
         articleId,
         recipient: 'admin',
         metadata: {
@@ -279,7 +302,7 @@ const handleCommentReply = async (parentCommentId, replyCommentId, actorId, comm
         message: `${actor.name} đã trả lời bình luận của bạn trong bài viết "${parentComment.article.title}": "${commentContent.substring(0, 50)}${commentContent.length > 50 ? '...' : ''}"`,
         type: 'article',
         subType: 'reply',
-        referenceId: parentCommentId,
+        referenceId: replyCommentId,
         articleId: parentComment.article._id,
         recipient: 'admin',
         metadata: {

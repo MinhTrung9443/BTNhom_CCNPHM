@@ -123,17 +123,33 @@ export function useNotifications() {
 
   // Listen for real-time notifications via Socket.IO
   useEffect(() => {
-    if (!socket) return;
+    if (!socket) {
+      console.log('[use-notifications] No socket available');
+      return;
+    }
+
+    console.log('[use-notifications] Setting up newNotification listener');
 
     const handleNewNotification = (data: { notification: Notification; unreadCount: number }) => {
+      console.log('[use-notifications] Received newNotification event:', data);
       setNotifications((prev) => [data.notification, ...prev]);
       setUnreadCount(data.unreadCount);
+      
+      // Optional: Show toast notification
+      // toast.success(data.notification.title);
+    };
+
+    const handleOrderStatusUpdate = (data: any) => {
+      console.log('[use-notifications] Received orderStatusUpdate event:', data);
     };
 
     socket.on("newNotification", handleNewNotification);
+    socket.on("orderStatusUpdate", handleOrderStatusUpdate);
 
     return () => {
+      console.log('[use-notifications] Cleaning up notification listeners');
       socket.off("newNotification", handleNewNotification);
+      socket.off("orderStatusUpdate", handleOrderStatusUpdate);
     };
   }, [socket]);
 

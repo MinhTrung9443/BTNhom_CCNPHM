@@ -968,9 +968,15 @@ export const updateOrderStatusByAdmin = async (orderId, newDetailedStatus, metad
 
   // Send notifications to user based on status change
   const notificationMessages = {
+    [DETAILED_ORDER_STATUS.PREPARING]: {
+      title: "Đơn hàng đang được chuẩn bị",
+      message: `Đơn hàng ${order.orderCode} của bạn đang được người bán chuẩn bị`,
+    },
     [DETAILED_ORDER_STATUS.SHIPPING_IN_PROGRESS]: {
       title: "Đơn hàng đang được giao",
-      message: `Đơn hàng ${order.orderCode} của bạn đang trên đường giao`,
+      message: metadata.trackingNumber 
+        ? `Đơn hàng ${order.orderCode} đang trên đường giao. Mã vận đơn: ${metadata.trackingNumber}`
+        : `Đơn hàng ${order.orderCode} của bạn đang trên đường giao`,
     },
     [DETAILED_ORDER_STATUS.DELIVERED]: {
       title: "Đơn hàng đã được giao",
@@ -978,32 +984,66 @@ export const updateOrderStatusByAdmin = async (orderId, newDetailedStatus, metad
     },
     [DETAILED_ORDER_STATUS.CANCELLED]: {
       title: "Đơn hàng đã bị hủy",
-      message: `Đơn hàng ${order.orderCode} của bạn đã bị hủy`,
+      message: metadata.reason 
+        ? `Đơn hàng ${order.orderCode} đã bị hủy. Lý do: ${metadata.reason}`
+        : `Đơn hàng ${order.orderCode} của bạn đã bị hủy`,
+    },
+    [DETAILED_ORDER_STATUS.DELIVERY_FAILED]: {
+      title: "Giao hàng thất bại",
+      message: `Không thể giao đơn hàng ${order.orderCode}. Vui lòng liên hệ để được hỗ trợ.`,
+    },
+    [DETAILED_ORDER_STATUS.REFUNDED]: {
+      title: "Đã hoàn tiền",
+      message: `Đơn hàng ${order.orderCode} đã được hoàn tiền. Số tiền ${order.totalAmount.toLocaleString('vi-VN')} VNĐ sẽ được hoàn lại cho bạn.`,
     },
   };
 
   if (notificationMessages[newDetailedStatus]) {
-    await Notification.create({
+    const userId = order.userId._id || order.userId;
+    
+    const notification = await Notification.create({
       title: notificationMessages[newDetailedStatus].title,
       message: notificationMessages[newDetailedStatus].message,
       type: "order",
       referenceId: orderId,
       recipient: "user",
-      userId: order.userId._id || order.userId,
+      recipientUserId: userId,
       metadata: {
         orderAmount: order.totalAmount,
+        orderCode: order.orderCode,
         status: newDetailedStatus,
       },
     });
 
+    // Get updated unread count for user
+    const unreadCount = await Notification.countDocuments({
+      recipientUserId: userId,
+      isRead: false
+    });
+
     // Send real-time notification to user
     if (global.io) {
-      const userSocketId = order.userId._id?.toString() || order.userId.toString();
+      const userSocketId = userId.toString();
+      
+      logger.info(`Emitting order status notification to user ${userSocketId} for order ${order.orderCode}`);
+      
+      // Emit orderStatusUpdate for order-specific updates
       global.io.to(userSocketId).emit("orderStatusUpdate", {
         orderId: updatedOrder._id,
+        orderCode: order.orderCode,
         status: newDetailedStatus,
         message: notificationMessages[newDetailedStatus].message,
       });
+      
+      // Emit newNotification for notification center
+      global.io.to(userSocketId).emit("newNotification", {
+        notification: notification.toObject(),
+        unreadCount
+      });
+      
+      logger.info(`Successfully emitted notification to user ${userSocketId}`);
+    } else {
+      logger.warn('Socket.IO not available, cannot send real-time notification');
     }
   }
 

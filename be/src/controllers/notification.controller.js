@@ -146,6 +146,7 @@ export const getNotificationsHandler = async (req, res) => {
     .skip(skip)
     .limit(limit)
     .populate('userId', 'fullName avatar email')
+    .populate('articleId', 'title slug')
     .lean();
 
   // Đếm tổng số thông báo

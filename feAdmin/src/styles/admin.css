@@ -598,3 +598,51 @@
     font-size: 1.25rem;
   }
 }
+
+/* Highlight Comment Animation */
+.highlight-comment {
+  animation: highlightPulse 3s ease-in-out;
+  position: relative;
+  border-radius: 8px;
+  padding: 4px;
+  margin: -4px;
+  scroll-margin-top: 100px; /* Offset for fixed header */
+}
+
+@keyframes highlightPulse {
+  0% {
+    background-color: transparent;
+    box-shadow: 0 0 0 0 rgba(13, 110, 253, 0);
+  }
+  5% {
+    background-color: rgba(255, 193, 7, 0.5);
+    box-shadow: 0 0 0 0 rgba(13, 110, 253, 0.3);
+  }
+  15% {
+    background-color: rgba(255, 193, 7, 0.4);
+    box-shadow: 0 0 15px 0 rgba(13, 110, 253, 0.4);
+  }
+  30% {
+    background-color: rgba(255, 193, 7, 0.3);
+    box-shadow: 0 0 10px 0 rgba(13, 110, 253, 0.3);
+  }
+  60% {
+    background-color: rgba(255, 193, 7, 0.15);
+    box-shadow: 0 0 5px 0 rgba(13, 110, 253, 0.2);
+  }
+  100% {
+    background-color: transparent;
+    box-shadow: 0 0 0 0 rgba(13, 110, 253, 0);
+  }
+}
+
+.highlight-comment .card {
+  border: 2px solid rgba(13, 110, 253, 0.6) !important;
+  transition: border 0.3s ease;
+  box-shadow: 0 0 20px rgba(13, 110, 253, 0.3) !important;
+}
+
+/* Đảm bảo highlight hoạt động với cả nested comments */
+.highlight-comment > .card {
+  border-color: rgba(13, 110, 253, 0.6) !important;
+}

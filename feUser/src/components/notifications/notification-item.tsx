@@ -40,12 +40,36 @@ export function NotificationItem({
   const getNotificationLink = () => {
     // Nếu là thông báo bài viết
     if (notification.type === 'article' && notification.articleId) {
+      let baseUrl = '';
+      
       if (typeof notification.articleId === 'object' && notification.articleId.slug) {
-        return `/bai-viet/${notification.articleId.slug}`;
+        baseUrl = `/bai-viet/${notification.articleId.slug}`;
+      } else if (typeof notification.articleId === 'string') {
+        // Fallback nếu articleId chỉ là ID string
+        baseUrl = `/bai-viet/${notification.articleId}`;
       }
+      
+      // Thêm query params cho highlight
+      if (baseUrl && notification.subType && notification.referenceId) {
+        const params = new URLSearchParams();
+        params.set('highlight', notification.subType);
+        params.set('commentId', notification.referenceId);
+        return `${baseUrl}?${params.toString()}`;
+      }
+      
+      return baseUrl;
     }
     // Nếu là thông báo đơn hàng
     if (notification.type === 'order') {
+      // Điều hướng đến chi tiết đơn hàng nếu có referenceId
+      if (notification.referenceId) {
+        return `/don-hang/${notification.referenceId}`;
+      }
+      // Fallback về danh sách đơn hàng
+      return `/don-hang`;
+    }
+    // Nếu là thông báo loyalty points
+    if (notification.type === 'loyalty') {
       return `/don-hang`;
     }
     return "#";
