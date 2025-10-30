@@ -15,7 +15,9 @@
     "slug:generate:dry": "node generateProductSlugs.js --dry-run",
     "slug:check": "node scripts/checkProductSlugs.js",
     "slug:find": "node scripts/findProductBySlug.js",
-    "slug:drop-index": "node scripts/dropSlugIndex.js"
+    "slug:drop-index": "node scripts/dropSlugIndex.js",
+    "migrate:author": "node src/migrations/add-author-to-articles.js",
+    "verify:author": "node src/migrations/verify-author-migration.js"
   },
   "author": "",
   "license": "ISC",

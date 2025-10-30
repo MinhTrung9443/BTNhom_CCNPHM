@@ -182,6 +182,15 @@ const ArticlesPage = () => {
                         <div className="d-flex align-items-center">
                           <div style={{ maxWidth: '400px' }}>
                             <div className="fw-semibold">{article.title}</div>
+                            {article.author && (
+                              <small className="text-muted d-block">
+                                <i className="bi bi-person-circle me-1"></i>
+                                {article.author.name}
+                                {article.author.role === 'admin' && (
+                                  <Badge bg="primary" className="ms-1" style={{ fontSize: '0.65rem' }}>Admin</Badge>
+                                )}
+                              </small>
+                            )}
                             {article.excerpt && (
                               <small className="text-muted">
                                 {article.excerpt.substring(0, 80)}...
@@ -226,6 +235,14 @@ const ArticlesPage = () => {
                       </td>
                       <td>
                         <div className="d-flex gap-2">
+                          <Button
+                            variant="outline-info"
+                            size="sm"
+                            onClick={() => navigate(`/articles/view/${article._id}`)}
+                            title="Xem chi tiết & bình luận"
+                          >
+                            <i className="bi bi-eye"></i>
+                          </Button>
                           <Button
                             variant="outline-primary"
                             size="sm"

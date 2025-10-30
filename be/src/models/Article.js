@@ -14,6 +14,12 @@ const articleSchema = new mongoose.Schema({
     lowercase: true,
     index: true
   },
+  author: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+    index: true
+  },
   content: { 
     type: String, 
     required: true 
@@ -61,6 +67,7 @@ articleSchema.index({ createdAt: -1 });
 articleSchema.index({ 'stats.views': -1 });
 articleSchema.index({ 'stats.likes': -1 });
 articleSchema.index({ status: 1, publishedAt: -1 });
+articleSchema.index({ author: 1, createdAt: -1 });
 
 // Compound indexes for common query patterns
 articleSchema.index({ status: 1, tags: 1, publishedAt: -1 });

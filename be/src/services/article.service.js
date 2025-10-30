@@ -89,7 +89,8 @@ export const articleService = {
       skip: pagination.skip,
       limit: pagination.limit,
       select: '-content',
-      sortBy
+      sortBy,
+      populateAuthor: true
     });
 
     const [articles, totalResult] = await Promise.all([
@@ -223,7 +224,9 @@ export const articleService = {
    * @returns {Promise<Object>} Article
    */
   async getArticleById(id) {
-    const article = await Article.findById(id).lean();
+    const article = await Article.findById(id)
+      .populate('author', 'name email avatar role')
+      .lean();
     
     if (!article) {
       throw new NotFoundError('Không tìm thấy bài viết');
@@ -245,7 +248,9 @@ export const articleService = {
       slug,
       status: 'published',
       publishedAt: { $lte: new Date() }
-    }).lean();
+    })
+      .populate('author', 'name avatar role')
+      .lean();
     
     if (!article) {
       throw new NotFoundError('Không tìm thấy bài viết');

@@ -12,6 +12,7 @@ export const articleController = {
       if (req.file) {
         req.body.featuredImage = req.file.path;
       }
+      req.body.author = req.user._id;
       const article = await articleService.createArticle(req.body);
       res.status(201).json({
         success: true,

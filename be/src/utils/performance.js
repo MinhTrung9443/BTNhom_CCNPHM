@@ -17,6 +17,35 @@ export function buildArticleAggregationPipeline(filter = {}, options = {}) {
     pipeline.push({ $match: filter });
   }
 
+  // Populate author if requested
+  if (options.populateAuthor) {
+    pipeline.push({
+      $lookup: {
+        from: 'users',
+        localField: 'author',
+        foreignField: '_id',
+        as: 'author'
+      }
+    });
+    pipeline.push({
+      $unwind: {
+        path: '$author',
+        preserveNullAndEmptyArrays: true
+      }
+    });
+    pipeline.push({
+      $addFields: {
+        'author': {
+          _id: '$author._id',
+          name: '$author.name',
+          email: '$author.email',
+          avatar: '$author.avatar',
+          role: '$author.role'
+        }
+      }
+    });
+  }
+
   // Add computed fields for sorting
   if (options.sortBy === 'popular') {
     pipeline.push({
