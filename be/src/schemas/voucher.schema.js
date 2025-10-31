@@ -40,7 +40,10 @@ export const adminCreateVoucherSchema = {
       Joi.number().integer().min(0),
       Joi.valid(null)
     ).optional(),
-    userUsageLimit: Joi.number().integer().min(1).optional(),
+    userUsageLimit: Joi.alternatives().try(
+      Joi.number().integer().min(1),
+      Joi.valid(null)
+    ).optional(),
     minPurchaseAmount: Joi.number().min(0).required(),
     maxDiscountAmount: Joi.number().min(0).required(),
     startDate: Joi.date().iso().required(),
@@ -69,7 +72,10 @@ export const adminUpdateVoucherSchema = {
       Joi.number().integer().min(0),
       Joi.valid(null)
     ),
-    userUsageLimit: Joi.number().integer().min(1),
+    userUsageLimit: Joi.alternatives().try(
+      Joi.number().integer().min(1),
+      Joi.valid(null)
+    ),
     applicableProducts: Joi.array().items(objectId).optional(),
     excludedProducts: Joi.array().items(objectId).optional(),
     applicableCategories: Joi.array().items(objectId).optional(),

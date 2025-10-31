@@ -239,9 +239,7 @@ export default function MyVouchersPage() {
                                   }).format(userVoucher.voucher.minPurchaseAmount)}
                                 </span>
                               </div>
-                            </div>
-
-                            <div className="space-y-2">
+                              
                               {userVoucher.voucher.maxDiscountAmount > 0 && (
                                 <div>
                                   Giảm tối đa:{" "}
@@ -253,11 +251,64 @@ export default function MyVouchersPage() {
                                   </span>
                                 </div>
                               )}
+                            </div>
 
+                            <div className="space-y-2">
                               <div className="text-xs text-gray-500">Lưu ngày: {formatDate(userVoucher.createdAt)}</div>
 
-                              {userVoucher.isUsed && userVoucher.orderId && (
-                                <div className="text-xs text-gray-500">Đã dùng cho đơn: {userVoucher.orderId.orderNumber}</div>
+                              {userVoucher.status === "used" && userVoucher.orderId && (
+                                <div className="text-xs text-gray-500">Đơn cuối: {userVoucher.orderId.orderNumber}</div>
+                              )}
+                              
+                              {/* Thông tin số lượt toàn hệ thống */}
+                              <div className="text-xs">
+                                <span className="text-gray-500">Tổng lượt (hệ thống): </span>
+                                <span className="font-semibold text-blue-600">
+                                  {userVoucher.voucher.globalUsageLimit !== null ? (
+                                    `${userVoucher.voucher.currentUsage}/${userVoucher.voucher.globalUsageLimit}`
+                                  ) : (
+                                    <span className="text-green-600">Không giới hạn</span>
+                                  )}
+                                </span>
+                              </div>
+                              
+                              <div className="text-xs">
+                                <span className="text-gray-500">Mỗi người: </span>
+                                <span className="font-semibold text-purple-600">
+                                  {userVoucher.voucher.userUsageLimit !== null ? (
+                                    `${userVoucher.voucher.userUsageLimit} lần`
+                                  ) : (
+                                    <span className="text-green-600">Không giới hạn</span>
+                                  )}
+                                </span>
+                              </div>
+                              
+                              {/* Hiển thị số lần đã dùng của user */}
+                              {(userVoucher.usageCount > 0 || userVoucher.remainingUsage !== null) && (
+                                <div className="mt-2 pt-2 border-t border-gray-200">
+                                  <div className="text-xs text-purple-600 font-semibold mb-1">📊 Của bạn:</div>
+                                  {userVoucher.remainingUsage !== null ? (
+                                    <div className="text-sm">
+                                      <span className="text-gray-700">
+                                        Đã dùng: <span className="font-bold text-purple-600">{userVoucher.usageCount}</span>/{userVoucher.voucher.userUsageLimit}
+                                      </span>
+                                      {userVoucher.remainingUsage > 0 ? (
+                                        <span className="ml-2 text-green-600 font-semibold">
+                                          • Còn {userVoucher.remainingUsage} lần
+                                        </span>
+                                      ) : (
+                                        <span className="ml-2 text-red-600 font-semibold">
+                                          • Hết lượt
+                                        </span>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <div className="text-sm text-gray-700">
+                                      Đã dùng: <span className="font-bold text-purple-600">{userVoucher.usageCount}</span> lần
+                                      <span className="ml-2 text-green-600">• Không giới hạn</span>
+                                    </div>
+                                  )}
+                                </div>
                               )}
                             </div>
                           </div>

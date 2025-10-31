@@ -6,6 +6,8 @@ import type { ApiResponse } from "@/types/api";
 export interface PublicVoucher extends Voucher {
   isClaimed: boolean;
   availableSlots: number | null;
+  usageCount: number;
+  remainingUsage: number | null;
 }
 
 export interface UserVoucher {
@@ -13,6 +15,8 @@ export interface UserVoucher {
   userId: string;
   voucherId: string;
   isUsed: boolean;
+  usageCount: number;
+  remainingUsage: number | null;
   orderId?: {
     _id: string;
     orderNumber: string;

@@ -9,21 +9,18 @@ import moment from "moment";
 import React from "react";
 import { getImageSrc, handleImageError } from "../../utils/imageUtils";
 import ProductSnapshotModal from "../../components/orders/ProductSnapshotModal";
+import UpdateStatusModal from "../../components/orders/UpdateStatusModal";
 
 const OrderDetailPage = () => {
   const { orderId } = useParams();
   const dispatch = useDispatch();
   const { order, loading } = useSelector((state) => state.orders);
 
-  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [showNoteModal, setShowNoteModal] = useState(false);
   const [showCancellationModal, setShowCancellationModal] = useState(false);
   const [showSnapshotModal, setShowSnapshotModal] = useState(false);
   const [selectedOrderLine, setSelectedOrderLine] = useState(null);
-  const [statusForm, setStatusForm] = useState({
-    status: "",
-    reason: "",
-  });
   const [noteForm, setNoteForm] = useState({
     description: "",
     metadata: {},
@@ -73,57 +70,9 @@ const OrderDetailPage = () => {
     return <Badge bg={config.variant}>{config.text}</Badge>;
   };
 
-  const DETAILED_STATUS_TEXT = {
-    preparing: "Chuẩn bị hàng",
-    shipping_in_progress: "Bắt đầu giao hàng",
-    delivered: "Đã giao thành công",
-    cancelled: "Hủy đơn hàng",
-    delivery_failed: "Giao hàng thất bại",
-    refunded: "Hoàn tiền",
-  };
-
-  const getStatusOptions = (currentDetailedStatus) => {
-    const transitions = {
-      new: ["confirmed"],
-      confirmed: ["preparing", "cancelled"],
-      preparing: ["shipping_in_progress", "cancelled"],
-      shipping_in_progress: ["delivered", "delivery_failed", "cancelled"],
-      cancellation_requested: ["cancelled"],
-      // [UPDATE] Thêm các tùy chọn cho admin sau khi giao hàng thất bại
-      delivery_failed: ["shipping_in_progress", "cancelled"],
-      delivered: [], // Chỉ có user xác nhận completed
-    };
-    // Lấy trạng thái chi tiết cuối cùng từ timeline
-    const lastStatus = order?.timeline?.[order.timeline.length - 1]?.status;
-    return transitions[lastStatus] || [];
-  };
-
-  const handleUpdateStatus = async () => {
-    if (!statusForm.status) {
-      toast.error("Vui lòng chọn trạng thái");
-      return;
-    }
-
-    try {
-      // Chỉ truyền reason nếu có giá trị
-      const metadata = {};
-      if (statusForm.reason && statusForm.reason.trim()) {
-        metadata.reason = statusForm.reason.trim();
-      }
-
-      await dispatch(
-        updateOrderStatus({
-          orderId: order._id,
-          status: statusForm.status,
-          metadata,
-        })
-      ).unwrap();
-      toast.success("Cập nhật trạng thái thành công");
-      setShowStatusModal(false);
-      setStatusForm({ status: "", reason: "" });
-    } catch (error) {
-      toast.error(error || "Có lỗi xảy ra");
-    }
+  const handleUpdateSuccess = () => {
+    dispatch(fetchOrderById(orderId));
+    toast.success('Cập nhật trạng thái thành công');
   };
 
   const handleApproveCancellation = async () => {
@@ -204,8 +153,8 @@ const OrderDetailPage = () => {
               {isCancellationApproved() ? "Đã chấp nhận yêu cầu hủy" : "Chấp nhận yêu cầu hủy"}
             </Button>
           )}
-          {!isPendingStatus() && getStatusOptions(order.status).length > 0 && (
-            <Button variant="primary" onClick={() => setShowStatusModal(true)} disabled={getStatusOptions().length === 0}>
+          {!isPendingStatus() && (
+            <Button variant="primary" onClick={() => setShowUpdateModal(true)}>
               <i className="bi bi-arrow-repeat me-2"></i>
               Cập nhật trạng thái
             </Button>
@@ -420,46 +369,14 @@ const OrderDetailPage = () => {
       </Row>
 
       {/* Update Status Modal */}
-      <Modal show={showStatusModal} onHide={() => setShowStatusModal(false)}>
-        <Modal.Header closeButton>
-          <Modal.Title>Cập nhật trạng thái đơn hàng</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Form>
-            <Form.Group className="mb-3">
-              <Form.Label>Trạng thái mới</Form.Label>
-              <Form.Select value={statusForm.status} onChange={(e) => setStatusForm((prev) => ({ ...prev, status: e.target.value }))}>
-                <option value="">Chọn trạng thái</option>
-                {getStatusOptions().map((status) => (
-                  <option key={status} value={status}>
-                    {DETAILED_STATUS_TEXT[status] || status}
-                  </option>
-                ))}
-              </Form.Select>
-            </Form.Group>
-            <Form.Group className="mb-3">
-              <Form.Label>
-                Mô tả <small className="text-muted">(tùy chọn)</small>
-              </Form.Label>
-              <Form.Control
-                as="textarea"
-                rows={3}
-                value={statusForm.reason}
-                onChange={(e) => setStatusForm((prev) => ({ ...prev, reason: e.target.value }))}
-                placeholder="Nhập lý do cập nhật (tùy chọn)"
-              />
-            </Form.Group>
-          </Form>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowStatusModal(false)}>
-            Hủy
-          </Button>
-          <Button variant="primary" onClick={handleUpdateStatus}>
-            Cập nhật
-          </Button>
-        </Modal.Footer>
-      </Modal>
+      {order && (
+        <UpdateStatusModal
+          show={showUpdateModal}
+          onHide={() => setShowUpdateModal(false)}
+          order={order}
+          onSuccess={handleUpdateSuccess}
+        />
+      )}
 
       {/* Cancellation Approval Modal */}
       <Modal show={showCancellationModal} onHide={() => setShowCancellationModal(false)}>

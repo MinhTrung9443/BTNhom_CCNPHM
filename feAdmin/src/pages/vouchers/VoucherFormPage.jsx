@@ -30,7 +30,7 @@ const defaultForm = {
   discountValue: "",
   type: "public",
   globalUsageLimit: "",
-  userUsageLimit: 1,
+  userUsageLimit: "",
   minPurchaseAmount: 0,
   maxDiscountAmount: 0,
   startDate: "",
@@ -196,6 +196,8 @@ const VoucherFormPage = () => {
       if (form.type === "public") {
         payload.globalUsageLimit =
           form.globalUsageLimit === "" ? null : Number(form.globalUsageLimit);
+        payload.userUsageLimit =
+          form.userUsageLimit === "" ? null : Number(form.userUsageLimit);
       } else {
         payload.userUsageLimit = Number(form.userUsageLimit);
       }
@@ -534,21 +536,38 @@ const VoucherFormPage = () => {
               </Card.Header>
               <Card.Body>
                 {form.type === "public" ? (
-                  <Form.Group className="mb-3">
-                    <Form.Label>Tổng lượt sử dụng</Form.Label>
-                    <Form.Control
-                      type="number"
-                      value={form.globalUsageLimit}
-                      onChange={(e) =>
-                        handleFormChange("globalUsageLimit", e.target.value)
-                      }
-                      placeholder="Không giới hạn"
-                      min="0"
-                    />
-                    <Form.Text className="text-muted">
-                      Tổng số lần voucher có thể được sử dụng
-                    </Form.Text>
-                  </Form.Group>
+                  <>
+                    <Form.Group className="mb-3">
+                      <Form.Label>Tổng lượt sử dụng</Form.Label>
+                      <Form.Control
+                        type="number"
+                        value={form.globalUsageLimit}
+                        onChange={(e) =>
+                          handleFormChange("globalUsageLimit", e.target.value)
+                        }
+                        placeholder="Không giới hạn"
+                        min="0"
+                      />
+                      <Form.Text className="text-muted">
+                        Tổng số lần voucher có thể được sử dụng trên toàn hệ thống
+                      </Form.Text>
+                    </Form.Group>
+                    <Form.Group className="mb-3">
+                      <Form.Label>Lượt sử dụng / người dùng</Form.Label>
+                      <Form.Control
+                        type="number"
+                        value={form.userUsageLimit}
+                        onChange={(e) =>
+                          handleFormChange("userUsageLimit", e.target.value)
+                        }
+                        placeholder="Không giới hạn"
+                        min="1"
+                      />
+                      <Form.Text className="text-muted">
+                        Số lần tối đa mỗi người dùng có thể sử dụng voucher này
+                      </Form.Text>
+                    </Form.Group>
+                  </>
                 ) : (
                   <Form.Group className="mb-3">
                     <Form.Label>Lượt sử dụng / người dùng</Form.Label>

@@ -24,11 +24,9 @@ export function VoucherSelector({
 }: VoucherSelectorProps) {
   const [showAll, setShowAll] = useState(false);
   
-  // Lọc voucher có thể áp dụng
-  const applicableVouchers = vouchers.filter(v => v.isApplicable);
-  const nonApplicableVouchers = vouchers.filter(v => !v.isApplicable);
-  
-  const displayedVouchers = showAll ? vouchers : applicableVouchers;
+  const INITIAL_DISPLAY_COUNT = 3;
+  const displayedVouchers = showAll ? vouchers : vouchers.slice(0, INITIAL_DISPLAY_COUNT);
+  const hasMore = vouchers.length > INITIAL_DISPLAY_COUNT;
 
   const formatDiscount = (voucher: Voucher) => {
     if (voucher.discountType === 'percentage') {
@@ -143,25 +141,25 @@ export function VoucherSelector({
               ))}
             </RadioGroup>
 
-            {nonApplicableVouchers.length > 0 && !showAll && (
+            {hasMore && !showAll && (
               <Button 
                 variant="outline" 
                 size="sm" 
                 onClick={() => setShowAll(true)}
                 className="w-full"
               >
-                Xem thêm {nonApplicableVouchers.length} voucher không khả dụng
+                Xem thêm {vouchers.length - INITIAL_DISPLAY_COUNT} mã giảm giá
               </Button>
             )}
 
-            {showAll && nonApplicableVouchers.length > 0 && (
+            {showAll && hasMore && (
               <Button 
                 variant="outline" 
                 size="sm" 
                 onClick={() => setShowAll(false)}
                 className="w-full"
               >
-                Ẩn bớt voucher không khả dụng
+                Thu gọn
               </Button>
             )}
           </div>

@@ -29,6 +29,56 @@ const calculateShippingFee = async (shippingMethod) => {
   }
   return deliveryMethod.price;
 };
+
+// Helper function to validate if voucher is applicable to the order
+const validateVoucherApplicability = (voucher, productsInCart) => {
+  const productIdsInCart = productsInCart.map(p => p._id.toString());
+  const categoryIdsInCart = [...new Set(productsInCart.map(p => p.categoryId.toString()))];
+
+  // Check excluded products - nếu TẤT CẢ sản phẩm trong cart đều bị loại trừ
+  if (voucher.excludedProducts && voucher.excludedProducts.length > 0) {
+    const excludedProductIds = voucher.excludedProducts.map(id => id.toString());
+    const hasNonExcludedProduct = productIdsInCart.some(pid => !excludedProductIds.includes(pid));
+    
+    if (!hasNonExcludedProduct) {
+      throw new AppError("Voucher không áp dụng cho các sản phẩm trong đơn hàng", 400);
+    }
+  }
+
+  // Check applicable products - chỉ áp dụng cho một số sản phẩm cụ thể
+  const appliesToAllProducts = !voucher.applicableProducts || voucher.applicableProducts.length === 0;
+  if (!appliesToAllProducts) {
+    const voucherProductIds = voucher.applicableProducts.map(id => id.toString());
+    const isProductApplicable = productIdsInCart.some(pid => voucherProductIds.includes(pid));
+
+    if (!isProductApplicable) {
+      throw new AppError("Voucher chỉ áp dụng cho một số sản phẩm cụ thể không có trong đơn hàng", 400);
+    }
+  }
+
+  // Check excluded categories - nếu TẤT CẢ sản phẩm đều thuộc danh mục bị loại trừ
+  if (voucher.excludedCategories && voucher.excludedCategories.length > 0) {
+    const excludedCategoryIds = voucher.excludedCategories.map(id => id.toString());
+    const hasNonExcludedCategory = categoryIdsInCart.some(catId => !excludedCategoryIds.includes(catId));
+    
+    if (!hasNonExcludedCategory) {
+      throw new AppError("Voucher không áp dụng cho danh mục sản phẩm trong đơn hàng", 400);
+    }
+  }
+
+  // Check applicable categories - chỉ áp dụng cho một số danh mục cụ thể
+  const appliesToAllCategories = !voucher.applicableCategories || voucher.applicableCategories.length === 0;
+  if (!appliesToAllCategories) {
+    const voucherCategoryIds = voucher.applicableCategories.map(id => id.toString());
+    const isCategoryApplicable = categoryIdsInCart.some(catId => voucherCategoryIds.includes(catId));
+
+    if (!isCategoryApplicable) {
+      throw new AppError("Voucher chỉ áp dụng cho một số danh mục cụ thể không có trong đơn hàng", 400);
+    }
+  }
+
+  return true;
+};
 export const getUserOrders = async (userId, page = 1, limit = 10, status = null, search = null) => {
   const filter = { userId };
   if (status) {
@@ -241,9 +291,14 @@ export const previewOrder = async (userId, { orderLines, shippingAddress, vouche
   let subtotal = 0;
   const unavailableItems = [];
   const processedOrderLines = [];
+  const productsInCart = []; // Keep track of products with categoryId for voucher validation
 
   for (const line of orderLines) {
     const product = await Product.findById(line.productId).lean();
+    
+    if (product) {
+      productsInCart.push(product); // Store for later voucher validation
+    }
 
     if (!product) {
       unavailableItems.push({ ...line, reason: "Sản phẩm không tồn tại" });
@@ -325,10 +380,18 @@ export const previewOrder = async (userId, { orderLines, shippingAddress, vouche
       const userVoucher = await UserVoucher.findOne({
         userId: userId,
         voucherId: voucher._id,
-        isUsed: false,
       }).lean();
 
       if (userVoucher) {
+        // Check xem còn lượt sử dụng không
+        const userLimit = voucher.userUsageLimit || null;
+        if (userLimit !== null && userVoucher.usageCount >= userLimit) {
+          throw new AppError(`Bạn đã hết lượt sử dụng voucher này (tối đa ${userLimit} lần)`, 400);
+        }
+        
+        // Validate voucher applicability (products and categories)
+        validateVoucherApplicability(voucher, productsInCart);
+        
         if (subtotal >= voucher.minPurchaseAmount) {
           // Tính giảm giá dựa trên loại voucher
           if (voucher.discountType === "percentage") {
@@ -483,12 +546,23 @@ const _executePostOrderActions = async (order) => {
     });
   }
 
-  // 2. Mark voucher as used
+  // 2. Increment voucher usage count
   if (order.voucherCode) {
     const voucher = await Voucher.findOne({ code: order.voucherCode }).lean();
     if (voucher) {
-      await UserVoucher.updateOne({ userId: order.userId, voucherId: voucher._id, isUsed: false }, { $set: { isUsed: true, orderId: order._id } });
-      logger.info(`Voucher ${order.voucherCode} marked as used for user ${order.userId}`);
+      const userVoucher = await UserVoucher.findOne({ userId: order.userId, voucherId: voucher._id });
+      if (userVoucher) {
+        userVoucher.usageCount += 1;
+        
+        // Nếu đã hết lượt thì đánh dấu isUsed = true (để tương thích với code cũ)
+        const userLimit = voucher.userUsageLimit || null;
+        if (userLimit !== null && userVoucher.usageCount >= userLimit) {
+          userVoucher.isUsed = true;
+        }
+        
+        await userVoucher.save();
+        logger.info(`Voucher ${order.voucherCode} usage count incremented for user ${order.userId} (${userVoucher.usageCount}/${userLimit || '∞'})`);
+      }
     }
   }
 

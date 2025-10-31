@@ -195,7 +195,7 @@ export default function ChatWidget() {
   return (
     <>
       {/* Chat Toggle Button */}
-      <div className="fixed bottom-24 right-10 z-[9999]">
+      <div className="fixed bottom-32 right-10 z-[9999]">
         {!isOpen && (
           <Button
             onClick={handleOpenChat}
@@ -216,7 +216,7 @@ export default function ChatWidget() {
 
       {/* Minimized Chat Window */}
       {isOpen && isMinimized && (
-        <Card className="fixed bottom-24 right-10 w-80 h-14 z-[9999] shadow-2xl cursor-pointer border-2" onClick={handleOpenChat}>
+        <Card className="fixed bottom-32 right-10 w-80 h-14 z-[9999] shadow-2xl cursor-pointer border-2" onClick={handleOpenChat}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 py-3 px-4">
             <CardTitle className="text-sm font-medium">
               Hỗ trợ khách hàng
@@ -239,7 +239,7 @@ export default function ChatWidget() {
 
       {/* Full Chat Window */}
       {isOpen && !isMinimized && (
-        <Card className="fixed bottom-24 right-10 w-[400px] h-[650px] z-[9999] shadow-2xl chat-widget-enter-active border-2 flex flex-col">
+        <Card className="fixed bottom-32 right-10 w-[400px] h-[650px] z-[9999] shadow-2xl chat-widget-enter-active border-2 flex flex-col">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
             <CardTitle className="text-sm font-medium">
               Hỗ trợ khách hàng

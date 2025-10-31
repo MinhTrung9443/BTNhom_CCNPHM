@@ -13,9 +13,9 @@ export interface Voucher {
   discountValue: number;
   discountType: DiscountType;
   type: VoucherType;
-  globalUsageLimit: number;
+  globalUsageLimit: number | null;
   currentUsage: number;
-  userUsageLimit: number;
+  userUsageLimit: number | null;
   minPurchaseAmount: number;
   maxDiscountAmount: number;
   startDate: string;

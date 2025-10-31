@@ -64,6 +64,29 @@ export default function N8nChatbot() {
 
           chatInitialized.current = true;
           console.log("✅ N8N Chatbot đã được khởi tạo thành công");
+
+          // Điều chỉnh vị trí sau khi load xong
+          setTimeout(() => {
+            const adjustN8nPosition = () => {
+              const n8nElements = document.querySelectorAll(
+                'div[style*="position"][style*="fixed"]'
+              );
+              n8nElements.forEach((el: Element) => {
+                const htmlEl = el as HTMLElement;
+                // Chỉ điều chỉnh nếu không phải ChatWidget
+                if (!htmlEl.className.includes("chat-widget") && 
+                    htmlEl.querySelector("iframe")) {
+                  htmlEl.style.bottom = "24px";
+                  htmlEl.style.right = "40px";
+                  htmlEl.style.zIndex = "9998";
+                }
+              });
+            };
+
+            adjustN8nPosition();
+            // Chạy lại sau 1s để đảm bảo
+            setTimeout(adjustN8nPosition, 1000);
+          }, 500);
         } catch (error) {
           console.error("❌ Lỗi khi khởi tạo N8N Chatbot:", error);
         }

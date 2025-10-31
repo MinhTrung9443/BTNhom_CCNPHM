@@ -74,6 +74,30 @@
 }
 
 /* 
+ * Position Override - Điều chỉnh vị trí nút toggle
+ * Đặt n8n chatbot button thẳng hàng với chat widget (right: 40px)
+ * Target all possible n8n chat containers
+ */
+#n8n-chat,
+[id*="n8n"],
+[class*="n8n-chat"],
+body > div:has(iframe[src*="webhook"]),
+body > div > div[style*="position"][style*="fixed"]:has(iframe) {
+  position: fixed !important;
+  bottom: 1.5rem !important; /* 24px - same as chat widget bottom */
+  right: 2.5rem !important; /* 40px - same as chat widget right */
+  z-index: 9998 !important; /* Below chat widget */
+}
+
+/* Target specific button elements */
+button[class*="chat-toggle"],
+button[class*="n8n"],
+div[class*="chat-widget"] button,
+div[class*="chat-button"] {
+  /* Additional styling if needed */
+}
+
+/* 
  * Custom Overrides - Các tùy chỉnh bổ sung
  * Nếu cần ẩn header/welcome screen, uncomment phần dưới:
  */

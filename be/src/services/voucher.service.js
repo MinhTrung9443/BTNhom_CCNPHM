@@ -44,7 +44,6 @@ const voucherService = {
     const currentDate = new Date();
     const userVouchers = await UserVoucher.find({
       userId: new mongoose.Types.ObjectId(userId),
-      isUsed: false,
     }).populate({
       path: "voucherId",
       select: "-applicableProducts -excludedProducts -applicableCategories -excludedCategories -__v",
@@ -54,10 +53,32 @@ const voucherService = {
     const availableVouchers = userVouchers
       .filter((uv) => {
         const voucher = uv.voucherId;
-        // Ensure voucher exists and is valid
-        return voucher && voucher.isActive && voucher.startDate <= currentDate && voucher.endDate >= currentDate;
+        if (!voucher || !voucher.isActive || voucher.startDate > currentDate || voucher.endDate < currentDate) {
+          return false;
+        }
+        
+        // Kiểm tra còn lượt sử dụng không
+        const userLimit = voucher.userUsageLimit || null;
+        if (userLimit !== null && uv.usageCount >= userLimit) {
+          return false; // Đã hết lượt
+        }
+        
+        return true;
       })
-      .map((uv) => uv.voucherId); // Extract the populated voucher document
+      .map((uv) => {
+        const voucher = uv.voucherId;
+        if (!voucher) return null; // Safety check (should not happen after filter)
+        
+        const voucherObj = voucher.toObject();
+        const userLimit = voucherObj.userUsageLimit || null;
+        
+        return {
+          ...voucherObj,
+          usageCount: uv.usageCount,
+          remainingUsage: userLimit === null ? null : Math.max(userLimit - uv.usageCount, 0),
+        };
+      })
+      .filter(Boolean); // Remove any null values
 
     return availableVouchers;
   },
@@ -70,7 +91,7 @@ const voucherService = {
     // 1. Calculate subtotal and get product IDs from the current cart
     let subtotal = 0;
     const productIdsInCart = orderLines.map((line) => line.productId);
-    const productsInCart = await Product.find({ _id: { $in: productIdsInCart } }).lean();
+    const productsInCart = await Product.find({ _id: { $in: productIdsInCart } }).select('_id name price discount categoryId').lean();
 
     const productMap = productsInCart.reduce((map, product) => {
       map[product._id.toString()] = product;
@@ -84,46 +105,77 @@ const voucherService = {
         subtotal += actualPrice * line.quantity;
       }
     }
+    
+    // Get all unique category IDs from products in cart
+    const categoryIdsInCart = [...new Set(productsInCart.map(p => p.categoryId.toString()))];
 
-    // 2. Get all unused vouchers for the user
+    // 2. Get all vouchers for the user
     const userVouchers = await UserVoucher.find({
       userId: new mongoose.Types.ObjectId(userId),
-      isUsed: false,
     }).populate("voucherId");
 
     const currentDate = new Date();
     const results = [];
 
-    // 3. Check each voucher for applicability
-    for (const userVoucher of userVouchers) {
+    // 3. Filter: Chỉ lấy voucher CÒN HẠN sử dụng
+    const validUserVouchers = userVouchers.filter(uv => {
+      const voucher = uv.voucherId;
+      
+      // Skip if voucher doesn't exist (dangling reference)
+      if (!voucher) return false;
+      
+      // Skip if not active
+      if (!voucher.isActive) return false;
+      
+      // Skip if not started yet
+      if (voucher.startDate > currentDate) return false;
+      
+      // Skip if expired
+      if (voucher.endDate < currentDate) return false;
+      
+      // Skip if user has no remaining usage
+      const userLimit = voucher.userUsageLimit || null;
+      if (userLimit !== null && uv.usageCount >= userLimit) return false;
+      
+      return true;
+    });
+
+    // 4. Check each valid voucher for applicability conditions
+    for (const userVoucher of validUserVouchers) {
       const voucher = userVoucher.voucherId;
+      
+      const userLimit = voucher.userUsageLimit || null;
       const result = {
         ...voucher.toObject(),
         isApplicable: false,
         reason: "",
+        usageCount: userVoucher.usageCount,
+        remainingUsage: userLimit === null ? null : Math.max(userLimit - userVoucher.usageCount, 0),
       };
 
-      if (!voucher || !voucher.isActive) {
-        result.reason = "Voucher bị vô hiệu hóa";
-        results.push(result);
-        continue;
-      }
-      if (voucher.startDate > currentDate) {
-        result.reason = `Voucher sẽ bắt đầu sau ${voucher.startDate.toLocaleDateString("vi-VN")}.`;
-        results.push(result);
-        continue;
-      }
-      if (voucher.endDate < currentDate) {
-        result.reason = "Voucher đã hết hạn.";
-        results.push(result);
-        continue;
-      }
+      // Check minimum purchase amount
       if (subtotal < voucher.minPurchaseAmount) {
         result.reason = `Yêu cầu đơn hàng tối thiểu ${voucher.minPurchaseAmount.toLocaleString("vi-VN")} VND.`;
         results.push(result);
         continue;
       }
 
+      // Check excluded products - nếu TẤT CẢ sản phẩm trong cart đều bị loại trừ
+      if (voucher.excludedProducts && voucher.excludedProducts.length > 0) {
+        const excludedProductIds = voucher.excludedProducts.map((id) => id.toString());
+        const cartProductIdsSet = new Set(productIdsInCart);
+        
+        // Kiểm tra xem có sản phẩm nào KHÔNG bị loại trừ không
+        const hasNonExcludedProduct = [...cartProductIdsSet].some(pid => !excludedProductIds.includes(pid));
+        
+        if (!hasNonExcludedProduct) {
+          result.reason = "Voucher không áp dụng cho các sản phẩm trong đơn hàng";
+          results.push(result);
+          continue;
+        }
+      }
+
+      // Check applicable products - chỉ áp dụng cho một số sản phẩm cụ thể
       const appliesToAllProducts = !voucher.applicableProducts || voucher.applicableProducts.length === 0;
       if (!appliesToAllProducts) {
         const cartProductIdsSet = new Set(productIdsInCart);
@@ -131,7 +183,34 @@ const voucherService = {
         const isProductApplicable = voucherProductIds.some((voucherProductId) => cartProductIdsSet.has(voucherProductId));
 
         if (!isProductApplicable) {
-          result.reason = "Voucher không áp dụng cho 1 vài sản phẩm trong đơn hàng";
+          result.reason = "Voucher chỉ áp dụng cho một số sản phẩm cụ thể không có trong đơn hàng";
+          results.push(result);
+          continue;
+        }
+      }
+
+      // Check excluded categories - nếu TẤT CẢ sản phẩm đều thuộc danh mục bị loại trừ
+      if (voucher.excludedCategories && voucher.excludedCategories.length > 0) {
+        const excludedCategoryIds = voucher.excludedCategories.map((id) => id.toString());
+        
+        // Kiểm tra xem có sản phẩm nào KHÔNG thuộc danh mục bị loại trừ không
+        const hasNonExcludedCategory = categoryIdsInCart.some(catId => !excludedCategoryIds.includes(catId));
+        
+        if (!hasNonExcludedCategory) {
+          result.reason = "Voucher không áp dụng cho danh mục sản phẩm trong đơn hàng";
+          results.push(result);
+          continue;
+        }
+      }
+
+      // Check applicable categories - chỉ áp dụng cho một số danh mục cụ thể
+      const appliesToAllCategories = !voucher.applicableCategories || voucher.applicableCategories.length === 0;
+      if (!appliesToAllCategories) {
+        const voucherCategoryIds = voucher.applicableCategories.map((id) => id.toString());
+        const isCategoryApplicable = categoryIdsInCart.some(catId => voucherCategoryIds.includes(catId));
+
+        if (!isCategoryApplicable) {
+          result.reason = "Voucher chỉ áp dụng cho một số danh mục cụ thể không có trong đơn hàng";
           results.push(result);
           continue;
         }
@@ -293,6 +372,13 @@ const voucherService = {
       voucherData.globalUsageLimit =
         globalUsageLimit === "" || globalUsageLimit === null || globalUsageLimit === undefined ? null : Number(globalUsageLimit);
       voucherData.currentUsage = 0;
+      // Cho phép set userUsageLimit cho voucher public
+      if (userUsageLimit !== undefined && userUsageLimit !== null && userUsageLimit !== "") {
+        const usage = Number(userUsageLimit);
+        if (usage > 0) {
+          voucherData.userUsageLimit = usage;
+        }
+      }
     } else {
       const usage = Number(userUsageLimit);
       if (!usage || usage < 1) {
@@ -376,15 +462,23 @@ const voucherService = {
       update.isActive = Boolean(isActive);
     }
 
-    if (voucher.type === "public" && globalUsageLimit !== undefined) {
-      const limitValue = globalUsageLimit === "" || globalUsageLimit === null || globalUsageLimit === undefined ? null : Number(globalUsageLimit);
-      if (limitValue !== null && limitValue < (voucher.currentUsage ?? 0)) {
-        throw new AppError("globalUsageLimit cannot be less than current usage", 400);
+    if (voucher.type === "public") {
+      if (globalUsageLimit !== undefined) {
+        const limitValue = globalUsageLimit === "" || globalUsageLimit === null || globalUsageLimit === undefined ? null : Number(globalUsageLimit);
+        if (limitValue !== null && limitValue < (voucher.currentUsage ?? 0)) {
+          throw new AppError("globalUsageLimit cannot be less than current usage", 400);
+        }
+        update.globalUsageLimit = limitValue;
       }
-      update.globalUsageLimit = limitValue;
-    }
-
-    if (voucher.type === "personal" && userUsageLimit !== undefined) {
+      // Cho phép cập nhật userUsageLimit cho voucher public
+      if (userUsageLimit !== undefined) {
+        const perUser = userUsageLimit === "" || userUsageLimit === null ? null : Number(userUsageLimit);
+        if (perUser !== null && perUser < 1) {
+          throw new AppError("userUsageLimit must be at least 1", 400);
+        }
+        update.userUsageLimit = perUser;
+      }
+    } else if (voucher.type === "personal" && userUsageLimit !== undefined) {
       const perUser = Number(userUsageLimit);
       if (!perUser || perUser < 1) {
         throw new AppError("userUsageLimit must be at least 1", 400);
@@ -492,19 +586,32 @@ const voucherService = {
 
     // Kiểm tra user đã claim voucher nào chưa
     const voucherIds = vouchers.map((v) => v._id);
-    const userClaims = await UserVoucher.find({
+    const userVouchers = await UserVoucher.find({
       userId: new mongoose.Types.ObjectId(userId),
       voucherId: { $in: voucherIds },
     }).lean();
 
-    const claimedVoucherIds = new Set(userClaims.map((uv) => uv.voucherId.toString()));
+    const userVoucherMap = userVouchers.reduce((map, uv) => {
+      map[uv.voucherId.toString()] = uv;
+      return map;
+    }, {});
 
-    // Thêm thông tin đã claim
-    const vouchersWithClaimStatus = vouchers.map((voucher) => ({
-      ...voucher,
-      isClaimed: claimedVoucherIds.has(voucher._id.toString()),
-      availableSlots: voucher.globalUsageLimit ? Math.max(voucher.globalUsageLimit - (voucher.currentUsage || 0), 0) : null,
-    }));
+    // Thêm thông tin đã claim và số lần còn lại có thể dùng
+    const vouchersWithClaimStatus = vouchers.map((voucher) => {
+      const userVoucher = userVoucherMap[voucher._id.toString()];
+      const isClaimed = !!userVoucher;
+      const usageCount = userVoucher?.usageCount || 0;
+      const userLimit = voucher.userUsageLimit || null;
+      const remainingUsage = userLimit === null ? null : Math.max(userLimit - usageCount, 0);
+
+      return {
+        ...voucher,
+        isClaimed,
+        usageCount,
+        remainingUsage,
+        availableSlots: voucher.globalUsageLimit ? Math.max(voucher.globalUsageLimit - (voucher.currentUsage || 0), 0) : null,
+      };
+    });
 
     // Đếm tổng số voucher
     const totalVouchers = await Voucher.countDocuments({
@@ -575,7 +682,7 @@ const voucherService = {
       throw new AppError("Voucher đã hết hạn.", 400);
     }
 
-    // Kiểm tra đã claim chưa
+    // Kiểm tra user đã claim voucher này chưa
     const existingClaim = await UserVoucher.findOne({
       userId: new mongoose.Types.ObjectId(userId),
       voucherId: new mongoose.Types.ObjectId(voucherId),
@@ -629,19 +736,31 @@ const voucherService = {
 
     // Lọc và phân loại voucher
     const validVouchers = userVouchers
-      .filter((uv) => uv.voucherId)
+      .filter((uv) => uv.voucherId) // Filter out null vouchers
       .map((uv) => {
         const voucher = uv.voucherId;
+        
+        // Safety check (should not happen after filter)
+        if (!voucher) return null;
+        
         const isExpired = voucher.endDate < currentDate;
         const isNotStarted = voucher.startDate > currentDate;
         const isInactive = !voucher.isActive;
+        
+        // Tính số lần còn lại
+        const userLimit = voucher.userUsageLimit || null;
+        const remainingUsage = userLimit === null ? null : Math.max(userLimit - uv.usageCount, 0);
+        const isUsedUp = userLimit !== null && uv.usageCount >= userLimit;
 
         return {
           ...uv,
           voucher,
-          status: uv.isUsed ? "used" : isInactive ? "inactive" : isExpired ? "expired" : isNotStarted ? "upcoming" : "available",
+          usageCount: uv.usageCount,
+          remainingUsage,
+          status: isUsedUp ? "used" : isInactive ? "inactive" : isExpired ? "expired" : isNotStarted ? "upcoming" : "available",
         };
-      });
+      })
+      .filter(Boolean); // Remove any null values
 
     const totalUserVouchers = await UserVoucher.countDocuments({
       userId: new mongoose.Types.ObjectId(userId),
