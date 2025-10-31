@@ -18,7 +18,7 @@ export default function Error({ error, reset }: ErrorProps) {
 
   return (
     <div>
-      <h1>server chưa chạy or bị lỗi 🚧</h1>
+      <h1>server chính chưa chạy or bị lỗi 🚧</h1>
     </div>
   );
 }
