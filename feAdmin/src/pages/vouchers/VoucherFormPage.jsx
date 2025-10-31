@@ -182,7 +182,7 @@ const VoucherFormPage = () => {
         discountValue: Number(form.discountValue),
         type: form.type,
         minPurchaseAmount: Number(form.minPurchaseAmount),
-        maxDiscountAmount: Number(form.maxDiscountAmount),
+        maxDiscountAmount: form.discountType === "fixed" ? 0 : Number(form.maxDiscountAmount),
         startDate: new Date(form.startDate),
         endDate: new Date(form.endDate),
         source: form.source,
@@ -309,28 +309,23 @@ const VoucherFormPage = () => {
                       )}
                     </Form.Group>
                   </Col>
-                  <Col md={4}>
-                    <Form.Group>
-                      <Form.Label>
-                        Loại <span className="text-danger">*</span>
-                      </Form.Label>
-                      <Form.Select
-                        value={form.type}
-                        onChange={(e) =>
-                          handleFormChange("type", e.target.value)
-                        }
-                        disabled={isEditing}
-                      >
-                        <option value="public">Công khai</option>
-                        <option value="personal">Cá nhân</option>
-                      </Form.Select>
-                      {isEditing && (
+                  {isEditing && (
+                    <Col md={4}>
+                      <Form.Group>
+                        <Form.Label>
+                          Loại <span className="text-danger">*</span>
+                        </Form.Label>
+                        <Form.Control
+                          type="text"
+                          value={form.type === "public" ? "Công khai" : "Cá nhân"}
+                          disabled
+                        />
                         <Form.Text className="text-muted">
                           Không thể thay đổi loại khi sửa
                         </Form.Text>
-                      )}
-                    </Form.Group>
-                  </Col>
+                      </Form.Group>
+                    </Col>
+                  )}
                   <Col md={4}>
                     <Form.Group>
                       <Form.Label>Nguồn</Form.Label>
@@ -415,23 +410,25 @@ const VoucherFormPage = () => {
                       </Form.Text>
                     </Form.Group>
                   </Col>
-                  <Col md={6}>
-                    <Form.Group>
-                      <Form.Label>Giảm giá tối đa (VND)</Form.Label>
-                      <Form.Control
-                        type="number"
-                        value={form.maxDiscountAmount}
-                        onChange={(e) =>
-                          handleFormChange("maxDiscountAmount", e.target.value)
-                        }
-                        placeholder="Không giới hạn"
-                        min="0"
-                      />
-                      <Form.Text className="text-muted">
-                        Áp dụng cho voucher giảm theo %
-                      </Form.Text>
-                    </Form.Group>
-                  </Col>
+                  {form.discountType === "percentage" && (
+                    <Col md={6}>
+                      <Form.Group>
+                        <Form.Label>Giảm giá tối đa (VND)</Form.Label>
+                        <Form.Control
+                          type="number"
+                          value={form.maxDiscountAmount}
+                          onChange={(e) =>
+                            handleFormChange("maxDiscountAmount", e.target.value)
+                          }
+                          placeholder="Không giới hạn"
+                          min="0"
+                        />
+                        <Form.Text className="text-muted">
+                          Áp dụng cho voucher giảm theo %
+                        </Form.Text>
+                      </Form.Group>
+                    </Col>
+                  )}
                 </Row>
               </Card.Body>
             </Card>
