@@ -23,7 +23,6 @@ import { HeaderSearch } from "@/components/header-search";
 import { NotificationCenter } from "@/components/notifications/notification-center";
 
 const navigation = [
-  { name: "Trang Chủ", href: "/" },
   { name: "Giới Thiệu", href: "/about" },
   { name: "Sản Phẩm", href: "/search" },
   { name: "Bài Viết", href: "/bai-viet" },
