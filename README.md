@@ -102,6 +102,352 @@ minhtrung9443-btnhom_ccnphm/
     │   └── services/     # Gọi API từ backend
     └── next.config.ts    # Cấu hình Next.js
 ```
+## Cơ sở dữ liệu
+
+```mermaid
+erDiagram
+  Article {
+    String title "(required)"
+    String slug "(unique)"
+    ObjectId author "(required, FK to User)"
+    String content "(required)"
+    String excerpt
+    String featuredImage
+    String[] images
+    String status
+    String[] tags
+    Date publishedAt
+    Date scheduledAt
+    String seoMeta_title
+    String seoMeta_description
+    String[] seoMeta_keywords
+    Number stats_views
+    Number stats_likes
+    Number stats_comments
+    Number stats_shares
+    ObjectId _id
+    Date createdAt
+    Date updatedAt
+  }
+  ArticleLike {
+    ObjectId article "(required, FK to Article)"
+    ObjectId user "(required, FK to User)"
+    ObjectId _id
+    Date createdAt
+    Date updatedAt
+  }
+  ArticleShare {
+    ObjectId article "(required, FK to Article)"
+    ObjectId user "(FK to User)"
+    String platform "(required)"
+    Date sharedAt
+    ObjectId _id
+    Date createdAt
+    Date updatedAt
+  }
+  Cart {
+    ObjectId userId "(required, unique, FK to User)"
+    object[] items
+    ObjectId _id
+    Date createdAt
+    Date updatedAt
+  }
+  Category {
+    String name "(required, unique)"
+    String description
+    Boolean isActive
+    ObjectId _id
+    Date createdAt
+    Date updatedAt
+  }
+  ChatMessage {
+    ObjectId roomId "(required, FK to ChatRoom)"
+    ObjectId senderId "(required, FK to User)"
+    String senderRole "(required)"
+    String message "(required)"
+    ObjectId _id
+    Date createdAt
+    Date updatedAt
+  }
+  ChatRoom {
+    ObjectId userId "(required, FK to User)"
+    String lastMessage
+    Date lastMessageTimestamp
+    String status
+    Number userUnreadCount
+    Number adminUnreadCount
+    ObjectId _id
+    Date createdAt
+    Date updatedAt
+  }
+  Comment {
+    ObjectId article "(required, FK to Article)"
+    ObjectId author "(required, FK to User)"
+    String content "(required)"
+    ObjectId parentComment "(FK to Comment)"
+    Number level
+    String status
+    Boolean isEdited
+    Date editedAt
+    Number likes
+    ObjectId _id
+    Date createdAt
+    Date updatedAt
+  }
+  CommentLike {
+    ObjectId comment "(required, FK to Comment)"
+    ObjectId user "(required, FK to User)"
+    ObjectId _id
+    Date createdAt
+    Date updatedAt
+  }
+  Delivery {
+    String type "(required)"
+    String name "(required)"
+    Number price "(required)"
+    String description "(required)"
+    Number estimatedDays "(required)"
+    ObjectId _id
+    Date createdAt
+    Date updatedAt
+  }
+  Favorite {
+    ObjectId userId "(required, FK to User)"
+    ObjectId productId "(required, FK to Product)"
+    ObjectId _id
+    Date createdAt
+    Date updatedAt
+  }
+  LoyaltyPoints {
+    ObjectId userId "(required, FK to User)"
+    Number points "(required)"
+    String transactionType "(required)"
+    String description "(required)"
+    ObjectId orderId "(FK to Order)"
+    Number pointsValue
+    Date expiryDate
+    Mixed metadata
+    ObjectId _id
+    Date createdAt
+    Date updatedAt
+  }
+  Notification {
+    String title "(required)"
+    String message "(required)"
+    String type "(required)"
+    String subType "(required)"
+    ObjectId referenceId "(required)"
+    ObjectId articleId "(FK to Article)"
+    ObjectId[] actors
+    String recipient "(required)"
+    ObjectId userId "(FK to User)"
+    ObjectId recipientUserId "(FK to User)"
+    Boolean isRead
+    Number metadata_orderAmount
+    String metadata_userName
+    String metadata_articleTitle
+    String metadata_commentContent
+    Number metadata_actorCount
+    ObjectId _id
+    Date createdAt
+    Date updatedAt
+  }
+  OTP {
+    String email "(required)"
+    String otp "(required)"
+    Date createdAt
+    ObjectId _id
+  }
+  Order {
+    ObjectId userId "(required, FK to User)"
+    String orderCode "(unique)"
+    String status
+    ObjectId deliveryId "(FK to Delivery)"
+    object[] orderLines
+    Number subtotal "(required)"
+    Number shippingFee "(required)"
+    Number discount
+    Number pointsApplied
+    Number totalAmount "(required)"
+    String voucherCode
+    String shippingAddress_recipientName "(required)"
+    String shippingAddress_phoneNumber "(required)"
+    String shippingAddress_street "(required)"
+    String shippingAddress_ward "(required)"
+    String shippingAddress_district "(required)"
+    String shippingAddress_province "(required)"
+    String notes
+    Number payment_amount
+    String payment_paymentMethod "(required)"
+    String payment_status
+    String payment_transactionId
+    Date payment_createdAt
+    Date payment_updatedAt
+    Date confirmedAt
+    Date preparingAt
+    Date shippingAt
+    Date deliveredAt
+    Date cancelledAt
+    String cancelledBy
+    String cancelledReason
+    Date cancellationRequestedAt
+    String cancellationRequestReason
+    Date returnRequestedAt
+    String returnRequestReason
+    Date refundedAt
+    object[] timeline
+    String internalNotes
+    ObjectId _id
+    Date createdAt
+    Date updatedAt
+  }
+  Payment {
+    ObjectId userId "(required, FK to User)"
+    ObjectId orderId "(required, FK to Order)"
+    Number amount "(required)"
+    String paymentMethod "(required)"
+    String status
+    String transactionId
+    Date paymentDate
+    String failureReason
+    Number refundAmount
+    Date refundDate
+    Mixed metadata
+    ObjectId _id
+    Date createdAt
+    Date updatedAt
+  }
+  Product {
+    String name "(required)"
+    String slug "(unique)"
+    String code "(unique)"
+    String description
+    Number price "(required)"
+    Number discount
+    String[] images
+    Number stock "(required)"
+    ObjectId categoryId "(required, FK to Category)"
+    Number averageRating
+    Number totalReviews
+    Number soldCount
+    Boolean isActive
+    Number viewCount
+    ObjectId _id
+    Date createdAt
+    Date updatedAt
+  }
+  Review {
+    ObjectId userId "(required, FK to User)"
+    ObjectId productId "(required, FK to Product)"
+    ObjectId orderId "(required, FK to Order)"
+    Number rating "(required)"
+    String comment "(required)"
+    Boolean isApproved
+    Boolean voucherGenerated
+    String voucherCode
+    Number editCount
+    Boolean isActive
+    ObjectId _id
+    Date createdAt
+    Date updatedAt
+  }
+  User {
+    String name "(required)"
+    String email "(required, unique)"
+    String avatar
+    String password "(required)"
+    String phone "(required)"
+    String address "(required)"
+    Boolean isVerified
+    Boolean isActive
+    String role
+    String passwordResetToken
+    Date passwordResetExpires
+    Number loyaltyPoints
+    Date lastLogin
+    Date lastCheckinDate
+    ObjectId _id
+    Date createdAt
+    Date updatedAt
+  }
+  UserVoucher {
+    ObjectId userId "(required, FK to User)"
+    ObjectId voucherId "(required, FK to Voucher)"
+    Boolean isUsed
+    Number usageCount
+    ObjectId orderId "(FK to Order)"
+    ObjectId _id
+    Date createdAt
+    Date updatedAt
+  }
+  ViewHistory {
+    ObjectId userId "(FK to User)"
+    ObjectId productId "(required, FK to Product)"
+    Number viewCount
+    Date viewedAt
+    ObjectId _id
+    Date createdAt
+    Date updatedAt
+  }
+  Voucher {
+    String code "(required, unique)"
+    Number discountValue "(required)"
+    String discountType
+    String type
+    Number globalUsageLimit
+    Number currentUsage
+    Number userUsageLimit
+    Number minPurchaseAmount "(required)"
+    Number maxDiscountAmount "(required)"
+    Date startDate "(required)"
+    Date endDate "(required)"
+    String source
+    Boolean isActive
+    ObjectId[] applicableProducts
+    ObjectId[] excludedProducts
+    ObjectId[] applicableCategories
+    ObjectId[] excludedCategories
+    ObjectId _id
+    Date createdAt
+    Date updatedAt
+  }
+
+  User |o--|| Article : "references"
+  Article |o--|| ArticleLike : "references"
+  User |o--|| ArticleLike : "references"
+  Article |o--|| ArticleShare : "references"
+  User |o--|| ArticleShare : "references"
+  User |o--|| Cart : "references"
+  ChatRoom |o--|| ChatMessage : "references"
+  User |o--|| ChatMessage : "references"
+  User |o--|| ChatRoom : "references"
+  Article |o--|| Comment : "references"
+  User |o--|| Comment : "references"
+  Comment |o--|| Comment : "references"
+  Comment |o--|| CommentLike : "references"
+  User |o--|| CommentLike : "references"
+  User |o--|| Favorite : "references"
+  Product |o--|| Favorite : "references"
+  User |o--|| LoyaltyPoints : "references"
+  Order |o--|| LoyaltyPoints : "references"
+  Article |o--|| Notification : "references"
+  User |o--|| Notification : "references"
+  User |o--|| Order : "references"
+  Delivery |o--|| Order : "references"
+  User |o--|| Payment : "references"
+  Order |o--|| Payment : "references"
+  Category |o--|| Product : "references"
+  User |o--|| Review : "references"
+  Product |o--|| Review : "references"
+  Order |o--|| Review : "references"
+  User |o--|| UserVoucher : "references"
+  Voucher |o--|| UserVoucher : "references"
+  Order |o--|| UserVoucher : "references"
+  User |o--|| ViewHistory : "references"
+  Product |o--|| ViewHistory : "references"
+
+```
+
 
 ## Yêu cầu hệ thống
 
