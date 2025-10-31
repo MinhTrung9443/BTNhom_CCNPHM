@@ -82,7 +82,7 @@ export function CommentItem({
     setIsEditing(false);
   };
 
-  const isAdminComment = comment.author.isAdmin || comment.author.role === 'admin';
+  const isAdminComment = comment.author.isAdmin;
 
   return (
     <div className="flex space-x-4">
