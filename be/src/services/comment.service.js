@@ -2,6 +2,7 @@ import Comment from '../models/Comment.js';
 import CommentLike from '../models/CommentLike.js';
 import Article from '../models/Article.js';
 import Notification from '../models/Notification.js';
+import User from '../models/User.js';
 import { NotFoundError, BadRequestError, UnauthorizedError } from '../utils/AppError.js';
 import articleNotificationService from './articleNotification.service.js';
 
@@ -11,6 +12,95 @@ const getUnreadCount = async (userId) => {
     recipientUserId: userId,
     isRead: false
   });
+};
+
+const createModerationNotification = async (comment, status, moderationNotes) => {
+  try {
+    const statusText = status === 'approved' ? 'đã được duyệt' : 'đã bị từ chối';
+    const message = status === 'rejected' && moderationNotes 
+      ? `Bình luận của bạn ${statusText}. Lý do: ${moderationNotes}`
+      : `Bình luận của bạn ${statusText}`;
+
+    const authorId = comment.author._id || comment.author;
+    console.log(`[Notification] Creating notification for user ${authorId}, status: ${status}`);
+
+    let notification;
+    try {
+      notification = await Notification.create({
+        recipientUserId: authorId,
+        type: 'article', // Use 'article' as main type  
+        subType: 'status_update', // Use status_update for moderation results
+        title: `Bình luận ${statusText}`,
+        message,
+        referenceId: comment._id, // Required field
+        recipient: 'user', // Required field
+        relatedId: comment._id,
+        relatedModel: 'Comment',
+        link: `/articles/${comment.article}/comments`,
+        articleId: comment.article,
+        metadata: {
+          commentContent: comment.content.substring(0, 100),
+          status: status,
+          moderationNotes: moderationNotes
+        }
+      });
+      console.log(`[Notification] Created notification: ${notification._id} for user ${authorId}`);
+    } catch (createError) {
+      // Handle duplicate key error (E11000)
+      if (createError.code === 11000) {
+        console.log(`[Notification] Duplicate notification detected, fetching existing notification`);
+        notification = await Notification.findOne({
+          recipientUserId: authorId,
+          type: 'article',
+          subType: 'status_update',
+          referenceId: comment._id
+        });
+        if (!notification) {
+          throw createError; // Re-throw if we can't find the existing notification
+        }
+        console.log(`[Notification] Using existing notification: ${notification._id}`);
+      } else {
+        throw createError; // Re-throw if it's not a duplicate key error
+      }
+    }
+
+    // Populate necessary fields before sending via socket (fix for missing articleId.slug)
+    await notification.populate([
+      { path: 'actors', select: 'name avatar' },
+      { path: 'articleId', select: 'title slug' }
+    ]);
+    console.log(`[Notification] Populated notification fields for socket emission`);
+
+    // Send real-time notification
+    if (global.io) {
+      const roomName = authorId.toString();
+      const unreadCount = await getUnreadCount(authorId);
+      
+      // Check if user is in the room
+      const sockets = await global.io.in(roomName).fetchSockets();
+      console.log(`[Notification] Users in room ${roomName}: ${sockets.length}`);
+      
+      if (sockets.length > 0) {
+        console.log(`[Notification] Emitting to room: ${roomName}, unreadCount: ${unreadCount}`);
+        
+        global.io.to(roomName).emit('newNotification', {
+          notification: notification.toObject(),
+          unreadCount
+        });
+        
+        console.log(`[Notification] Emitted newNotification event to ${sockets.length} socket(s) in room ${roomName}`);
+      } else {
+        console.log(`[Notification] No users in room ${roomName}, notification will be stored in DB only`);
+      }
+    } else {
+      console.error('[Notification] global.io not available');
+    }
+
+    return notification;
+  } catch (error) {
+    console.error('[Notification] Failed to create moderation notification:', error);
+    console.error('[Notification] Error details:', error.message, error.stack);
+  }
 };
 
 export const commentService = {
@@ -51,15 +141,22 @@ export const commentService = {
       }
     }
 
+    // Check if user is admin
+    const user = await User.findById(userId);
+    const isAdmin = user?.role === 'admin';
+
     // Create comment
     const comment = new Comment({
       article,
       author: userId,
       content,
-      parentComment: commentData.parentComment || null
+      parentComment: commentData.parentComment || null,
+      status: isAdmin ? 'approved' : 'pending'
     });
 
     await comment.save();
+    
+    console.log(`[Comment] Created comment: ${comment._id}, author: ${userId}, status: ${comment.status}`);
 
     // Update article comment count
     await Article.findByIdAndUpdate(article, {
@@ -99,16 +196,31 @@ export const commentService = {
 
     // Emit real-time event for new comment
     if (global.io) {
-      global.io.to(`article_${article}`).emit('newComment', {
-        comment: {
-          ...comment.toObject(),
-          author: {
-            ...comment.author,
-            isAdmin: comment.author.role === 'admin'
-          }
-        },
-        articleId: article
-      });
+      if (comment.status === 'approved') {
+        // If approved, broadcast to everyone in the article room
+        global.io.to(`article_${article}`).emit('newComment', {
+          comment: {
+            ...comment.toObject(),
+            author: {
+              ...comment.author,
+              isAdmin: comment.author.role === 'admin'
+            }
+          },
+          articleId: article
+        });
+      } else if (comment.status === 'pending') {
+        // If pending, only emit to the author
+        global.io.to(userId.toString()).emit('newComment', {
+          comment: {
+            ...comment.toObject(),
+            author: {
+              ...comment.author,
+              isAdmin: comment.author.role === 'admin'
+            }
+          },
+          articleId: article
+        });
+      }
     }
 
     return comment;
@@ -134,7 +246,15 @@ export const commentService = {
     }
 
     // Get root comments (level 0)
-    const filter = {
+    // If userId is provided, also include pending comments authored by that user
+    const filter = userId ? {
+      article: articleId,
+      parentComment: null,
+      $or: [
+        { status },
+        { status: 'pending', author: userId }
+      ]
+    } : {
       article: articleId,
       parentComment: null,
       status
@@ -150,22 +270,40 @@ export const commentService = {
 
     // Get all replies for these root comments
     const rootCommentIds = rootComments.map(c => c._id);
-    const replies = await Comment.find({
+    const repliesFilter = userId ? {
+      article: articleId,
+      parentComment: { $in: rootCommentIds },
+      $or: [
+        { status },
+        { status: 'pending', author: userId }
+      ]
+    } : {
       article: articleId,
       parentComment: { $in: rootCommentIds },
       status
-    })
+    };
+    
+    const replies = await Comment.find(repliesFilter)
       .sort({ createdAt: 1 })
       .populate('author', 'name avatar role')
       .lean();
 
     // Get nested replies (level 2)
     const level1CommentIds = replies.map(c => c._id);
-    const nestedReplies = await Comment.find({
+    const nestedRepliesFilter = userId ? {
+      article: articleId,
+      parentComment: { $in: level1CommentIds },
+      $or: [
+        { status },
+        { status: 'pending', author: userId }
+      ]
+    } : {
       article: articleId,
       parentComment: { $in: level1CommentIds },
       status
-    })
+    };
+    
+    const nestedReplies = await Comment.find(nestedRepliesFilter)
       .sort({ createdAt: 1 })
       .populate('author', 'name avatar role')
       .lean();
@@ -273,15 +411,24 @@ export const commentService = {
       throw new UnauthorizedError('Bạn không có quyền chỉnh sửa bình luận này');
     }
 
+    // Check if user is admin
+    const user = await User.findById(userId);
+    const isAdmin = user?.role === 'admin';
+
     comment.content = content;
     comment.isEdited = true;
     comment.editedAt = new Date();
+    
+    // Reset status to pending if user is not admin, keep approved if admin
+    if (!isAdmin) {
+      comment.status = 'pending';
+    }
 
     await comment.save();
     await comment.populate('author', 'name avatar role');
 
-    // Emit real-time event for comment update
-    if (global.io) {
+    // Emit real-time event for comment update (only if approved)
+    if (global.io && comment.status === 'approved') {
       global.io.to(`article_${comment.article}`).emit('commentUpdated', {
         comment: {
           ...comment.toObject(),
@@ -291,6 +438,13 @@ export const commentService = {
           }
         },
         articleId: comment.article
+      });
+    } else if (global.io && comment.status === 'pending') {
+      // If comment becomes pending, emit delete event to remove from UI
+      global.io.to(`article_${comment.article}`).emit('commentDeleted', {
+        commentId: comment._id,
+        articleId: comment.article,
+        deletedCount: 1
       });
     }
 
@@ -466,21 +620,49 @@ export const commentService = {
    * Moderate comment (Admin only)
    * @param {String} commentId - Comment ID
    * @param {String} status - New status (approved/rejected)
+   * @param {String} moderationNotes - Optional moderation notes
    * @returns {Promise<Object>} Updated comment
    */
-  async moderateComment(commentId, status) {
+  async moderateComment(commentId, status, moderationNotes) {
     if (!['approved', 'rejected'].includes(status)) {
       throw new BadRequestError('Trạng thái không hợp lệ');
     }
 
+    const updateData = { status };
+    if (moderationNotes) {
+      updateData.moderationNotes = moderationNotes;
+    }
+
     const comment = await Comment.findByIdAndUpdate(
       commentId,
-      { status },
+      updateData,
       { new: true }
-    ).populate('author', 'name avatar');
+    ).populate('author', 'name avatar role');
 
     if (!comment) {
       throw new NotFoundError('Không tìm thấy bình luận');
+    }
+
+    // Tạo thông báo cho user khi admin duyệt thủ công
+    await createModerationNotification(comment, status, moderationNotes);
+
+    // Emit socket.io event để update UI real-time
+    if (global.io) {
+      // Nếu approved, emit commentStatusUpdated để hiển thị comment
+      if (status === 'approved') {
+        global.io.to(`article_${comment.article}`).emit('commentStatusUpdated', {
+          commentId: comment._id,
+          status: comment.status,
+          articleId: comment.article
+        });
+      }
+
+      // Notify to user về kết quả
+      global.io.to(`user_${comment.author._id}`).emit('commentModerated', {
+        commentId: comment._id,
+        status: comment.status,
+        moderationNotes: comment.moderationNotes
+      });
     }
 
     return comment;
@@ -551,5 +733,101 @@ export const commentService = {
       message: `Đã cập nhật ${result.modifiedCount} bình luận`,
       modifiedCount: result.modifiedCount
     };
+  },
+
+  /**
+   * Submit comment to n8n for AI moderation
+   * Client gọi API này sau khi tạo/sửa comment
+   * @param {String} commentId - Comment ID
+   * @returns {Promise<Object>} Submission result
+   */
+  async submitCommentModeration(commentId) {
+    const comment = await Comment.findById(commentId);
+
+    if (!comment) {
+      throw new NotFoundError('Không tìm thấy bình luận');
+    }
+
+    // Only submit pending comments
+    if (comment.status !== 'pending') {
+      throw new BadRequestError('Bình luận này không cần kiểm duyệt');
+    }
+
+    // Import n8n service dynamically to avoid circular dependency
+    const { submitCommentModeration } = await import('./n8n.service.js');
+
+    try {
+      // Gọi n8n và đợi kết quả (synchronous)
+      const result = await submitCommentModeration(commentId, comment.content);
+      
+      return {
+        message: 'Đã gửi bình luận để kiểm duyệt',
+        result
+      };
+    } catch (error) {
+      console.error('[Comment] Failed to submit moderation:', error.message);
+      throw new BadRequestError('Không thể gửi bình luận để kiểm duyệt. Vui lòng thử lại.');
+    }
+  },
+
+  /**
+   * Handle n8n callback after AI moderation
+   * N8n sẽ gọi endpoint này sau khi xử lý xong
+   * @param {String} commentId - Comment ID
+   * @param {String} status - New status (approved/rejected/pending)
+   * @param {String} moderationNotes - AI moderation notes
+   * @returns {Promise<Object>} Updated comment
+   */
+  async handleN8nCallback(commentId, status, moderationNotes) {
+    console.log(`[N8N Callback] Received: commentId=${commentId}, status=${status}, moderationNotes=${moderationNotes}`);
+    
+    if (!['approved', 'rejected', 'pending'].includes(status)) {
+      throw new BadRequestError('Trạng thái không hợp lệ');
+    }
+
+    const comment = await Comment.findByIdAndUpdate(
+      commentId,
+      { 
+        status, 
+        moderationNotes 
+      },
+      { new: true }
+    ).populate('author', 'name avatar role');
+
+    if (!comment) {
+      throw new NotFoundError('Không tìm thấy bình luận');
+    }
+
+    console.log(`[N8N Callback] Updated comment: ${comment._id}, author: ${comment.author._id}, status: ${status}`);
+
+    // Tạo thông báo cho user (chỉ khi approved hoặc rejected)
+    if (status === 'approved' || status === 'rejected') {
+      console.log(`[N8N Callback] Creating notification for status: ${status}`);
+      await createModerationNotification(comment, status, moderationNotes);
+    } else {
+      console.log(`[N8N Callback] Skipping notification for status: ${status} (not approved/rejected)`);
+    }
+
+    // Emit socket.io event để update UI real-time
+    if (global.io) {
+      // Notify to article room
+      global.io.to(`article_${comment.article}`).emit('commentStatusUpdated', {
+        commentId: comment._id,
+        status: comment.status,
+        articleId: comment.article
+      });
+
+      // Notify to user (use only userId as room name)
+      const authorId = comment.author._id || comment.author;
+      global.io.to(authorId.toString()).emit('commentModerated', {
+        commentId: comment._id,
+        status: comment.status,
+        moderationNotes: comment.moderationNotes
+      });
+    }
+
+    console.log(`[N8N Callback] Comment ${commentId} status updated to ${status}`);
+
+    return comment;
   }
 };

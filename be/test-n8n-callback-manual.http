@@ -1,0 +1,45 @@
+### Test N8N Callback Endpoint - Approved
+POST http://localhost:3000/api/webhook/n8n/comment-result
+Content-Type: application/json
+
+{
+  "commentId": "673f6f7a8b9c5d001a234567",
+  "status": "approved",
+  "moderationNote": "Bình luận hợp lệ, không vi phạm quy định"
+}
+
+###
+
+### Test N8N Callback Endpoint - Rejected
+POST http://localhost:3000/api/webhook/n8n/comment-result
+Content-Type: application/json
+
+{
+  "commentId": "673f6f7a8b9c5d001a234567",
+  "status": "rejected",
+  "moderationNote": "Bình luận chứa nội dung không phù hợp"
+}
+
+###
+
+### Test N8N Callback Endpoint - Pending
+POST http://localhost:3000/api/webhook/n8n/comment-result
+Content-Type: application/json
+
+{
+  "commentId": "673f6f7a8b9c5d001a234567",
+  "status": "pending",
+  "moderationNote": "Cần xem xét thêm"
+}
+
+###
+
+### Test với moderationNotes (alternative field name)
+POST http://localhost:3000/api/webhook/n8n/comment-result
+Content-Type: application/json
+
+{
+  "commentId": "673f6f7a8b9c5d001a234567",
+  "status": "approved",
+  "moderationNotes": "Test với field name khác"
+}

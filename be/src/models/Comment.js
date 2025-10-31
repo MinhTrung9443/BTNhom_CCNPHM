@@ -37,8 +37,12 @@ const commentSchema = new mongoose.Schema(
     status: {
       type: String,
       enum: ['pending', 'approved', 'rejected'],
-      default: 'approved',
+      default: 'pending',
       index: true
+    },
+    moderationNotes: {
+      type: String,
+      default: null
     },
     isEdited: {
       type: Boolean,

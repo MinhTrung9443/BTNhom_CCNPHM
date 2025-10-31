@@ -64,7 +64,10 @@ export const useSocket = () => {
       });
 
       newSocket.on('disconnect', (reason) => {
-        console.log('Socket disconnected:', reason);
+        // Only log if it's an unexpected disconnect
+        if (reason !== 'io client disconnect') {
+          console.log('Socket disconnected:', reason);
+        }
         setIsConnected(false);
         if (reason === 'io server disconnect') {
           // This happens when the server forcefully disconnects the client (e.g., auth error).

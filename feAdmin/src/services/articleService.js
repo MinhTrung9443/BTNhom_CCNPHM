@@ -122,14 +122,18 @@ const articleService = {
   },
 
   // Reject comment
-  rejectComment: async (commentId) => {
-    const response = await api.patch(`/articles/admin/comments/${commentId}/moderate`, { status: 'rejected' })
+  rejectComment: async (commentId, moderationNotes) => {
+    const body = { status: 'rejected' }
+    if (moderationNotes) {
+      body.moderationNotes = moderationNotes
+    }
+    const response = await api.patch(`/articles/admin/comments/${commentId}/moderate`, body)
     return response.data
   },
 
   // Delete comment
   deleteComment: async (commentId) => {
-    const response = await api.delete(`/articles/public/comments/${commentId}`)
+    const response = await api.delete(`/comments/${commentId}`)
     return response.data
   },
 

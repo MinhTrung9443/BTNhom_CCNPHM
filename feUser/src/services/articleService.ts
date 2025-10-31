@@ -162,6 +162,20 @@ class ArticleService {
     );
   }
 
+  /**
+   * Submit comment to n8n for AI moderation
+   */
+  async submitCommentModeration(
+    commentId: string,
+    accessToken: string
+  ): Promise<ApiResponse<{ message: string }>> {
+    return await apiFetch<ApiResponse<{ message: string }>>(
+      `/comments/${commentId}/submit-moderation`,
+      accessToken,
+      { method: "POST" }
+    );
+  }
+
 }
 
 export const articleService = new ArticleService();

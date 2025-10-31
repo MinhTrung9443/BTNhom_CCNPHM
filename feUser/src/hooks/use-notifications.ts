@@ -3,6 +3,7 @@ import { notificationService } from "@/services/notificationService";
 import { Notification } from "@/types/notification";
 import { useSession } from "next-auth/react";
 import { useSocket } from "./useSocket";
+import { useToast } from "./use-toast";
 
 export function useNotifications() {
   const { data: session } = useSession();
@@ -143,13 +144,21 @@ export function useNotifications() {
       console.log('[use-notifications] Received orderStatusUpdate event:', data);
     };
 
+    const handleCommentModerated = (data: { commentId: string; status: string; moderationNotes: string }) => {
+      console.log('[use-notifications] Received commentModerated event:', data);
+      // Notification will be added via newNotification event
+      // This is just for logging/tracking
+    };
+
     socket.on("newNotification", handleNewNotification);
     socket.on("orderStatusUpdate", handleOrderStatusUpdate);
+    socket.on("commentModerated", handleCommentModerated);
 
     return () => {
       console.log('[use-notifications] Cleaning up notification listeners');
       socket.off("newNotification", handleNewNotification);
       socket.off("orderStatusUpdate", handleOrderStatusUpdate);
+      socket.off("commentModerated", handleCommentModerated);
     };
   }, [socket]);
 

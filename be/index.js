@@ -20,6 +20,7 @@ import articleRoutes from "./src/routes/article.route.js";
 import commentRoutes from "./src/routes/comment.route.js";
 import articleInteractionRoutes from './src/routes/article-interaction.route.js';
 import notificationRoutes from './src/routes/notification.route.js';
+import webhookRoutes from './src/routes/webhook.route.js';
 import logger from "./src/utils/logger.js";
 import { notFound, errorHandler } from "./src/middlewares/error.js";
 import cartRoutes from "./src/routes/cart.route.js";
@@ -91,6 +92,7 @@ app.use("/api/articles", articleRoutes);
 app.use("/api/comments", commentRoutes);
 app.use('/api/article-interactions', articleInteractionRoutes);
 app.use('/api/v1/notifications', notificationRoutes);
+app.use('/api/webhooks', webhookRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
@@ -119,14 +121,16 @@ io.use((socket, next) => {
 io.on("connection", (socket) => {
   const userId = socket.userId;
   const userRole = socket.userRole;
-  logger.info(`User ${userId} (${userRole}) connected`);
+  logger.info(`User ${userId} (${userRole}) connected with socket ${socket.id}`);
+  console.log(`[Socket] User connected - ID: ${userId}, Role: ${userRole}, Socket: ${socket.id}`);
 
   const userRoomIdentifier = `chat_${userId}`;
 
   if (userRole === 'user') {
     // User joins their notification room (using userId as room name)
-    socket.join(userId);
-    logger.info(`User ${userId} joined notification room ${userId}`);
+    const notificationRoom = userId.toString();
+    socket.join(notificationRoom);
+    logger.info(`User ${userId} joined notification room ${notificationRoom}`);
     
     // User connects: Get or create their room, join the socket room, and get initial messages.
     chatService.getOrCreateRoomForUser(userId)
@@ -150,6 +154,11 @@ io.on("connection", (socket) => {
       .catch(err => logger.error(`Error getting/creating room for user ${userId}: ${err.message}`));
 
   } else if (userRole === 'admin') {
+    // Admin joins their notification room (same as users)
+    const notificationRoom = userId.toString();
+    socket.join(notificationRoom);
+    logger.info(`Admin ${userId} joined notification room ${notificationRoom}`);
+    
     // Admin connects: Join the 'admin' room to receive broadcasts.
     socket.join('admin');
     logger.info(`Admin ${userId} joined the main admin room`);
@@ -338,6 +347,22 @@ io.on("connection", (socket) => {
         logger.error(`Error during adminInitiateChat for target ${targetUserId}: ${error.message}`);
         socket.emit('chatError', { message: 'Could not initiate chat with user.' });
     }
+  });
+
+  // Join article room for real-time comments
+  socket.on("joinArticle", (articleId) => {
+    if (!articleId) return;
+    const articleRoom = `article_${articleId}`;
+    socket.join(articleRoom);
+    logger.info(`User ${socket.userId} joined article room ${articleRoom}`);
+  });
+
+  // Leave article room
+  socket.on("leaveArticle", (articleId) => {
+    if (!articleId) return;
+    const articleRoom = `article_${articleId}`;
+    socket.leave(articleRoom);
+    logger.info(`User ${socket.userId} left article room ${articleRoom}`);
   });
 
   socket.on("disconnect", () => {

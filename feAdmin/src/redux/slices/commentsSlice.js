@@ -28,9 +28,9 @@ export const approveComment = createAsyncThunk(
 
 export const rejectComment = createAsyncThunk(
   'comments/rejectComment',
-  async (commentId, { rejectWithValue }) => {
+  async ({ commentId, moderationNotes }, { rejectWithValue }) => {
     try {
-      const response = await articleService.rejectComment(commentId)
+      const response = await articleService.rejectComment(commentId, moderationNotes)
       return response
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || error.message)

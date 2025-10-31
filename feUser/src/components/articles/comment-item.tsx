@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { ThumbsUp, MessageSquare, Edit, Trash2 } from 'lucide-react';
+import { ThumbsUp, MessageSquare, Edit, Trash2, Clock, CheckCircle, XCircle } from 'lucide-react';
 import { Comment } from '@/types/article';
 import { UserAvatar } from '@/components/user-avatar';
 import { useToast } from '@/hooks/use-toast';
@@ -83,9 +83,11 @@ export function CommentItem({
   };
 
   const isAdminComment = comment.author.isAdmin;
+  const isPending = comment.status === 'pending';
+  const isRejected = comment.status === 'rejected';
 
   return (
-    <div className="flex space-x-4">
+    <div className={`flex space-x-4 ${isPending ? 'opacity-75' : ''}`}>
       <UserAvatar
         session={{
           user: {
@@ -104,6 +106,10 @@ export function CommentItem({
         <div className={`rounded-lg p-3 ${
           isAdminComment 
             ? 'bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border-2 border-blue-200 dark:border-blue-800' 
+            : isPending
+            ? 'bg-yellow-50 dark:bg-yellow-950/30 border-2 border-yellow-300 dark:border-yellow-800'
+            : isRejected
+            ? 'bg-red-50 dark:bg-red-950/30 border-2 border-red-300 dark:border-red-800'
             : 'bg-gray-100 dark:bg-gray-800'
         }`}>
           <div className="flex items-center justify-between">
@@ -115,6 +121,18 @@ export function CommentItem({
                     <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
                   </svg>
                   ADMIN
+                </span>
+              )}
+              {isPending && (
+                <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100">
+                  <Clock className="w-3 h-3 mr-1 animate-pulse" />
+                  Đang xử lý
+                </span>
+              )}
+              {isRejected && (
+                <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100">
+                  <XCircle className="w-3 h-3 mr-1" />
+                  Bị từ chối
                 </span>
               )}
             </span>
@@ -140,14 +158,18 @@ export function CommentItem({
           )}
         </div>
         <div className="flex items-center space-x-4 mt-1 text-xs text-gray-500 dark:text-gray-400">
-          <button onClick={handleLike} className={`flex items-center space-x-1 hover:text-blue-600 ${isLiked ? 'text-blue-600 font-semibold' : ''}`}>
-            <ThumbsUp className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
-            <span>{likeCount} Thích</span>
-          </button>
-          <button onClick={() => setIsReplying(!isReplying)} className="flex items-center space-x-1 hover:text-primary">
-            <MessageSquare className="w-3 h-3" />
-            <span>Trả lời</span>
-          </button>
+          {!isPending && !isRejected && (
+            <button onClick={handleLike} className={`flex items-center space-x-1 hover:text-blue-600 ${isLiked ? 'text-blue-600 font-semibold' : ''}`}>
+              <ThumbsUp className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
+              <span>{likeCount} Thích</span>
+            </button>
+          )}
+          {!isPending && !isRejected && (
+            <button onClick={() => setIsReplying(!isReplying)} className="flex items-center space-x-1 hover:text-primary">
+              <MessageSquare className="w-3 h-3" />
+              <span>Trả lời</span>
+            </button>
+          )}
           {canEdit && (
             <button onClick={() => setIsEditing(true)} className="flex items-center space-x-1 hover:text-primary">
               <Edit className="w-3 h-3" />

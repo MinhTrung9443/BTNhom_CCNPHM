@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Container, Row, Col, Card, Table, Button, Form, Badge, InputGroup, Modal, Spinner } from 'react-bootstrap'
 import { useDispatch, useSelector } from 'react-redux'
 import { 
@@ -32,9 +32,9 @@ const CommentModerationPage = () => {
   const [deleteLoading, setDeleteLoading] = useState(false)
   const [actionLoading, setActionLoading] = useState({})
   const [bulkActionLoading, setBulkActionLoading] = useState(false)
-  const [showReplyModal, setShowReplyModal] = useState(false)
-  const [replyContent, setReplyContent] = useState('')
-  const [replyLoading, setReplyLoading] = useState(false)
+  const [showRejectModal, setShowRejectModal] = useState(false)
+  const [rejectNotes, setRejectNotes] = useState('')
+  const [rejectLoading, setRejectLoading] = useState(false)
 
   useEffect(() => {
     dispatch(fetchComments(filters))
@@ -80,15 +80,29 @@ const CommentModerationPage = () => {
     }
   }
 
-  const handleRejectComment = async (commentId) => {
-    setActionLoading(prev => ({ ...prev, [commentId]: true }))
+  const handleRejectComment = (comment) => {
+    setSelectedComment(comment)
+    setRejectNotes('')
+    setShowRejectModal(true)
+  }
+
+  const confirmRejectComment = async () => {
+    if (!selectedComment) return
+
+    setRejectLoading(true)
     try {
-      await dispatch(rejectComment(commentId)).unwrap()
+      await dispatch(rejectComment({ 
+        commentId: selectedComment._id, 
+        moderationNotes: rejectNotes.trim() || 'Admin từ chối bình luận này'
+      })).unwrap()
       toast.success('Đã từ chối bình luận')
+      setShowRejectModal(false)
+      setSelectedComment(null)
+      setRejectNotes('')
     } catch (error) {
       toast.error(error || 'Có lỗi xảy ra')
     } finally {
-      setActionLoading(prev => ({ ...prev, [commentId]: false }))
+      setRejectLoading(false)
     }
   }
 
@@ -140,33 +154,6 @@ const CommentModerationPage = () => {
       toast.error(error || 'Có lỗi xảy ra')
     } finally {
       setBulkActionLoading(false)
-    }
-  }
-
-  const handleReplyToComment = (comment) => {
-    setSelectedComment(comment)
-    setReplyContent('')
-    setShowReplyModal(true)
-  }
-
-  const submitReply = async () => {
-    if (!replyContent.trim()) {
-      toast.warning('Vui lòng nhập nội dung phản hồi')
-      return
-    }
-
-    setReplyLoading(true)
-    try {
-      // This would call the reply API
-      // await articleService.replyToComment(selectedComment._id, replyContent)
-      toast.success('Đã gửi phản hồi')
-      setShowReplyModal(false)
-      setSelectedComment(null)
-      setReplyContent('')
-    } catch (error) {
-      toast.error(error || 'Có lỗi xảy ra')
-    } finally {
-      setReplyLoading(false)
     }
   }
 
@@ -273,6 +260,7 @@ const CommentModerationPage = () => {
                     <th>Người dùng</th>
                     <th>Cấp độ</th>
                     <th>Trạng thái</th>
+                    <th>Ghi chú kiểm duyệt</th>
                     <th>Lượt thích</th>
                     <th>Ngày tạo</th>
                     <th>Hành động</th>
@@ -317,6 +305,15 @@ const CommentModerationPage = () => {
                         {getStatusBadge(comment.status)}
                       </td>
                       <td>
+                        <div style={{ maxWidth: '200px' }}>
+                          {comment.moderationNotes ? (
+                            <small className="text-muted">{comment.moderationNotes}</small>
+                          ) : (
+                            <small className="text-muted fst-italic">Chưa có ghi chú</small>
+                          )}
+                        </div>
+                      </td>
+                      <td>
                         <i className="bi bi-heart me-1"></i>
                         {comment.likes || 0}
                       </td>
@@ -345,26 +342,13 @@ const CommentModerationPage = () => {
                               <Button
                                 variant="outline-warning"
                                 size="sm"
-                                onClick={() => handleRejectComment(comment._id)}
-                                disabled={actionLoading[comment._id]}
+                                onClick={() => handleRejectComment(comment)}
                                 title="Từ chối"
                               >
-                                {actionLoading[comment._id] ? (
-                                  <Spinner as="span" animation="border" size="sm" />
-                                ) : (
-                                  <i className="bi bi-x"></i>
-                                )}
+                                <i className="bi bi-x"></i>
                               </Button>
                             </>
                           )}
-                          <Button
-                            variant="outline-primary"
-                            size="sm"
-                            onClick={() => handleReplyToComment(comment)}
-                            title="Phản hồi"
-                          >
-                            <i className="bi bi-reply"></i>
-                          </Button>
                           <Button
                             variant="outline-danger"
                             size="sm"
@@ -410,45 +394,48 @@ const CommentModerationPage = () => {
         loading={deleteLoading}
       />
 
-      {/* Reply Modal */}
-      <Modal show={showReplyModal} onHide={() => setShowReplyModal(false)}>
+      {/* Reject Modal */}
+      <Modal show={showRejectModal} onHide={() => setShowRejectModal(false)}>
         <Modal.Header closeButton>
-          <Modal.Title>Phản hồi bình luận</Modal.Title>
+          <Modal.Title>Từ chối bình luận</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           {selectedComment && (
             <div className="mb-3">
-              <strong>Bình luận gốc:</strong>
+              <strong>Nội dung bình luận:</strong>
               <p className="text-muted mt-2">{selectedComment.content}</p>
             </div>
           )}
           <Form.Group>
-            <Form.Label>Nội dung phản hồi</Form.Label>
+            <Form.Label>Lý do từ chối <small className="text-muted">(tùy chọn)</small></Form.Label>
             <Form.Control
               as="textarea"
               rows={4}
-              placeholder="Nhập nội dung phản hồi..."
-              value={replyContent}
-              onChange={(e) => setReplyContent(e.target.value)}
+              placeholder="Nhập lý do từ chối bình luận... (user sẽ nhận được thông báo)"
+              value={rejectNotes}
+              onChange={(e) => setRejectNotes(e.target.value)}
             />
+            <Form.Text className="text-muted">
+              Lý do này sẽ được gửi đến người dùng qua thông báo
+            </Form.Text>
           </Form.Group>
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowReplyModal(false)}>
+          <Button variant="secondary" onClick={() => setShowRejectModal(false)}>
             Hủy
           </Button>
           <Button 
-            variant="primary" 
-            onClick={submitReply}
-            disabled={replyLoading}
+            variant="danger" 
+            onClick={confirmRejectComment}
+            disabled={rejectLoading}
           >
-            {replyLoading ? (
+            {rejectLoading ? (
               <>
                 <Spinner as="span" animation="border" size="sm" className="me-2" />
-                Đang gửi...
+                Đang xử lý...
               </>
             ) : (
-              'Gửi phản hồi'
+              'Xác nhận từ chối'
             )}
           </Button>
         </Modal.Footer>

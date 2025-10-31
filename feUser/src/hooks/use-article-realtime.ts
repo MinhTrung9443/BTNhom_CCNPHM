@@ -31,12 +31,19 @@ interface CommentDelete {
   deletedCount: number;
 }
 
+interface CommentStatusUpdate {
+  commentId: string;
+  status: string;
+  articleId: string;
+}
+
 interface ArticleRealtimeCallbacks {
   onArticleLikeUpdate?: (data: ArticleLikeUpdate) => void;
   onCommentLikeUpdate?: (data: CommentLikeUpdate) => void;
   onNewComment?: (data: NewComment) => void;
   onCommentUpdate?: (data: CommentUpdate) => void;
   onCommentDelete?: (data: CommentDelete) => void;
+  onCommentStatusUpdate?: (data: CommentStatusUpdate) => void;
 }
 
 /**
@@ -95,11 +102,18 @@ export function useArticleRealtime(
       }
     };
 
+    const handleCommentStatusUpdate = (data: CommentStatusUpdate) => {
+      if (data.articleId === articleId && callbacks.onCommentStatusUpdate) {
+        callbacks.onCommentStatusUpdate(data);
+      }
+    };
+
     socket.on("articleLikeUpdated", handleArticleLikeUpdate);
     socket.on("commentLikeUpdated", handleCommentLikeUpdate);
     socket.on("newComment", handleNewComment);
     socket.on("commentUpdated", handleCommentUpdate);
     socket.on("commentDeleted", handleCommentDelete);
+    socket.on("commentStatusUpdated", handleCommentStatusUpdate);
 
     return () => {
       socket.off("articleLikeUpdated", handleArticleLikeUpdate);
@@ -107,6 +121,7 @@ export function useArticleRealtime(
       socket.off("newComment", handleNewComment);
       socket.off("commentUpdated", handleCommentUpdate);
       socket.off("commentDeleted", handleCommentDelete);
+      socket.off("commentStatusUpdated", handleCommentStatusUpdate);
     };
   }, [socket, articleId, callbacks]);
 

@@ -126,6 +126,30 @@ router.post(
 
 // ==================== ADMIN ROUTES ====================
 
+// Get all comments for moderation (admin)
+router.get(
+  '/admin/comments',
+  protect,
+  restrictTo('admin'),
+  commentController.getCommentsForModeration
+);
+
+// Moderate a specific comment (approve/reject)
+router.patch(
+  '/admin/comments/:commentId/moderate',
+  protect,
+  restrictTo('admin'),
+  commentController.moderateComment
+);
+
+// Bulk moderate comments
+router.post(
+  '/admin/comments/bulk-moderate',
+  protect,
+  restrictTo('admin'),
+  commentController.bulkModerateComments
+);
+
 // Get article analytics
 router.get(
   '/admin/analytics',

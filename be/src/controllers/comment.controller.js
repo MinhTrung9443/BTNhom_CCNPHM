@@ -108,7 +108,8 @@ export const commentController = {
     try {
       const comment = await commentService.moderateComment(
         req.params.commentId,
-        req.body.status
+        req.body.status,
+        req.body.moderationNotes
       );
       res.status(200).json({
         success: true,
@@ -132,6 +133,68 @@ export const commentController = {
         data: result,
       });
     } catch (error) {
+      next(error);
+    }
+  },
+
+  submitCommentModeration: async (req, res, next) => {
+    try {
+      const result = await commentService.submitCommentModeration(
+        req.params.commentId
+      );
+      res.status(200).json({
+        success: true,
+        message: 'Đã gửi bình luận để kiểm duyệt',
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  handleN8nCallback: async (req, res, next) => {
+    try {
+
+      const { commentId, status, moderationNote, moderationNotes } = req.body;
+      
+      // Validate required fields
+      if (!commentId) {
+        console.error('[N8N Callback Controller] Missing commentId in request body');
+        return res.status(400).json({
+          success: false,
+          message: 'Thiếu commentId'
+        });
+      }
+      
+      if (!status) {
+        console.error('[N8N Callback Controller] Missing status in request body');
+        return res.status(400).json({
+          success: false,
+          message: 'Thiếu status'
+        });
+      }
+      
+      console.log(`[N8N Callback Controller] Processing: commentId=${commentId}, status=${status}`);
+      
+      // Support both moderationNote and moderationNotes for compatibility
+      const notes = moderationNotes || moderationNote;
+      
+      const comment = await commentService.handleN8nCallback(
+        commentId,
+        status,
+        notes
+      );
+      
+      console.log(`[N8N Callback Controller] Successfully processed comment ${commentId}`);
+      
+      res.status(200).json({
+        success: true,
+        message: 'Đã cập nhật kết quả kiểm duyệt',
+        data: comment,
+      });
+    } catch (error) {
+      console.error('[N8N Callback Controller] Error:', error.message);
+      console.error('[N8N Callback Controller] Stack:', error.stack);
       next(error);
     }
   },

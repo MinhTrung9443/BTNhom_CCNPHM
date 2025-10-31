@@ -1,0 +1,42 @@
+### Test Direct Notification
+POST http://localhost:5000/api/webhooks/test-notification
+Content-Type: application/json
+
+{
+  "userId": "6729a4f8e4b5c3d2a1b2c3d4",
+  "title": "Test Notification",
+  "message": "This is a test notification"
+}
+
+### Test N8n Callback - Approved
+POST http://localhost:5000/api/webhooks/n8n/comment-result
+Content-Type: application/json
+
+{
+  "commentId": "REPLACE_WITH_COMMENT_ID",
+  "status": "approved",
+  "moderationNotes": "AI approved this comment"
+}
+
+### Test N8n Callback - Rejected
+POST http://localhost:5000/api/webhooks/n8n/comment-result
+Content-Type: application/json
+
+{
+  "commentId": "REPLACE_WITH_COMMENT_ID", 
+  "status": "rejected",
+  "moderationNotes": "Comment contains inappropriate content"
+}
+
+### Create Comment (requires auth token)
+POST http://localhost:5000/api/articles/public/ARTICLE_ID/comments
+Content-Type: application/json
+Authorization: Bearer YOUR_AUTH_TOKEN
+
+{
+  "content": "This is a test comment"
+}
+
+### Get User Profile to find User ID
+GET http://localhost:5000/api/users/profile
+Authorization: Bearer YOUR_AUTH_TOKEN

@@ -46,7 +46,15 @@ export function CommentForm({
           content,
           session.user.accessToken
         );
-        toast({ title: 'Bình luận của bạn đã được cập nhật' });
+        
+        if (response.data?.status === 'pending') {
+          toast({ 
+            title: 'Bình luận đã được gửi',
+            description: 'Vui lòng đợi kết quả kiểm duyệt. Bạn sẽ nhận được thông báo khi có kết quả.',
+          });
+        } else {
+          toast({ title: 'Bình luận của bạn đã được cập nhật' });
+        }
       } else {
         response = await articleService.createComment(
           articleId,
@@ -54,9 +62,33 @@ export function CommentForm({
           parentCommentId,
           session.user.accessToken
         );
-        toast({ title: 'Bình luận của bạn đã được gửi' });
+        
+        if (response.data?.status === 'pending') {
+          toast({ 
+            title: 'Bình luận đã được gửi',
+            description: 'Vui lòng đợi kết quả kiểm duyệt. Bạn sẽ nhận được thông báo khi có kết quả.',
+          });
+        } else {
+          toast({ title: 'Bình luận của bạn đã được đăng' });
+        }
+        
+        // Submit to n8n if pending (handled in hook, but also do here if needed)
+        if (response.data?.status === 'pending') {
+          try {
+            await articleService.submitCommentModeration(
+              response.data._id,
+              session.user.accessToken
+            );
+          } catch (error) {
+            console.error('[Comment] Failed to submit moderation:', error);
+          }
+        }
       }
+      
+      // Add comment to UI immediately (including pending comments)
+      // Pending comments will be visible to the author with a processing indicator
       onCommentAdded(response.data);
+      
       setContent('');
       if (onCancel) onCancel();
     } catch (error) {

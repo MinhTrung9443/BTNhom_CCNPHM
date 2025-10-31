@@ -50,6 +50,16 @@ const notificationSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  relatedId: {
+    type: mongoose.Schema.Types.ObjectId
+  },
+  relatedModel: {
+    type: String,
+    enum: ['Comment', 'Article', 'Order', 'User', 'Product']
+  },
+  link: {
+    type: String
+  },
   metadata: {
     orderAmount: { type: Number },
     userName: { type: String },
@@ -67,5 +77,23 @@ notificationSchema.index({ recipientUserId: 1, isRead: 1, createdAt: -1 });
 notificationSchema.index({ type: 1, referenceId: 1 });
 notificationSchema.index({ type: 1, subType: 1, referenceId: 1, recipientUserId: 1 });
 notificationSchema.index({ isRead: 1, createdAt: -1 });
+
+// Prevent duplicate notifications for the same event
+// For comment moderation, we only want one notification per comment per user
+notificationSchema.index(
+  { 
+    type: 1, 
+    subType: 1, 
+    referenceId: 1, 
+    recipientUserId: 1 
+  }, 
+  { 
+    unique: true, 
+    partialFilterExpression: { 
+      type: 'article',
+      subType: 'status_update'
+    } 
+  }
+);
 
 export default mongoose.model('Notification', notificationSchema);

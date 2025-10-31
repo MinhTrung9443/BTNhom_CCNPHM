@@ -29,4 +29,10 @@ router.post(
   commentController.toggleCommentLike
 );
 
+// Submit comment for AI moderation
+router.post(
+  '/:commentId/submit-moderation',
+  commentController.submitCommentModeration
+);
+
 export default router;
