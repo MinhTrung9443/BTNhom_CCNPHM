@@ -61,7 +61,7 @@ const voucherSchema = new mongoose.Schema({
   },
   source: {
     type: String,
-    enum: ["review", "admin"],
+    enum: ["review", "admin","promotion"],
     default: "admin"
   },
   isActive: {

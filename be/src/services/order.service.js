@@ -223,6 +223,7 @@ export const getOrderDetail = async (orderId, userId = null) => {
 };
 
 export const previewOrder = async (userId, { orderLines, shippingAddress, voucherCode, shippingMethod, pointsToApply = 0, paymentMethod }) => {
+  console.log("Preview Order Input:", { orderLines, shippingAddress, voucherCode, shippingMethod, pointsToApply, paymentMethod });
   if (!orderLines || orderLines.length === 0) {
     throw new AppError("Vui lòng chọn sản phẩm để xem trước", 400);
   }
@@ -312,7 +313,6 @@ export const previewOrder = async (userId, { orderLines, shippingAddress, vouche
   const shippingFee = shippingMethod ? await calculateShippingFee(shippingMethod) : null;
   let discount = 0;
   let appliedVoucherCode = null;
-
   if (voucherCode) {
     const voucher = await Voucher.findOne({
       code: voucherCode,
@@ -320,7 +320,7 @@ export const previewOrder = async (userId, { orderLines, shippingAddress, vouche
       startDate: { $lte: new Date() },
       endDate: { $gte: new Date() },
     }).lean();
-
+    console.log("Voucher Found:", voucher);
     if (voucher) {
       const userVoucher = await UserVoucher.findOne({
         userId: userId,
@@ -341,16 +341,21 @@ export const previewOrder = async (userId, { orderLines, shippingAddress, vouche
           } else {
             // Giảm giá cố định
             discount = voucher.discountValue;
+            console.log("Fixed Discount:", discount);
             // Đảm bảo không vượt quá maxDiscountAmount
+            console.log("Max Discount Amount:", voucher.maxDiscountAmount);
+            if (! voucher.discountType === "fixed")
             if (discount > voucher.maxDiscountAmount) {
               discount = voucher.maxDiscountAmount;
             }
           }
+                      console.log("Fixed Discount2:", discount);
 
           // Đảm bảo discount không vượt quá subtotal
           if (discount > subtotal) {
             discount = subtotal;
           }
+            console.log("Fixed Discount3:", discount);
 
           appliedVoucherCode = voucher.code;
         } else {
@@ -363,7 +368,7 @@ export const previewOrder = async (userId, { orderLines, shippingAddress, vouche
       throw new AppError("Voucher không hợp lệ hoặc đã hết hạn", 400);
     }
   }
-
+  console.log("Discount:", discount);
   let totalAfterVoucher = subtotal + shippingFee - discount;
   let pointsApplied = 0;
 
@@ -383,7 +388,7 @@ export const previewOrder = async (userId, { orderLines, shippingAddress, vouche
 
   // Since 1 point = 1 VND, pointsApplied is the discount
   const totalAmount = totalAfterVoucher - pointsApplied;
-
+  console.log("Total Amount Calculation:", { subtotal, shippingFee, discount, pointsApplied, totalAmount });
   const preview = {
     orderLines: processedOrderLines,
     shippingAddress: shippingAddress,
@@ -607,6 +612,7 @@ export const placeOrder = async (userId, { previewOrder: clientPreview }) => {
       "vi-VN"
     )} VNĐ`,
     type: "order",
+    subType: "new_order",
     referenceId: newOrder._id,
     recipient: "admin",
     metadata: {
@@ -678,6 +684,7 @@ export const placeMomoOrder = async (userId, { previewOrder: clientPreview }) =>
       "vi-VN"
     )} VNĐ`,
     type: "order",
+    subType: "new_order",
     referenceId: newOrder._id,
     recipient: "admin",
     metadata: {
@@ -1235,6 +1242,7 @@ export const cancelOrderByUser = async (userId, orderId, reason) => {
       title: "Đơn hàng đã bị hủy",
       message: `Khách hàng ${user?.name || "N/A"} đã hủy đơn hàng ${order.orderCode}. Lý do: ${order.cancelledReason}`,
       type: "order",
+      subType: "cancellation",
       referenceId: order._id,
       recipient: "admin",
       metadata: {
@@ -1269,6 +1277,7 @@ export const cancelOrderByUser = async (userId, orderId, reason) => {
         title: "Yêu cầu hủy đơn hàng",
         message: `Khách hàng ${user?.name || "N/A"} yêu cầu hủy đơn hàng ${order.orderCode}. Lý do: ${order.cancellationRequestReason}`,
         type: "order",
+        subType: "cancellation",
         referenceId: order._id,
         recipient: "admin",
         metadata: {
@@ -1304,6 +1313,7 @@ export const cancelOrderByUser = async (userId, orderId, reason) => {
         title: "Đơn hàng đã bị hủy",
         message: `Khách hàng ${user?.name || "N/A"} đã hủy đơn hàng ${order.orderCode}. Lý do: ${order.cancelledReason}`,
         type: "order",
+        subType: "cancellation",
         referenceId: order._id,
         recipient: "admin",
         metadata: {
@@ -1391,6 +1401,7 @@ export const approveCancellationRequest = async (orderId, adminId) => {
     title: "Yêu cầu hủy đơn đã được chấp thuận",
     message: `Yêu cầu hủy đơn hàng ${order.orderCode} của bạn đã được chấp thuận. Đơn hàng đã được hủy thành công.`,
     type: "order",
+    subType: "cancellation",
     referenceId: orderId,
     recipient: "user",
     userId: order.userId._id || order.userId,
@@ -1437,6 +1448,7 @@ export const requestReturn = async (userId, orderId, reason) => {
     title: "Yêu cầu trả hàng/hoàn tiền",
     message: `Khách hàng ${user?.name || "N/A"} yêu cầu trả hàng cho đơn ${order.orderCode}. Lý do: ${reason}`,
     type: "order",
+    subType: "return_request",
     referenceId: orderId,
     recipient: "admin",
     metadata: {
@@ -1507,6 +1519,7 @@ export const approveReturn = async (orderId) => {
       "vi-VN"
     )} VNĐ sẽ được hoàn lại cho bạn.`,
     type: "order",
+    subType: "return_request",
     referenceId: orderId,
     recipient: "user",
     userId: order.userId._id || order.userId,
