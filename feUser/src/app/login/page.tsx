@@ -27,6 +27,24 @@ export default function LoginPage() {
     setError("");
 
     try {
+      // Gọi API trực tiếp để lấy message lỗi cụ thể
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const response = await res.json();
+
+      if (!res.ok || !response.success) {
+        // Hiển thị message lỗi từ backend
+        setError(response.message || 'Đăng nhập thất bại');
+        return;
+      }
+
+      // Nếu thành công, dùng signIn để tạo session
       const result = await signIn("credentials", {
         email,
         password,
@@ -40,8 +58,8 @@ export default function LoginPage() {
         router.refresh();
       }
     } catch (error: unknown) {
-      console.log(error);
-      const errorMessage = error instanceof Error ? error.message : "Đã xảy ra lỗi khi đăng nhập";
+      console.error('Login error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Đã xảy ra lỗi khi đăng nhập';
       setError(errorMessage);
     } finally {
       setIsLoading(false);

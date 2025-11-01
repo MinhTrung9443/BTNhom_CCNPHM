@@ -90,6 +90,9 @@ const login = async (email, password) => {
   if (!user.isVerified) {
     throw new AppError("Tài khoản của bạn chưa được tạo. Vui lòng kiểm tra email.", 403);
   }
+  if (!user.isActive) {
+    throw new AppError("Tài khoản của bạn đã bị vô hiệu hóa. Vui lòng liên hệ quản trị viên để được hỗ trợ.", 403);
+  }
 
   let isPasswordMatch = false;
 
