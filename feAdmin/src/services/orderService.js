@@ -58,6 +58,10 @@ const orderService = {
   getValidTransitions: (orderId) => {
     return api.get(`/admin/orders/${orderId}/valid-transitions`)
   },
+
+  getUserOrdersForChat: (params = {}) => {
+    return api.get('/orders/my/for-chat', { params })
+  },
 }
 
 export default orderService

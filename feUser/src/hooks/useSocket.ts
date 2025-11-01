@@ -13,6 +13,21 @@ export interface IChatMessage {
   message: string;
   room: string; // The room identifier (e.g., 'chat_...')
   timestamp: string; // ISO 8601 date string
+  orderReference?: {
+    orderId: {
+      _id: string;
+      orderCode: string;
+      totalAmount: number;
+      status: string;
+      createdAt: string;
+      orderLines?: Array<{
+        productName: string;
+        productImage: string;
+        quantity: number;
+      }>;
+    } | null;
+    orderCode: string;
+  } | null;
 }
 
 /**
@@ -127,8 +142,36 @@ export const useSocket = () => {
       // Event listener for receiving a new message in real-time.
       newSocket.on('message', (newMessage: IChatMessage) => {
         console.log('Received new message:', newMessage);
-        // Add the new message to the existing messages array.
-        setMessages((prevMessages) => [...prevMessages, newMessage]);
+        
+        setMessages((prevMessages) => {
+          // Check if this is our own message (optimistic update)
+          const tempMessageIndex = prevMessages.findIndex(
+            msg => msg._id.startsWith('temp_') && 
+            msg.senderRole === 'user' && 
+            msg.message === newMessage.message
+          );
+          
+          if (tempMessageIndex !== -1 && newMessage.senderRole === 'user') {
+            // This is our message coming back from server
+            // Keep the temp message but update its ID and merge orderReference data
+            const tempMessage = prevMessages[tempMessageIndex];
+            const updatedMessage: IChatMessage = {
+              ...tempMessage,
+              _id: newMessage._id, // Use real ID from server
+              timestamp: newMessage.timestamp, // Use real timestamp
+              // Keep orderReference from temp message if it has more details
+              orderReference: tempMessage.orderReference?.orderId ? tempMessage.orderReference : newMessage.orderReference,
+            };
+            
+            // Replace temp message with updated one
+            const newMessages = [...prevMessages];
+            newMessages[tempMessageIndex] = updatedMessage;
+            return newMessages;
+          }
+          
+          // This is a message from someone else (admin), just add it
+          return [...prevMessages, newMessage];
+        });
       });
 
       // Store the new socket instance in the ref.
@@ -166,11 +209,46 @@ export const useSocket = () => {
    * Sends a message to the chat server.
    * The message is sent to the user's dedicated room.
    * @param message The content of the message to send.
+   * @param orderReference Optional order reference to attach to the message.
+   * @param orderDetails Optional full order details for optimistic UI update.
    */
-  const sendMessage = (message: string) => {
+  const sendMessage = (
+    message: string, 
+    orderReference?: { orderId: string; orderCode: string },
+    orderDetails?: any
+  ) => {
     if (socketRef.current && isConnected && session?.user?.id) {
       const roomIdentifier = `chat_${session.user.id}`;
-      socketRef.current.emit("sendMessage", { room: roomIdentifier, message });
+      
+      // Optimistic update: Add message to UI immediately
+      const optimisticMessage: IChatMessage = {
+        _id: `temp_${Date.now()}`, // Temporary ID
+        sender: session.user.id,
+        senderRole: 'user',
+        message,
+        room: roomIdentifier,
+        timestamp: new Date().toISOString(),
+        orderReference: orderReference && orderDetails ? {
+          orderId: {
+            _id: orderDetails._id,
+            orderCode: orderDetails.orderCode,
+            totalAmount: orderDetails.totalAmount,
+            status: orderDetails.status,
+            createdAt: orderDetails.createdAt,
+            orderLines: orderDetails.orderLines,
+          },
+          orderCode: orderReference.orderCode,
+        } : undefined,
+      };
+      
+      setMessages((prevMessages) => [...prevMessages, optimisticMessage]);
+      
+      // Send to server
+      socketRef.current.emit("sendMessage", { 
+        room: roomIdentifier, 
+        message,
+        orderReference: orderReference || null
+      });
     } else {
       console.error("Socket not connected or user session not found, cannot send message.");
       toast.error("Chưa kết nối với server chat hoặc không tìm thấy phiên đăng nhập.");

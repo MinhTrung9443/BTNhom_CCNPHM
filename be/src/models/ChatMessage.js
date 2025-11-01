@@ -24,6 +24,17 @@ const chatMessageSchema = new mongoose.Schema(
       trim: true,
       maxlength: 1000,
     },
+    orderReference: { // Tham chiếu đến đơn hàng (tùy chọn)
+      orderId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Order',
+        default: null,
+      },
+      orderCode: {
+        type: String,
+        default: null,
+      },
+    },
     // (Tùy chọn) Thêm cờ isRead để đánh dấu đã đọc
     // isRead: {
     //   type: Boolean,
@@ -35,5 +46,7 @@ const chatMessageSchema = new mongoose.Schema(
 
 // Index để lấy tin nhắn theo phòng và sắp xếp theo thời gian
 chatMessageSchema.index({ roomId: 1, createdAt: -1 });
+// Index để tìm tin nhắn theo orderId
+chatMessageSchema.index({ 'orderReference.orderId': 1 });
 
 export default mongoose.model('ChatMessage', chatMessageSchema);

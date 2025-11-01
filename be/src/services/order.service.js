@@ -110,6 +110,54 @@ export const getUserOrders = async (userId, page = 1, limit = 10, status = null,
   };
 };
 
+export const getUserOrdersForChat = async (userId, page = 1, limit = 10, search = null) => {
+  const filter = { userId };
+
+  // Tìm kiếm theo orderCode hoặc productName
+  if (search) {
+    const searchRegex = new RegExp(search, "i");
+    filter.$or = [
+      { orderCode: searchRegex },
+      { "orderLines.productName": searchRegex }
+    ];
+  }
+
+  const skip = (page - 1) * limit;
+
+  // Chỉ lấy các trường cần thiết để tối ưu hiệu năng
+  const orders = await Order.find(filter)
+    .select('orderCode totalAmount status createdAt orderLines.productName orderLines.productImage')
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limit)
+    .lean();
+
+  const total = await Order.countDocuments(filter);
+
+  // Format lại dữ liệu để chỉ trả về thông tin cần thiết
+  const formattedOrders = orders.map(order => ({
+    _id: order._id,
+    orderCode: order.orderCode,
+    totalAmount: order.totalAmount,
+    status: order.status,
+    createdAt: order.createdAt,
+    orderLines: order.orderLines.map(line => ({
+      productName: line.productName,
+      productImage: line.productImage
+    }))
+  }));
+
+  return {
+    data: formattedOrders,
+    meta: {
+      currentPage: page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+      totalItems: total,
+    },
+  };
+};
+
 export const getAllOrders = async (page = 1, limit = 10, status = null, detailedStatus = null, search = null, sortBy = "createdAt", sortOrder = "desc") => {
   const skip = (page - 1) * limit;
   const sort = { [sortBy]: sortOrder === "asc" ? 1 : -1 };

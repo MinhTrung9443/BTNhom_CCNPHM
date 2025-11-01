@@ -53,25 +53,6 @@ export function RecipientInfoForm({ formData, onFieldChange, resetFields, access
     }
   }, [formData.province, formData.district, getWards]);
 
-  // Hàm xử lý khi có dữ liệu từ bản đồ
-  const handleLocationChange = (locationData: any) => {
-    const mapped = mapGoongLocationToStandard(locationData);
-
-    // Cập nhật địa chỉ chi tiết
-    onFieldChange('street', locationData.address || '');
-
-    // Cập nhật Tỉnh/Thành
-    onFieldChange('province', mapped.province);
-
-    // Sử dụng requestAnimationFrame để đảm bảo React cập nhật state tuần tự, tránh lỗi race condition
-    requestAnimationFrame(() => {
-      onFieldChange('district', mapped.district);
-      requestAnimationFrame(() => {
-        onFieldChange('ward', mapped.commune);
-      });
-    });
-  };
-
   // Hàm xử lý khi người dùng muốn sử dụng địa chỉ từ đơn hàng gần nhất
   const handleUseLatestAddress = async () => {
     if (!accessToken) {
@@ -99,17 +80,36 @@ export function RecipientInfoForm({ formData, onFieldChange, resetFields, access
           });
         });
 
-        toast.success('Thành công', { description: 'Đã điền địa chỉ từ đơn hàng gần nhất' });
+        toast.success('Đã tải địa chỉ từ đơn hàng gần nhất');
       } else {
-        toast.error('Lỗi', { description: response.message || 'Không thể lấy địa chỉ' });
+        toast.error('Không thể tải địa chỉ', { description: response.message || 'Vui lòng thử lại' });
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Không thể lấy địa chỉ đơn hàng gần nhất';
-      toast.error('Lỗi', { description: errorMessage });
+      toast.error('Đã xảy ra lỗi', { description: 'Không thể tải địa chỉ từ đơn hàng gần nhất' });
     } finally {
       setIsLoadingLatestAddress(false);
     }
   };
+
+  // Hàm xử lý khi có dữ liệu từ bản đồ
+  const handleLocationChange = (locationData: any) => {
+    const mapped = mapGoongLocationToStandard(locationData);
+
+    // Cập nhật địa chỉ chi tiết
+    onFieldChange('street', locationData.address || '');
+
+    // Cập nhật Tỉnh/Thành
+    onFieldChange('province', mapped.province);
+
+    // Sử dụng requestAnimationFrame để đảm bảo React cập nhật state tuần tự, tránh lỗi race condition
+    requestAnimationFrame(() => {
+      onFieldChange('district', mapped.district);
+      requestAnimationFrame(() => {
+        onFieldChange('ward', mapped.commune);
+      });
+    });
+  };
+
 
   return (
     <Card>

@@ -120,6 +120,7 @@ export interface Order {
   payment: Payment;
   canCancel: boolean;
   timeline: Timeline[];
+  addressChangeCount?: number;
   createdAt: string;
   updatedAt: string;
   confirmedAt?: string;

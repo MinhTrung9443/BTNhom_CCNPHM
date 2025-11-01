@@ -276,3 +276,22 @@
 .user-list-item.active .message-time {
   color: rgba(255, 255, 255, 0.7);
 }
+
+/* Order Reference Card Styles */
+.order-reference-card {
+  transition: all 0.2s ease;
+}
+
+.order-reference-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.order-not-found {
+  cursor: default !important;
+}
+
+.order-not-found:hover {
+  box-shadow: none !important;
+  transform: none !important;
+}

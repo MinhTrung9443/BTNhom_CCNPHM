@@ -38,14 +38,25 @@ export const chatService = {
    * @param {string} senderId - ID người gửi
    * @param {string} senderRole - Vai trò người gửi ('user' hoặc 'admin')
    * @param {string} message - Nội dung tin nhắn
+   * @param {Object} orderReference - Tham chiếu đến đơn hàng (tùy chọn)
    * @returns {Promise<ChatMessage>} Tin nhắn đã lưu
    */
-  async addMessage(roomId, senderId, senderRole, message) {
+  async addMessage(roomId, senderId, senderRole, message, orderReference = null) {
     if (!mongoose.Types.ObjectId.isValid(roomId) || !mongoose.Types.ObjectId.isValid(senderId)) {
       throw new AppError('Room ID hoặc Sender ID không hợp lệ', 400);
     }
     if (!message || message.trim() === '') {
       throw new AppError('Nội dung tin nhắn không được rỗng', 400);
+    }
+
+    // Validate orderReference nếu có
+    if (orderReference) {
+      if (!orderReference.orderId || !orderReference.orderCode) {
+        throw new AppError('Thông tin đơn hàng không hợp lệ', 400);
+      }
+      if (!mongoose.Types.ObjectId.isValid(orderReference.orderId)) {
+        throw new AppError('Order ID không hợp lệ', 400);
+      }
     }
 
     // Check if this is the first message
@@ -57,6 +68,7 @@ export const chatService = {
       senderId,
       senderRole,
       message: message.trim(),
+      orderReference: orderReference || undefined,
     });
     await chatMessage.save();
 
@@ -99,6 +111,7 @@ export const chatService = {
       .sort({ createdAt: -1 }) // Lấy tin nhắn mới nhất trước
       .limit(limit)
       .populate('senderId', 'name avatar') // Lấy thông tin cơ bản người gửi
+      .populate('orderReference.orderId', 'orderCode totalAmount status createdAt orderLines') // Populate thông tin đơn hàng với orderLines
       .lean(); // Dùng lean() để tăng tốc độ truy vấn
 
     logger.debug(`Lấy ${messages.length} tin nhắn cho phòng ${roomId}` + (before ? ` trước ${before}` : ''));

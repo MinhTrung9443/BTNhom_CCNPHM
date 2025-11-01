@@ -276,3 +276,22 @@ export const updateOrderShippingAddress = async (req, res) => {
     },
   });
 };
+
+export const getUserOrdersForChat = async (req, res) => {
+  const userId = req.user._id;
+  const { page = 1, limit = 10, search } = req.query;
+
+  const result = await OrderService.getUserOrdersForChat(
+    userId,
+    parseInt(page, 10),
+    parseInt(limit, 10),
+    search
+  );
+
+  res.json({
+    success: true,
+    message: "Lấy danh sách đơn hàng thành công",
+    meta: result.meta,
+    data: result.data,
+  });
+};

@@ -129,13 +129,89 @@ class OrderService {
     accessToken: string, 
     orderId: string, 
     newAddressId: string
-  ): Promise<ApiResponse<{ _id: string; shippingAddress: any; addressChangeCount: number }>> {
-    const response = await apiFetch(`/orders/my/${orderId}/address`, accessToken, {
+  ): Promise<ApiResponse<{ _id: string; shippingAddress: unknown; addressChangeCount: number }>> {
+    const response: ApiResponse<{ _id: string; shippingAddress: unknown; addressChangeCount: number }> = await apiFetch(`/orders/my/${orderId}/address`, accessToken, {
       method: "PATCH",
       body: JSON.stringify({ newAddressId }),
     });
     return response;
   }
+
+  /**
+   * Lấy danh sách đơn hàng để đính kèm vào chat
+   * @param accessToken - Token xác thực
+   * @param params - Tham số phân trang và tìm kiếm
+   */
+  async getOrdersForChat(
+    accessToken: string,
+    params?: { page?: number; limit?: number; search?: string }
+  ): Promise<{
+    success: boolean;
+    message: string;
+    data: Array<{
+      _id: string;
+      orderCode: string;
+      totalAmount: number;
+      status: string;
+      createdAt: string;
+      orderLines: Array<{ productName: string; productImage: string }>;
+    }>;
+    meta?: {
+      currentPage: number;
+      limit: number;
+      totalPages: number;
+      totalItems: number;
+    };
+  }> {
+    const queryParams = new URLSearchParams();
+    if (params?.page) queryParams.append("page", params.page.toString());
+    if (params?.limit) queryParams.append("limit", params.limit.toString());
+    if (params?.search) queryParams.append("search", params.search);
+
+    const response: {
+      success: boolean;
+      message: string;
+      data: Array<{
+        _id: string;
+        orderCode: string;
+        totalAmount: number;
+        status: string;
+        createdAt: string;
+        orderLines: Array<{ productName: string; productImage: string }>;
+      }>;
+      meta?: {
+        currentPage: number;
+        limit: number;
+        totalPages: number;
+        totalItems: number;
+      };
+    } = await apiFetch(`/orders/my/for-chat?${queryParams.toString()}`, accessToken);
+    return response;
+  }
+
+  /**
+   * Lấy địa chỉ từ đơn hàng gần nhất
+   * @param accessToken - Token xác thực
+   */
+  async getLatestOrderAddress(accessToken: string): Promise<ApiResponse<{
+    recipientName: string;
+    phone: string;
+    address: string;
+    ward: string;
+    district: string;
+    province: string;
+  }>> {
+    const response: ApiResponse<{
+      recipientName: string;
+      phone: string;
+      address: string;
+      ward: string;
+      district: string;
+      province: string;
+    }> = await apiFetch("/orders/my/latest-address", accessToken);
+    return response;
+  }
+
 }
 
 export const orderService = new OrderService();

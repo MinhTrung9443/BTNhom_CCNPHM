@@ -9,8 +9,10 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Send, X, MessageCircle, Minimize2, Headphones, HelpCircle } from "lucide-react";
+import { Send, X, MessageCircle, Minimize2, Headphones, HelpCircle, Paperclip } from "lucide-react";
 import "@/styles/chat-widget.css";
+import OrderAttachmentModal from "./order-attachment-modal";
+import OrderReferenceCard from "./order-reference-card";
 
 // The IChatMessage interface is now imported from the hook, so this is not needed.
 // interface Message {
@@ -26,6 +28,20 @@ export default function ChatWidget() {
   const [isMinimized, setIsMinimized] = useState(false);
   const [inputMessage, setInputMessage] = useState("");
   const [hasNewMessage, setHasNewMessage] = useState(false);
+  const [showOrderModal, setShowOrderModal] = useState(false);
+  const [selectedOrderRef, setSelectedOrderRef] = useState<{ orderId: string; orderCode: string } | null>(null);
+  const [selectedOrderDetails, setSelectedOrderDetails] = useState<{
+    _id: string;
+    orderCode: string;
+    totalAmount: number;
+    status: string;
+    createdAt: string;
+    orderLines?: Array<{
+      productName: string;
+      productImage: string;
+      quantity: number;
+    }>;
+  } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const previousMessagesLengthRef = useRef(0);
@@ -169,9 +185,23 @@ export default function ChatWidget() {
     if (!inputMessage.trim()) return;
 
     // Use the sendMessage function provided by the useSocket hook.
-    sendSocketMessage(inputMessage.trim());
-    // Clear the input field after sending.
+    sendSocketMessage(inputMessage.trim(), selectedOrderRef || undefined, selectedOrderDetails || undefined);
+    // Clear the input field and selected order after sending.
     setInputMessage("");
+    setSelectedOrderRef(null);
+    setSelectedOrderDetails(null);
+  };
+
+  const handleSelectOrder = (orderReference: { orderId: string; orderCode: string }, orderDetails?: any) => {
+    setSelectedOrderRef(orderReference);
+    if (orderDetails) {
+      setSelectedOrderDetails(orderDetails);
+    }
+  };
+
+  const handleRemoveOrderRef = () => {
+    setSelectedOrderRef(null);
+    setSelectedOrderDetails(null);
   };
 
   // Handle the "Enter" key press to send a message.
@@ -194,6 +224,7 @@ export default function ChatWidget() {
 
   return (
     <>
+      <OrderAttachmentModal open={showOrderModal} onOpenChange={setShowOrderModal} onSelectOrder={handleSelectOrder} />
       {/* Chat Toggle Button */}
       <div className="fixed bottom-32 right-10 z-[9999]">
         {!isOpen && (
@@ -307,6 +338,11 @@ export default function ChatWidget() {
                         >
                           {msg.message}
                         </div>
+                        {msg.orderReference && (
+                          <div className="mt-2">
+                            <OrderReferenceCard orderReference={msg.orderReference} />
+                          </div>
+                        )}
                         <div className={`text-xs text-gray-400 mt-1 px-1 ${msg.senderRole === "user" ? "text-right" : "text-left"}`}>
                           {msg.senderRole === "admin" ? "Hỗ trợ viên" : "Bạn"} • {formatTime(msg.timestamp)}
                         </div>
@@ -334,32 +370,60 @@ export default function ChatWidget() {
               </div>
             </div>
             {/* Input Area */}
-            <div className="flex space-x-2 pt-3 border-t bg-white px-1 pb-1">
-              <div className="flex-1 relative">
-                <Input
-                  placeholder={isConnected ? "Nhập tin nhắn..." : "Đang kết nối..."}
-                  value={inputMessage}
-                  onChange={(e) => setInputMessage(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  disabled={!isConnected}
-                  className="text-sm pr-10 border-gray-200 focus:border-green-500 bg-white"
-                  suppressHydrationWarning
-                />
-                {!isConnected && (
-                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                    <div className="w-2 h-2 bg-orange-400 rounded-full animate-pulse"></div>
+            <div className="pt-3 border-t bg-white px-1 pb-1">
+              {selectedOrderRef && (
+                <div className="mb-2 p-2 bg-green-50 border border-green-200 rounded-lg flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Paperclip className="h-4 w-4 text-green-600" />
+                    <span className="text-sm text-green-700 font-medium">{selectedOrderRef.orderCode}</span>
                   </div>
-                )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleRemoveOrderRef}
+                    className="h-6 w-6 p-0 hover:bg-green-100"
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+              )}
+              <div className="flex space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowOrderModal(true)}
+                  disabled={!isConnected}
+                  className="px-3 border-gray-200 hover:bg-gray-50"
+                  suppressHydrationWarning
+                >
+                  <Paperclip className="h-4 w-4" />
+                </Button>
+                <div className="flex-1 relative">
+                  <Input
+                    placeholder={isConnected ? "Nhập tin nhắn..." : "Đang kết nối..."}
+                    value={inputMessage}
+                    onChange={(e) => setInputMessage(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    disabled={!isConnected}
+                    className="text-sm pr-10 border-gray-200 focus:border-green-500 bg-white"
+                    suppressHydrationWarning
+                  />
+                  {!isConnected && (
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                      <div className="w-2 h-2 bg-orange-400 rounded-full animate-pulse"></div>
+                    </div>
+                  )}
+                </div>
+                <Button
+                  onClick={sendMessage}
+                  disabled={!inputMessage.trim() || !isConnected}
+                  size="sm"
+                  className="px-3 bg-green-600 hover:bg-green-700 disabled:bg-gray-300"
+                  suppressHydrationWarning
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
               </div>
-              <Button
-                onClick={sendMessage}
-                disabled={!inputMessage.trim() || !isConnected}
-                size="sm"
-                className="px-3 bg-green-600 hover:bg-green-700 disabled:bg-gray-300"
-                suppressHydrationWarning
-              >
-                <Send className="h-4 w-4" />
-              </Button>
             </div>
           </div>
         </Card>

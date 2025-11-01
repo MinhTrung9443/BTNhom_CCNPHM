@@ -147,6 +147,7 @@ io.on("connection", (socket) => {
             message: msg.message,
             room: userRoomIdentifier,
             timestamp: msg.createdAt.toISOString(),
+            orderReference: msg.orderReference || null,
         }));
         socket.emit("roomMessages", { room: userRoomIdentifier, messages: formattedMessages });
         logger.info(`Sent initial message history to user ${userId} for room ${userRoomIdentifier}`);
@@ -175,7 +176,7 @@ io.on("connection", (socket) => {
 
   // Handles a new message from any client
   socket.on('sendMessage', async (data) => {
-    const { room: roomIdentifier, message } = data;
+    const { room: roomIdentifier, message, orderReference } = data;
     if (!roomIdentifier || !message || !message.trim()) return;
 
     const targetUserId = roomIdentifier.split('_')[1];
@@ -191,8 +192,18 @@ io.on("connection", (socket) => {
         return logger.error(`sendMessage: Could not find a chat room in DB for identifier ${roomIdentifier}`);
       }
 
-      // Save the message to the database
-      const savedMessage = await chatService.addMessage(room._id, userId, userRole, message);
+      // Save the message to the database (with optional orderReference)
+      const savedMessage = await chatService.addMessage(room._id, userId, userRole, message, orderReference);
+
+      // Populate orderReference if exists
+      let populatedOrderReference = savedMessage.orderReference;
+      if (savedMessage.orderReference && savedMessage.orderReference.orderId) {
+        const ChatMessage = (await import('./src/models/index.js')).ChatMessage;
+        const populatedMsg = await ChatMessage.findById(savedMessage._id)
+          .populate('orderReference.orderId', 'orderCode totalAmount status createdAt orderLines')
+          .lean();
+        populatedOrderReference = populatedMsg?.orderReference || savedMessage.orderReference;
+      }
 
       const messageToSend = {
         _id: savedMessage._id,
@@ -201,6 +212,7 @@ io.on("connection", (socket) => {
         message: savedMessage.message,
         room: roomIdentifier,
         timestamp: savedMessage.createdAt.toISOString(),
+        orderReference: populatedOrderReference || null,
       };
 
       // Broadcast the message to the room (which includes the user and all listening admins)
@@ -238,6 +250,7 @@ io.on("connection", (socket) => {
                 message: msg.message,
                 room: roomIdentifier,
                 timestamp: msg.createdAt.toISOString(),
+                orderReference: msg.orderReference || null,
             }));
             socket.emit("roomMessages", { room: roomIdentifier, messages: formattedMessages });
             logger.info(`Admin ${socket.userId} joined room ${roomIdentifier} and received history.`);
@@ -286,6 +299,7 @@ io.on("connection", (socket) => {
                 message: msg.message,
                 room: roomIdentifier,
                 timestamp: msg.createdAt.toISOString(),
+                orderReference: msg.orderReference || null,
             }));
 
             socket.emit('olderMessages', { room: roomIdentifier, messages: formattedMessages });
@@ -338,6 +352,7 @@ io.on("connection", (socket) => {
             message: msg.message,
             room: roomIdentifier,
             timestamp: msg.createdAt.toISOString(),
+            orderReference: msg.orderReference || null,
         }));
 
         // Send room info and history back to the initiating admin

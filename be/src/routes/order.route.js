@@ -24,5 +24,6 @@ router.patch("/my/:orderId/address", restrictTo("user"), validate(updateShipping
 router.patch("/my/:orderId/cancel", restrictTo("user"), validate(cancelOrder), OrderController.cancelOrderByUser);
 router.post("/:orderId/request-return", restrictTo("user"), validate(requestReturn), OrderController.requestReturn);
 router.patch("/my/:orderId/confirm-received", restrictTo("user"), validate(confirmReceived), OrderController.confirmOrderReceived);
+router.get("/my/for-chat", restrictTo("user"), OrderController.getUserOrdersForChat);
 
 export default router;

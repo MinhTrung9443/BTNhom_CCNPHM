@@ -169,3 +169,22 @@
     opacity: 0.8;
   }
 }
+
+/* Order Attachment Modal - Ensure it appears above chat widget */
+/* Chat widget uses z-index: 9999, so modal needs to be higher */
+
+/* Target the dialog overlay (backdrop) */
+.order-attachment-modal-content ~ [data-radix-dialog-overlay],
+[data-radix-dialog-overlay] {
+  z-index: 10000 !important;
+}
+
+/* Target the dialog content itself */
+.order-attachment-modal-content {
+  z-index: 10001 !important;
+}
+
+/* Alternative selectors for Radix UI Dialog */
+[data-state="open"][role="dialog"] {
+  z-index: 10001 !important;
+}

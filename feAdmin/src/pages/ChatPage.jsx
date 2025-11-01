@@ -5,6 +5,7 @@ import { useChatContext } from "../contexts/ChatContext";
 import { Form, Image, Button, Spinner } from "react-bootstrap";
 import moment from "moment";
 import "./ChatPage.css";
+import OrderReferenceCard from "../components/common/OrderReferenceCard";
 
 function useQuery() {
   return new URLSearchParams(useLocation().search);
@@ -346,6 +347,11 @@ const ChatPage = () => {
               {messages.map((msg, index) => (
                 <div key={msg._id || index} className={`message ${msg.senderRole === "admin" ? "admin" : "user"}`}>
                   <div className="message-content">{msg.message}</div>
+                  {msg.orderReference && (
+                    <div className="mt-2">
+                      <OrderReferenceCard orderReference={msg.orderReference} />
+                    </div>
+                  )}
                   <div className="message-time">{msg.timestamp ? moment(msg.timestamp).format("HH:mm") : ""}</div>
                 </div>
               ))}

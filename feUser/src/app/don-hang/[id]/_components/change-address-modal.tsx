@@ -19,7 +19,7 @@ import { orderService } from "@/services/orderService";
 import { cn } from "@/lib/utils";
 
 interface Address {
-  _id: string;
+  _id?: string;
   recipientName: string;
   phoneNumber: string;
   street: string;
@@ -151,7 +151,7 @@ export function ChangeAddressModal({
 
                   return (
                     <div
-                      key={addr._id}
+                      key={addr._id!}
                       className={cn(
                         "relative flex items-start space-x-3 p-4 rounded-lg border cursor-pointer transition-colors",
                         selectedAddressId === addr._id
@@ -159,16 +159,16 @@ export function ChangeAddressModal({
                           : "border-border hover:border-primary/50",
                         isCurrent && "opacity-50 cursor-not-allowed"
                       )}
-                      onClick={() => !isCurrent && setSelectedAddressId(addr._id)}
+                      onClick={() => !isCurrent && setSelectedAddressId(addr._id!)}
                     >
                       <RadioGroupItem
-                        value={addr._id}
-                        id={addr._id}
+                        value={addr._id!}
+                        id={addr._id!}
                         disabled={isCurrent}
                         className="mt-1"
                       />
                       <Label
-                        htmlFor={addr._id}
+                        htmlFor={addr._id!}
                         className="flex-1 cursor-pointer space-y-1"
                       >
                         <div className="flex items-center gap-2">
