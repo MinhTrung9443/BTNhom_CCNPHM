@@ -15,6 +15,14 @@ router.get('/favorites', userController.getFavorites);
 router.post('/favorites/:productId', userController.toggleFavorite);
 router.get('/recently-viewed', userController.getRecentlyViewed);
 
+// Address management routes
+router.get('/me/addresses', userController.getAddresses);
+router.post('/me/addresses', userController.addAddress);
+router.put('/me/addresses/:addressId', userController.updateAddress);
+router.delete('/me/addresses/:addressId', userController.deleteAddress);
+router.patch('/me/addresses/:addressId/default', userController.setDefaultAddress);
+router.get('/me/addresses/default', userController.getDefaultAddress);
+
 // Loyalty points routes
 router.get('/loyalty-points', userController.getUserLoyaltyPoints);
 router.get('/points-history', userController.getPointsHistory);

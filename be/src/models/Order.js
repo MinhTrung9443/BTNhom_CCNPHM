@@ -164,6 +164,8 @@ const orderSchema = new mongoose.Schema(
       district: { type: String, required: true },
       province: { type: String, required: true },
     },
+    // Đếm số lần thay đổi địa chỉ (giới hạn 1 lần)
+    addressChangeCount: { type: Number, default: 0 },
     notes: { type: String },
     payment: {
       amount: { type: Number },

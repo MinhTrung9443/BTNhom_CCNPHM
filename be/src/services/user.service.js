@@ -6,7 +6,7 @@ import { AppError } from "../utils/AppError.js";
 import mongoose from "mongoose";
 
 const updateUserProfile = async (userId, updateData, file) => {
-  const allowedUpdates = ["name", "phone", "address"];
+  const allowedUpdates = ["name", "phone"];
   const updates = {};
 
   Object.keys(updateData).forEach((key) => {
@@ -33,6 +33,122 @@ const updateUserProfile = async (userId, updateData, file) => {
   }
 
   return user;
+};
+
+// === ADDRESS MANAGEMENT SERVICES ===
+
+const getAddresses = async (userId) => {
+  const user = await User.findById(userId).select("addresses").lean();
+  if (!user) {
+    throw new AppError("Không tìm thấy người dùng.", 404);
+  }
+  return user.addresses || [];
+};
+
+const addAddress = async (userId, addressData) => {
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new AppError("Không tìm thấy người dùng.", 404);
+  }
+
+  // Nếu đây là địa chỉ đầu tiên hoặc được đánh dấu là mặc định
+  if (user.addresses.length === 0 || addressData.isDefault) {
+    // Set tất cả địa chỉ khác thành không mặc định
+    user.addresses.forEach(addr => {
+      addr.isDefault = false;
+    });
+    addressData.isDefault = true;
+  }
+
+  user.addresses.push(addressData);
+  await user.save();
+
+  // Trả về địa chỉ vừa thêm (địa chỉ cuối cùng trong mảng)
+  return user.addresses[user.addresses.length - 1];
+};
+
+const updateAddress = async (userId, addressId, addressData) => {
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new AppError("Không tìm thấy người dùng.", 404);
+  }
+
+  const address = user.addresses.id(addressId);
+  if (!address) {
+    throw new AppError("Không tìm thấy địa chỉ.", 404);
+  }
+
+  // Nếu đặt làm mặc định, bỏ mặc định của các địa chỉ khác
+  if (addressData.isDefault) {
+    user.addresses.forEach(addr => {
+      if (addr._id.toString() !== addressId) {
+        addr.isDefault = false;
+      }
+    });
+  }
+
+  // Cập nhật các trường
+  Object.keys(addressData).forEach(key => {
+    address[key] = addressData[key];
+  });
+
+  await user.save();
+  return address;
+};
+
+const deleteAddress = async (userId, addressId) => {
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new AppError("Không tìm thấy người dùng.", 404);
+  }
+
+  const address = user.addresses.id(addressId);
+  if (!address) {
+    throw new AppError("Không tìm thấy địa chỉ.", 404);
+  }
+
+  const wasDefault = address.isDefault;
+  
+  // Sử dụng pull() thay vì remove()
+  user.addresses.pull(addressId);
+
+  // Nếu địa chỉ bị xóa là mặc định và còn địa chỉ khác, đặt địa chỉ đầu tiên làm mặc định
+  if (wasDefault && user.addresses.length > 0) {
+    user.addresses[0].isDefault = true;
+  }
+
+  await user.save();
+  return { message: "Xóa địa chỉ thành công" };
+};
+
+const setDefaultAddress = async (userId, addressId) => {
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new AppError("Không tìm thấy người dùng.", 404);
+  }
+
+  const address = user.addresses.id(addressId);
+  if (!address) {
+    throw new AppError("Không tìm thấy địa chỉ.", 404);
+  }
+
+  // Set tất cả địa chỉ khác thành không mặc định
+  user.addresses.forEach(addr => {
+    addr.isDefault = addr._id.toString() === addressId;
+  });
+
+  await user.save();
+  return address;
+};
+
+const getDefaultAddress = async (userId) => {
+  const user = await User.findById(userId).select("addresses").lean();
+  if (!user) {
+    throw new AppError("Không tìm thấy người dùng.", 404);
+  }
+
+  const defaultAddress = user.addresses?.find(addr => addr.isDefault);
+  return defaultAddress || null;
 };
 
 const toggleFavorite = async (userId, productId) => {
@@ -263,4 +379,18 @@ const getAllUsersForChat = async ({ page = 1, limit = 15, search = '' } = {}) =>
   };
 };
 
-export { updateUserProfile, toggleFavorite, getFavorites, getRecentlyViewed, getLoyaltyPoints, getAllUsersForChat };
+export { 
+  updateUserProfile, 
+  toggleFavorite, 
+  getFavorites, 
+  getRecentlyViewed, 
+  getLoyaltyPoints, 
+  getAllUsersForChat,
+  // Address management
+  getAddresses,
+  addAddress,
+  updateAddress,
+  deleteAddress,
+  setDefaultAddress,
+  getDefaultAddress
+};

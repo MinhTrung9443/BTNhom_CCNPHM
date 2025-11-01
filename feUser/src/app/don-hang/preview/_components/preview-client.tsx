@@ -11,7 +11,9 @@ import { CartItem } from "@/types/cart";
 import { OrderPreview, OrderPreviewRequest, CreateOrderRequest, PaymentMethod } from "@/types/order";
 import { DeliveryMethod } from "@/types/delivery";
 import { Voucher } from "@/types/voucher";
-import { RecipientInfoForm } from "./recipient-info-form";
+import { Address } from "@/types/user";
+import { AddressSelector } from "./address-selector";
+import { AddressFormData } from "@/app/profile/_components/address-form-modal";
 import { DeliveryMethodSelector } from "./delivery-method-selector";
 import { PaymentMethodSelector } from "./payment-method-selector";
 import { VoucherSelector } from "./voucher-selector";
@@ -36,16 +38,12 @@ interface PreviewState {
   selectedVoucher: string | null;
   availablePoints: number;
   pointsApplied: number;
-  recipientName: string;
-  phoneNumber: string;
-  address: string;
-  street: string;
-  province: string;
-  district: string;
-  ward: string;
+  addresses: Address[];
+  selectedAddress: Address | null;
   isLoading: boolean;
   isLoadingDelivery: boolean;
   isLoadingVouchers: boolean;
+  isLoadingAddresses: boolean;
   isCreatingOrder: boolean;
   error: string | null;
 }
@@ -54,6 +52,7 @@ type PreviewAction =
   | { type: "SET_IS_LOADING"; payload: boolean }
   | { type: "SET_IS_LOADING_DELIVERY"; payload: boolean }
   | { type: "SET_IS_LOADING_VOUCHERS"; payload: boolean }
+  | { type: "SET_IS_LOADING_ADDRESSES"; payload: boolean }
   | { type: "SET_IS_CREATING_ORDER"; payload: boolean }
   | { type: "SET_SELECTED_ITEMS"; payload: CartItem[] }
   | { type: "SET_PREVIEW_DATA"; payload: OrderPreview }
@@ -64,8 +63,8 @@ type PreviewAction =
   | { type: "SET_VOUCHER"; payload: string | null }
   | { type: "SET_AVAILABLE_POINTS"; payload: number }
   | { type: "SET_POINTS_APPLIED"; payload: number }
-  | { type: "SET_RECIPIENT_FIELD"; payload: { field: keyof PreviewState; value: string } }
-  | { type: "RESET_FIELDS"; payload: (keyof PreviewState)[] }
+  | { type: "SET_ADDRESSES"; payload: Address[] }
+  | { type: "SET_SELECTED_ADDRESS"; payload: Address | null }
   | { type: "SET_ERROR"; payload: string | null };
 
 const initialState: PreviewState = {
@@ -78,16 +77,12 @@ const initialState: PreviewState = {
   selectedVoucher: null,
   availablePoints: 0,
   pointsApplied: 0,
-  recipientName: "",
-  phoneNumber: "",
-  address: "",
-  street: "",
-  province: "",
-  district: "",
-  ward: "",
-  isLoading: true,
+  addresses: [],
+  selectedAddress: null,
+  isLoading: false, // Không cần loading ban đầu, chỉ loading khi fetch preview
   isLoadingDelivery: true,
-  isLoadingVouchers: true,
+  isLoadingVouchers: false, // Sẽ được set khi có selectedItems
+  isLoadingAddresses: true,
   isCreatingOrder: false,
   error: null,
 };
@@ -98,6 +93,10 @@ function previewReducer(state: PreviewState, action: PreviewAction): PreviewStat
       return { ...state, isLoading: action.payload };
     case "SET_IS_LOADING_DELIVERY":
       return { ...state, isLoadingDelivery: action.payload };
+    case "SET_IS_LOADING_VOUCHERS":
+      return { ...state, isLoadingVouchers: action.payload };
+    case "SET_IS_LOADING_ADDRESSES":
+      return { ...state, isLoadingAddresses: action.payload };
     case "SET_IS_CREATING_ORDER":
       return { ...state, isCreatingOrder: action.payload };
     case "SET_SELECTED_ITEMS":
@@ -110,8 +109,6 @@ function previewReducer(state: PreviewState, action: PreviewAction): PreviewStat
       return { ...state, selectedDeliveryMethod: action.payload };
     case "SET_PAYMENT_METHOD":
       return { ...state, selectedPaymentMethod: action.payload };
-    case "SET_IS_LOADING_VOUCHERS":
-      return { ...state, isLoadingVouchers: action.payload };
     case "SET_VOUCHERS":
       return { ...state, vouchers: action.payload };
     case "SET_VOUCHER":
@@ -120,16 +117,10 @@ function previewReducer(state: PreviewState, action: PreviewAction): PreviewStat
       return { ...state, availablePoints: action.payload };
     case "SET_POINTS_APPLIED":
       return { ...state, pointsApplied: action.payload };
-    case "SET_RECIPIENT_FIELD":
-      return { ...state, [action.payload.field]: action.payload.value };
-    case "RESET_FIELDS":
-      const newState = { ...state };
-      action.payload.forEach((field) => {
-        if (field === "district" || field === "ward") {
-          newState[field] = "";
-        }
-      });
-      return newState;
+    case "SET_ADDRESSES":
+      return { ...state, addresses: action.payload };
+    case "SET_SELECTED_ADDRESS":
+      return { ...state, selectedAddress: action.payload };
     case "SET_ERROR":
       return { ...state, error: action.payload, isLoading: false, isCreatingOrder: false };
     default:
@@ -142,14 +133,16 @@ export default function PreviewClient({ accessToken }: PreviewClientProps) {
   const [state, dispatch] = useReducer(previewReducer, initialState);
   const { refreshCartCount } = useCart();
 
-  // Fetch delivery methods và user points
+  // Fetch delivery methods, user points và addresses
   useEffect(() => {
     const fetchInitialData = async () => {
       dispatch({ type: "SET_IS_LOADING_DELIVERY", payload: true });
+      dispatch({ type: "SET_IS_LOADING_ADDRESSES", payload: true });
       try {
-        const [deliveryRes, pointsRes] = await Promise.all([
+        const [deliveryRes, pointsRes, addressesRes] = await Promise.all([
           deliveryService.getDeliveryMethods(accessToken),
           userService.getLoyaltyPoints(accessToken),
+          userService.getAddresses(accessToken),
         ]);
 
         if (deliveryRes.success && deliveryRes.data) {
@@ -166,11 +159,34 @@ export default function PreviewClient({ accessToken }: PreviewClientProps) {
         if (pointsRes.success && pointsRes.data) {
           dispatch({ type: "SET_AVAILABLE_POINTS", payload: pointsRes.data.loyaltyPoints });
         }
+
+        if (addressesRes.success && addressesRes.data) {
+          console.log("Addresses loaded:", addressesRes.data);
+          dispatch({ type: "SET_ADDRESSES", payload: addressesRes.data });
+          
+          // Tự động chọn địa chỉ mặc định
+          const defaultAddr = addressesRes.data.find((a: Address) => a.isDefault);
+          if (defaultAddr) {
+            console.log("Default address selected:", defaultAddr);
+            dispatch({ type: "SET_SELECTED_ADDRESS", payload: defaultAddr });
+          } else if (addressesRes.data.length > 0) {
+            // Nếu không có mặc định, chọn địa chỉ đầu tiên
+            console.log("First address selected:", addressesRes.data[0]);
+            dispatch({ type: "SET_SELECTED_ADDRESS", payload: addressesRes.data[0] });
+          } else {
+            console.log("No addresses found");
+          }
+        } else {
+          console.error("Failed to load addresses:", addressesRes);
+        }
       } catch (error: unknown) {
         const errorMessage = error instanceof Error ? error.message : "Không thể tải dữ liệu ban đầu";
+        console.error("Error loading initial data:", error);
         toast.error("Lỗi", { description: errorMessage });
       } finally {
+        console.log("Initial data loading complete");
         dispatch({ type: "SET_IS_LOADING_DELIVERY", payload: false });
+        dispatch({ type: "SET_IS_LOADING_ADDRESSES", payload: false });
       }
     };
 
@@ -213,6 +229,14 @@ export default function PreviewClient({ accessToken }: PreviewClientProps) {
         productId: item.productId._id,
         quantity: item.quantity,
       })),
+      shippingAddress: state.selectedAddress ? {
+        recipientName: state.selectedAddress.recipientName,
+        phoneNumber: state.selectedAddress.phoneNumber,
+        street: state.selectedAddress.street,
+        ward: state.selectedAddress.ward,
+        district: state.selectedAddress.district,
+        province: state.selectedAddress.province,
+      } : undefined,
       shippingMethod: state.selectedDeliveryMethod as "express" | "standard" | undefined,
       voucherCode: state.selectedVoucher || undefined,
       pointsToApply: state.pointsApplied,
@@ -221,7 +245,6 @@ export default function PreviewClient({ accessToken }: PreviewClientProps) {
     try {
       const response = await orderService.previewOrder(accessToken, requestData);
       if (response.success && response.data.previewOrder) {
-
         dispatch({ type: "SET_PREVIEW_DATA", payload: response.data.previewOrder });
       } else {
         throw new Error(response.message);
@@ -233,7 +256,7 @@ export default function PreviewClient({ accessToken }: PreviewClientProps) {
     } finally {
       dispatch({ type: "SET_IS_LOADING", payload: false });
     }
-  }, [accessToken, state.selectedItems, state.selectedDeliveryMethod, state.selectedVoucher, state.pointsApplied]);
+  }, [accessToken, state.selectedItems, state.selectedAddress, state.selectedDeliveryMethod, state.selectedVoucher, state.pointsApplied]);
 
   useEffect(() => {
     try {
@@ -256,17 +279,17 @@ export default function PreviewClient({ accessToken }: PreviewClientProps) {
   }, [router]);
 
   useEffect(() => {
-    if (state.selectedItems.length > 0 && state.selectedDeliveryMethod) {
+    if (state.selectedItems.length > 0 && state.selectedDeliveryMethod && state.selectedAddress) {
       updatePreview();
     }
-  }, [state.selectedItems, state.selectedDeliveryMethod, state.selectedVoucher, state.pointsApplied, updatePreview]);
+  }, [state.selectedItems, state.selectedAddress, state.selectedDeliveryMethod, state.selectedVoucher, state.pointsApplied, updatePreview]);
 
-  const handleFieldChange = (field: string, value: string) => {
-    dispatch({ type: "SET_RECIPIENT_FIELD", payload: { field: field as keyof PreviewState, value } });
+  const handleSelectAddress = (address: Address) => {
+    dispatch({ type: "SET_SELECTED_ADDRESS", payload: address });
 
-    // Nếu thay đổi province và đang chọn express, kiểm tra lại
-    if (field === 'province' && state.selectedDeliveryMethod === 'express') {
-      const normalized = value.trim().toLowerCase();
+    // Kiểm tra nếu đang chọn express mà địa chỉ không phải Sóc Trăng
+    if (state.selectedDeliveryMethod === 'express') {
+      const normalized = address.province.trim().toLowerCase();
       const socTrangVariants = ["sóc trăng", "soc trang", "tỉnh sóc trăng", "tinh soc trang"];
       const isSocTrang = socTrangVariants.some(variant => normalized.includes(variant));
 
@@ -289,8 +312,24 @@ export default function PreviewClient({ accessToken }: PreviewClientProps) {
     }
   };
 
-  const handleResetFields = (fields: ("district" | "ward")[]) => {
-    dispatch({ type: "RESET_FIELDS", payload: fields });
+  const handleAddAddress = async (data: AddressFormData) => {
+    try {
+      const response = await userService.addAddress(accessToken, data);
+      if (response.success) {
+        // Refresh addresses
+        const addressesRes = await userService.getAddresses(accessToken);
+        if (addressesRes.success) {
+          dispatch({ type: "SET_ADDRESSES", payload: addressesRes.data });
+          // Tự động chọn địa chỉ vừa thêm
+          dispatch({ type: "SET_SELECTED_ADDRESS", payload: response.data });
+        }
+        toast.success("Thành công", { description: "Đã thêm địa chỉ mới" });
+      }
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Không thể thêm địa chỉ";
+      toast.error("Lỗi", { description: errorMessage });
+      throw error;
+    }
   };
 
   const handleDeliveryMethodChange = (methodType: string) => {
@@ -304,8 +343,8 @@ export default function PreviewClient({ accessToken }: PreviewClientProps) {
     }
 
     // Kiểm tra nếu chọn express mà không phải Sóc Trăng thì không cho phép
-    if (methodType === 'express') {
-      const normalized = state.province.trim().toLowerCase();
+    if (methodType === 'express' && state.selectedAddress) {
+      const normalized = state.selectedAddress.province.trim().toLowerCase();
       const socTrangVariants = ["sóc trăng", "soc trang", "tỉnh sóc trăng", "tinh soc trang"];
       const isSocTrang = socTrangVariants.some(variant => normalized.includes(variant));
 
@@ -332,6 +371,12 @@ export default function PreviewClient({ accessToken }: PreviewClientProps) {
   };
 
   const handleCreateOrder = async () => {
+    // Validate địa chỉ giao hàng
+    if (!state.selectedAddress) {
+      toast.error("Lỗi", { description: "Vui lòng chọn địa chỉ giao hàng" });
+      return;
+    }
+
     // Validate phương thức vận chuyển
     if (!state.selectedDeliveryMethod) {
       toast.error("Lỗi", { description: "Vui lòng chọn phương thức vận chuyển" });
@@ -343,24 +388,18 @@ export default function PreviewClient({ accessToken }: PreviewClientProps) {
       return;
     }
 
-    // Validate thông tin người nhận
-    if (!state.recipientName || !state.phoneNumber || !state.street || !state.province || !state.district || !state.ward) {
-      toast.error("Lỗi", { description: "Vui lòng điền đầy đủ thông tin người nhận" });
-      return;
-    }
-
     dispatch({ type: "SET_IS_CREATING_ORDER", payload: true });
 
     const finalPreviewData: OrderPreview = {
       ...state.previewData,
       paymentMethod: state.selectedPaymentMethod,
       shippingAddress: {
-        recipientName: state.recipientName,
-        phoneNumber: state.phoneNumber,
-        street: state.street,
-        ward: state.ward,
-        district: state.district,
-        province: state.province,
+        recipientName: state.selectedAddress.recipientName,
+        phoneNumber: state.selectedAddress.phoneNumber,
+        street: state.selectedAddress.street,
+        ward: state.selectedAddress.ward,
+        district: state.selectedAddress.district,
+        province: state.selectedAddress.province,
       },
     };
 
@@ -404,15 +443,12 @@ export default function PreviewClient({ accessToken }: PreviewClientProps) {
   };
 
   const {
-    recipientName,
-    phoneNumber,
-    street,
-    province,
-    district,
-    ward,
+    addresses,
+    selectedAddress,
     isLoading,
     isLoadingDelivery,
     isLoadingVouchers,
+    isLoadingAddresses,
     isCreatingOrder,
     previewData,
     selectedItems,
@@ -425,7 +461,9 @@ export default function PreviewClient({ accessToken }: PreviewClientProps) {
 
   const totalAmount = previewData?.totalAmount ?? selectedItems.reduce((sum, item) => sum + item.productId.price * item.quantity, 0);
 
-  if ((isLoading || isLoadingDelivery || isLoadingVouchers) && !previewData) {
+  // Chỉ show loading khi đang fetch initial data (delivery methods và addresses)
+  // Không chờ preview data vì nó cần selectedAddress trước
+  if (isLoadingDelivery || isLoadingAddresses) {
     return (
       <div className="flex justify-center items-center h-64">
         <Loader2 className="w-8 h-8 animate-spin" />
@@ -491,21 +529,27 @@ export default function PreviewClient({ accessToken }: PreviewClientProps) {
             </CardContent>
           </Card>
 
-          <RecipientInfoForm
-            formData={{ recipientName, phoneNumber, street, province, district, ward }}
-            onFieldChange={handleFieldChange}
-            resetFields={handleResetFields}
-            accessToken={accessToken}
+          <AddressSelector
+            addresses={addresses}
+            selectedAddress={selectedAddress}
+            onSelectAddress={handleSelectAddress}
+            onAddAddress={handleAddAddress}
           />
 
           <DeliveryMethodSelector
             deliveryMethods={deliveryMethods}
             selectedMethod={selectedDeliveryMethod}
             onMethodChange={handleDeliveryMethodChange}
-            province={province}
+            province={selectedAddress?.province || ""}
           />
 
-          {!selectedDeliveryMethod && (
+          {!selectedAddress && (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-amber-800 text-sm">
+              ⚠️ Vui lòng chọn địa chỉ giao hàng để tiếp tục
+            </div>
+          )}
+
+          {!selectedDeliveryMethod && selectedAddress && (
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-amber-800 text-sm">
               ⚠️ Vui lòng chọn phương thức vận chuyển để tiếp tục đặt hàng
             </div>
@@ -515,7 +559,7 @@ export default function PreviewClient({ accessToken }: PreviewClientProps) {
             availablePoints={state.availablePoints}
             isApplied={state.pointsApplied > 0}
             onToggle={handlePointsToggle}
-            orderSubtotal={state.previewData?.subtotal || 0}
+            maxApplicablePoints={state.previewData?.maxApplicablePoints || 0}
             isLoading={state.isLoading}
           />
 
@@ -572,13 +616,15 @@ export default function PreviewClient({ accessToken }: PreviewClientProps) {
               <Button 
                 onClick={handleCreateOrder} 
                 className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 disabled:cursor-not-allowed" 
-                disabled={isCreatingOrder || !selectedDeliveryMethod}
+                disabled={isCreatingOrder || !selectedAddress || !selectedDeliveryMethod}
               >
                 {isCreatingOrder ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                     {selectedPaymentMethod === "MOMO" ? "Đang tạo liên kết MoMo..." : "Đang xử lý..."}
                   </>
+                ) : !selectedAddress ? (
+                  "Vui lòng chọn địa chỉ giao hàng"
                 ) : !selectedDeliveryMethod ? (
                   "Vui lòng chọn phương thức vận chuyển"
                 ) : selectedPaymentMethod === "MOMO" ? (

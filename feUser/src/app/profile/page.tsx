@@ -11,6 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, User, Mail, Camera, Save, Edit3, CheckCircle, XCircle } from "lucide-react";
 import { userService } from "@/services/userService";
+import AddressBook from "./_components/address-book";
 
 export default function ProfilePage() {
   const { data: session, update } = useSession();
@@ -28,7 +29,6 @@ export default function ProfilePage() {
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
-    address: "",
   });
 
   // Handle form input changes
@@ -56,7 +56,6 @@ export default function ProfilePage() {
         setFormData({
           name: response.data.user.name || "",
           phone: response.data.user.phone || "",
-          address: response.data.user.address || "",
         });
       }
     } catch (error: unknown) {
@@ -319,11 +318,6 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="address">Địa chỉ</Label>
-              <Input id="address" name="address" value={formData.address} onChange={handleInputChange} placeholder="Nhập địa chỉ" />
-            </div>
-
             <div className="flex gap-3 pt-4">
               <Button onClick={handleUpdateProfile} disabled={isSaving} className="bg-green-600 hover:bg-green-700">
                 {isSaving ? (
@@ -342,6 +336,11 @@ export default function ProfilePage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Address Book Section */}
+      <div className="mt-6">
+        <AddressBook />
+      </div>
     </div>
   );
 }

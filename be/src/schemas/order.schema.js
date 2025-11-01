@@ -79,7 +79,7 @@ export const placeOrder = {
       totalAmount: Joi.number().required(),
       voucherCode: Joi.string().allow(null),
       paymentMethod: Joi.string().valid("MOMO", "COD", "BANK").required(),
-      
+      maxApplicablePoints:  Joi.number().integer().min(0).optional(),
     }).required(),
   }),
 };

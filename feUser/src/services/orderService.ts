@@ -120,27 +120,25 @@ class OrderService {
   }
 
   /**
-   * Lấy địa chỉ từ đơn hàng gần nhất
+   * Cập nhật địa chỉ giao hàng của đơn hàng
    */
-  async getLatestOrderAddress(accessToken: string): Promise<ApiResponse<{
-    recipientName: string;
-    phone: string;
-    address: string;
-    ward: string;
-    district: string;
-    province: string;
-  }>> {
-    const response = await apiFetch("/orders/latest-address", accessToken, {
-      method: "GET",
-    });
-    return response as  ApiResponse<{
+  async updateOrderAddress(
+    accessToken: string, 
+    orderId: string, 
+    shippingAddress: {
       recipientName: string;
-      phone: string;
-      address: string;
+      phoneNumber: string;
+      street: string;
       ward: string;
       district: string;
       province: string;
-    }>;
+    }
+  ): Promise<ApiResponse<Order>> {
+    const response: ApiResponse<Order> = await apiFetch(`/orders/my/${orderId}/address`, accessToken, {
+      method: "PATCH",
+      body: JSON.stringify({ shippingAddress }),
+    });
+    return response;
   }
 }
 

@@ -194,6 +194,131 @@ class UserService {
       cache: "no-store",
     });
   }
+
+  // === ADDRESS MANAGEMENT METHODS ===
+
+  /**
+   * Lấy danh sách địa chỉ của người dùng
+   */
+  async getAddresses(accessToken: string): Promise<ApiResponse<Address[]>> {
+    if (!accessToken) {
+      return {
+        success: false,
+        message: "Yêu cầu xác thực.",
+        data: [],
+      };
+    }
+    return await apiFetch("/users/me/addresses", accessToken, {
+      method: "GET",
+      cache: "no-store",
+    });
+  }
+
+  /**
+   * Thêm địa chỉ mới
+   */
+  async addAddress(accessToken: string, addressData: {
+    recipientName: string;
+    phoneNumber: string;
+    street: string;
+    ward: string;
+    district: string;
+    province: string;
+    isDefault?: boolean;
+  }): Promise<ApiResponse<Address>> {
+    if (!accessToken) {
+      return {
+        success: false,
+        message: "Yêu cầu xác thực.",
+        data: {} as Address,
+      };
+    }
+    return await apiFetch("/users/me/addresses", accessToken, {
+      method: "POST",
+      body: JSON.stringify(addressData),
+      cache: "no-store",
+    });
+  }
+
+  /**
+   * Cập nhật địa chỉ
+   */
+  async updateAddress(accessToken: string, addressId: string, addressData: {
+    recipientName: string;
+    phoneNumber: string;
+    street: string;
+    ward: string;
+    district: string;
+    province: string;
+    isDefault?: boolean;
+  }): Promise<ApiResponse<Address>> {
+    if (!accessToken) {
+      return {
+        success: false,
+        message: "Yêu cầu xác thực.",
+        data: {} as Address,
+      };
+    }
+    return await apiFetch(`/users/me/addresses/${addressId}`, accessToken, {
+      method: "PUT",
+      body: JSON.stringify(addressData),
+      cache: "no-store",
+    });
+  }
+
+  /**
+   * Xóa địa chỉ
+   */
+  async deleteAddress(accessToken: string, addressId: string): Promise<ApiResponse<void>> {
+    if (!accessToken) {
+      return {
+        success: false,
+        message: "Yêu cầu xác thực.",
+        data: undefined,
+      };
+    }
+    return await apiFetch(`/users/me/addresses/${addressId}`, accessToken, {
+      method: "DELETE",
+      cache: "no-store",
+    });
+  }
+
+  /**
+   * Đặt địa chỉ làm mặc định
+   */
+  async setDefaultAddress(accessToken: string, addressId: string): Promise<ApiResponse<Address>> {
+    if (!accessToken) {
+      return {
+        success: false,
+        message: "Yêu cầu xác thực.",
+        data: {} as Address,
+      };
+    }
+    return await apiFetch(`/users/me/addresses/${addressId}/default`, accessToken, {
+      method: "PATCH",
+      cache: "no-store",
+    });
+  }
+
+  /**
+   * Lấy địa chỉ mặc định
+   */
+  async getDefaultAddress(accessToken: string): Promise<ApiResponse<Address | null>> {
+    if (!accessToken) {
+      return {
+        success: false,
+        message: "Yêu cầu xác thực.",
+        data: null,
+      };
+    }
+    return await apiFetch("/users/me/addresses/default", accessToken, {
+      method: "GET",
+      cache: "no-store",
+    });
+  }
 }
+
+// Import Address type
+import { Address } from "@/types/user";
 
 export const userService = new UserService();

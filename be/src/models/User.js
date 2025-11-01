@@ -1,6 +1,46 @@
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
 
+// Schema con cho địa chỉ giao hàng
+const addressSchema = new mongoose.Schema({
+  recipientName: { 
+    type: String, 
+    required: true,
+    trim: true,
+    maxlength: 100
+  },
+  phoneNumber: { 
+    type: String, 
+    required: true,
+    trim: true
+  },
+  street: { 
+    type: String, 
+    required: true,
+    trim: true,
+    maxlength: 500
+  },
+  ward: { 
+    type: String, 
+    required: true,
+    trim: true
+  },
+  district: { 
+    type: String, 
+    required: true,
+    trim: true
+  },
+  province: { 
+    type: String, 
+    required: true,
+    trim: true
+  },
+  isDefault: { 
+    type: Boolean, 
+    default: false 
+  }
+}, { _id: true, timestamps: true });
+
 const userSchema = new mongoose.Schema(
   {
     name: {
@@ -30,12 +70,8 @@ const userSchema = new mongoose.Schema(
       required: true,
       trim: true
     },
-    address: {
-      type: String,
-      required: true,
-      trim: true,
-      maxlength: 500
-    },
+    // Mảng địa chỉ giao hàng
+    addresses: [addressSchema],
     isVerified: {
       type: Boolean,
       default: false,

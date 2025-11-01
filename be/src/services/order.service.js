@@ -221,28 +221,17 @@ export const getAllOrders = async (page = 1, limit = 10, status = null, detailed
   };
 };
 
-export const getLatestOrderAddress = async (userId) => {
-  // Tìm đơn hàng gần nhất của user (đã hoàn thành hoặc đang xử lý)
-  const latestOrder = await Order.findOne({
-    userId,
-  })
-    .sort({ createdAt: -1 })
-    .select("shippingAddress")
-    .lean();
-
-  if (!latestOrder) {
-    throw new AppError("Không tìm thấy đơn hàng nào", 404);
-  }
-
-  return {
-    recipientName: latestOrder.shippingAddress.recipientName,
-    phone: latestOrder.shippingAddress.phoneNumber,
-    address: latestOrder.shippingAddress.street,
-    ward: latestOrder.shippingAddress.ward,
-    district: latestOrder.shippingAddress.district,
-    province: latestOrder.shippingAddress.province,
-  };
-};
+// Deprecated: Sử dụng getDefaultAddress từ user.service.js thay thế
+// export const getLatestOrderAddress = async (userId) => {
+//   const latestOrder = await Order.findOne({ userId })
+//     .sort({ createdAt: -1 })
+//     .select("shippingAddress")
+//     .lean();
+//   if (!latestOrder) {
+//     throw new AppError("Không tìm thấy đơn hàng nào", 404);
+//   }
+//   return latestOrder.shippingAddress;
+// };
 
 export const getOrderDetail = async (orderId, userId = null) => {
   const filter = { _id: orderId };
@@ -432,26 +421,34 @@ export const previewOrder = async (userId, { orderLines, shippingAddress, vouche
     }
   }
   console.log("Discount:", discount);
-  let totalAfterVoucher = subtotal + shippingFee - discount;
+  
+  // Tính giá trị đơn hàng sau khi trừ voucher (không bao gồm phí ship)
+  const subtotalAfterVoucher = subtotal - discount;
+  
+  // Lấy thông tin user để tính điểm
+  const user = await User.findById(userId).select("loyaltyPoints").lean();
+  const userPoints = user?.loyaltyPoints || 0;
+  
+  // Tính số điểm tối đa có thể áp dụng (50% giá trị đơn hàng sau voucher, làm tròn xuống bội số 100)
+  const maxAllowableDiscount = Math.floor((subtotalAfterVoucher * 0.5) / 100) * 100;
+  const maxApplicablePoints = Math.min(userPoints, maxAllowableDiscount);
+  
+  // Tính số điểm thực tế được áp dụng (dựa trên pointsToApply từ client)
   let pointsApplied = 0;
-
   if (pointsToApply > 0) {
-    const user = await User.findById(userId).select("loyaltyPoints").lean();
-    if (user && user.loyaltyPoints > 0) {
-      // 1. Calculate max discount allowed (50% of value, rounded down to nearest 100)
-      const maxAllowableDiscount = Math.floor((totalAfterVoucher * 0.5) / 100) * 100;
-
-      // 2. Determine points to actually apply
-      // It's the minimum of: what user wants to apply, what user has, and the max allowed by the rule
-      pointsApplied = Math.min(pointsToApply, user.loyaltyPoints, maxAllowableDiscount);
+    if (userPoints > 0) {
+      // Lấy giá trị nhỏ nhất trong: điểm user muốn dùng, điểm user có, và giảm giá tối đa cho phép
+      pointsApplied = Math.min(pointsToApply, userPoints, maxAllowableDiscount);
     } else {
       logger.warn(`User ${userId} does not have enough loyalty points or tried to apply points with a zero balance.`);
     }
   }
 
-  // Since 1 point = 1 VND, pointsApplied is the discount
-  const totalAmount = totalAfterVoucher - pointsApplied;
-  console.log("Total Amount Calculation:", { subtotal, shippingFee, discount, pointsApplied, totalAmount });
+  // Tính tổng tiền cuối cùng: subtotal - discount từ voucher + phí ship - điểm tích lũy
+  // 1 điểm = 1 VNĐ
+  const totalAmount = subtotal - discount + shippingFee - pointsApplied;
+  console.log("Total Amount Calculation:", { subtotal, shippingFee, discount, pointsApplied, maxApplicablePoints, totalAmount });
+  
   const preview = {
     orderLines: processedOrderLines,
     shippingAddress: shippingAddress,
@@ -460,6 +457,7 @@ export const previewOrder = async (userId, { orderLines, shippingAddress, vouche
     discount,
     shippingMethod: shippingMethod,
     pointsApplied,
+    maxApplicablePoints, // Thêm field mới: số điểm tối đa có thể áp dụng
     totalAmount,
     voucherCode: appliedVoucherCode,
     paymentMethod: paymentMethod,
@@ -1735,6 +1733,75 @@ export const updateMomoPaymentFromReturn = async (orderId, userId, paymentData) 
   }
 
   await order.save();
+
+  return order;
+};
+
+// === UPDATE ORDER SHIPPING ADDRESS ===
+export const updateOrderShippingAddress = async (userId, orderId, newAddress) => {
+  const order = await Order.findOne({ _id: orderId, userId });
+  
+  if (!order) {
+    throw new AppError("Không tìm thấy đơn hàng hoặc bạn không có quyền truy cập.", 404);
+  }
+
+  // Kiểm tra số lần đã thay đổi địa chỉ
+  if (order.addressChangeCount >= 1) {
+    throw new AppError("Bạn đã thay đổi địa chỉ giao hàng cho đơn hàng này. Không thể thay đổi thêm.", 400);
+  }
+
+  const latestDetailedStatus = order.timeline[order.timeline.length - 1]?.status;
+
+  // Chỉ cho phép thay đổi địa chỉ khi:
+  // 1. Đơn hàng đang ở trạng thái PENDING (chờ xác nhận)
+  // 2. Đơn hàng đang ở trạng thái PROCESSING và detailed status là CONFIRMED (đã xác nhận nhưng chưa chuẩn bị)
+  const canChangeAddress = 
+    order.status === ORDER_STATUS.PENDING ||
+    (order.status === ORDER_STATUS.PROCESSING && latestDetailedStatus === DETAILED_ORDER_STATUS.CONFIRMED);
+
+  if (!canChangeAddress) {
+    throw new AppError(
+      "Không thể thay đổi địa chỉ giao hàng khi đơn hàng đã được chuẩn bị hoặc đang giao hàng.", 
+      400
+    );
+  }
+
+  // Validate địa chỉ mới
+  const requiredFields = ['recipientName', 'phoneNumber', 'street', 'ward', 'district', 'province'];
+  for (const field of requiredFields) {
+    if (!newAddress[field]) {
+      throw new AppError(`Thiếu thông tin bắt buộc: ${field}`, 400);
+    }
+  }
+
+  // Cập nhật địa chỉ (tạo bản sao mới, không tham chiếu)
+  order.shippingAddress = {
+    recipientName: newAddress.recipientName,
+    phoneNumber: newAddress.phoneNumber,
+    street: newAddress.street,
+    ward: newAddress.ward,
+    district: newAddress.district,
+    province: newAddress.province,
+  };
+
+  // Tăng số lần thay đổi địa chỉ
+  order.addressChangeCount += 1;
+
+  // Thêm timeline entry
+  order.timeline.push({
+    status: latestDetailedStatus, // Giữ nguyên status hiện tại
+    description: `Người dùng đã cập nhật địa chỉ giao hàng`,
+    performedBy: "user",
+    timestamp: new Date(),
+    metadata: {
+      oldAddress: order.shippingAddress,
+      newAddress: newAddress,
+    },
+  });
+
+  await order.save();
+
+  logger.info(`User ${userId} updated shipping address for order ${orderId}`);
 
   return order;
 };

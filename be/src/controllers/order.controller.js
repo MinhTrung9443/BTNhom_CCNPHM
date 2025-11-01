@@ -248,14 +248,27 @@ export const cancelOrderByUser = async (req, res) => {
   });
 };
 
-export const getLatestOrderAddress = async (req, res) => {
-  const userId = req.user._id;
+// Deprecated: Use getDefaultAddress from user.controller.js instead
+// export const getLatestOrderAddress = async (req, res) => {
+//   const userId = req.user._id;
+//   const address = await OrderService.getLatestOrderAddress(userId);
+//   res.json({
+//     success: true,
+//     message: "Lấy địa chỉ đơn hàng gần nhất thành công",
+//     data: address,
+//   });
+// };
 
-  const address = await OrderService.getLatestOrderAddress(userId);
+export const updateOrderShippingAddress = async (req, res) => {
+  const userId = req.user._id;
+  const { orderId } = req.params;
+  const { shippingAddress } = req.body;
+
+  const updatedOrder = await OrderService.updateOrderShippingAddress(userId, orderId, shippingAddress);
 
   res.json({
     success: true,
-    message: "Lấy địa chỉ đơn hàng gần nhất thành công",
-    data: address,
+    message: "Cập nhật địa chỉ giao hàng thành công",
+    data: updatedOrder,
   });
 };

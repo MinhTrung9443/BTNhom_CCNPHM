@@ -176,6 +176,7 @@ export interface OrderPreview {
   discount: number;
   shippingMethod: string | null;
   pointsApplied: number;
+  maxApplicablePoints: number; // Số điểm tối đa có thể áp dụng (từ backend)
   totalAmount: number;
   voucherCode: string | null;
   paymentMethod: PaymentMethod | null;

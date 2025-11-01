@@ -75,7 +75,6 @@ const notificationSchema = new mongoose.Schema({
 notificationSchema.index({ recipient: 1, isRead: 1, createdAt: -1 });
 notificationSchema.index({ recipientUserId: 1, isRead: 1, createdAt: -1 });
 notificationSchema.index({ type: 1, referenceId: 1 });
-notificationSchema.index({ type: 1, subType: 1, referenceId: 1, recipientUserId: 1 });
 notificationSchema.index({ isRead: 1, createdAt: -1 });
 
 // Prevent duplicate notifications for the same event

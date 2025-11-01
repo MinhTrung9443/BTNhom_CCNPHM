@@ -11,7 +11,7 @@ interface PointsSelectorProps {
   availablePoints: number;
   isApplied: boolean;
   onToggle: (apply: boolean) => void;
-  orderSubtotal: number;
+  maxApplicablePoints: number; // Giá trị từ backend đã tính toán
   isLoading: boolean;
 }
 
@@ -19,11 +19,10 @@ export function PointsSelector({
   availablePoints,
   isApplied,
   onToggle,
-  orderSubtotal,
+  maxApplicablePoints,
   isLoading,
 }: PointsSelectorProps) {
-  // Tính toán số điểm tối đa có thể áp dụng (50% giá trị đơn hàng)
-  const maxApplicablePoints = Math.min(availablePoints, Math.floor(orderSubtotal * 0.5));
+  // Sử dụng giá trị maxApplicablePoints từ backend (pointsApplied trong preview)
 
   const formatPoints = (points: number) => points.toLocaleString('vi-VN');
 
@@ -80,7 +79,7 @@ export function PointsSelector({
         <Alert variant="default" className="bg-blue-50 border-blue-200 text-blue-800">
           <Info className="h-4 w-4 text-blue-600" />
           <AlertDescription className="text-xs">
-            Lưu ý: Bạn có thể sử dụng điểm để thanh toán tối đa 50% giá trị đơn hàng.
+            Lưu ý: Bạn có thể sử dụng điểm để thanh toán tối đa 50% giá trị đơn hàng sau khi áp dụng voucher.
           </AlertDescription>
         </Alert>
       </CardContent>

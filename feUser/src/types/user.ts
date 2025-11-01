@@ -1,10 +1,26 @@
+/**
+ * Địa chỉ giao hàng của người dùng
+ */
+export interface Address {
+  _id: string;
+  recipientName: string;
+  phoneNumber: string;
+  street: string;
+  ward: string;
+  district: string;
+  province: string;
+  isDefault: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface User {
   _id: string;
   name:string;
   email: string;
   avatar?: string;
   phone?: string;
-  address?: string;
+  addresses?: Address[]; // Mảng địa chỉ mới
   isVerified?: boolean;
   isActive?: boolean;
   role?: 'user' | 'admin';
