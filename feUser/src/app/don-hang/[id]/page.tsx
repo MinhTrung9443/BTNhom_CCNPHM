@@ -16,6 +16,7 @@ import { ArrowLeft, MapPin, CreditCard, Package, CheckCircle2, Clock, AlertTrian
 import { cn } from "@/lib/utils";
 import { OrderDetailClient } from "./_components/order-detail-client";
 import { OrderItemsWithSnapshot } from "./_components/order-items-with-snapshot";
+import { ChangeAddressButton } from "./_components/change-address-button";
 
 // Helper functions for formatting
 const formatPrice = (price: number) => {
@@ -233,12 +234,23 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
                     Địa chỉ nhận hàng
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-2 text-sm">
-                  <p className="font-semibold text-base">{order.shippingAddress.recipientName}</p>
-                  <p>{order.shippingAddress.phoneNumber}</p>
-                  <p className="text-muted-foreground">
-                    {order.shippingAddress.street}, {order.shippingAddress.ward}, {order.shippingAddress.district}, {order.shippingAddress.province}
-                  </p>
+                <CardContent className="space-y-3 text-sm">
+                  <div className="space-y-2">
+                    <p className="font-semibold text-base">{order.shippingAddress.recipientName}</p>
+                    <p>{order.shippingAddress.phoneNumber}</p>
+                    <p className="text-muted-foreground">
+                      {order.shippingAddress.street}, {order.shippingAddress.ward}, {order.shippingAddress.district}, {order.shippingAddress.province}
+                    </p>
+                  </div>
+                  <Suspense fallback={null}>
+                    <ChangeAddressButton
+                      orderId={order._id}
+                      currentAddress={order.shippingAddress}
+                      orderStatus={order.status}
+                      latestDetailedStatus={latestDetailedStatus}
+                      addressChangeCount={order.addressChangeCount || 0}
+                    />
+                  </Suspense>
                 </CardContent>
               </Card>
 

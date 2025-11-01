@@ -1738,7 +1738,7 @@ export const updateMomoPaymentFromReturn = async (orderId, userId, paymentData) 
 };
 
 // === UPDATE ORDER SHIPPING ADDRESS ===
-export const updateOrderShippingAddress = async (userId, orderId, newAddress) => {
+export const updateOrderShippingAddress = async (userId, orderId, newAddressId) => {
   const order = await Order.findOne({ _id: orderId, userId });
   
   if (!order) {
@@ -1766,13 +1766,19 @@ export const updateOrderShippingAddress = async (userId, orderId, newAddress) =>
     );
   }
 
-  // Validate địa chỉ mới
-  const requiredFields = ['recipientName', 'phoneNumber', 'street', 'ward', 'district', 'province'];
-  for (const field of requiredFields) {
-    if (!newAddress[field]) {
-      throw new AppError(`Thiếu thông tin bắt buộc: ${field}`, 400);
-    }
+  // Lấy địa chỉ mới từ danh sách địa chỉ của user
+  const user = await User.findById(userId).select('addresses').lean();
+  if (!user) {
+    throw new AppError("Không tìm thấy người dùng.", 404);
   }
+
+  const newAddress = user.addresses.find(addr => addr._id.toString() === newAddressId);
+  if (!newAddress) {
+    throw new AppError("Địa chỉ không tồn tại hoặc không thuộc về bạn.", 404);
+  }
+
+  // Lưu địa chỉ cũ để ghi log
+  const oldAddress = { ...order.shippingAddress };
 
   // Cập nhật địa chỉ (tạo bản sao mới, không tham chiếu)
   order.shippingAddress = {
@@ -1794,14 +1800,14 @@ export const updateOrderShippingAddress = async (userId, orderId, newAddress) =>
     performedBy: "user",
     timestamp: new Date(),
     metadata: {
-      oldAddress: order.shippingAddress,
-      newAddress: newAddress,
+      oldAddress: oldAddress,
+      newAddress: order.shippingAddress,
     },
   });
 
   await order.save();
 
-  logger.info(`User ${userId} updated shipping address for order ${orderId}`);
+  logger.info(`User ${userId} updated shipping address for order ${orderId} (change count: ${order.addressChangeCount})`);
 
   return order;
 };

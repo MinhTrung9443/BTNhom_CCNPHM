@@ -2,7 +2,7 @@ import express from "express";
 import * as OrderController from "../controllers/order.controller.js";
 import { protect, restrictTo } from "../middlewares/auth.js";
 import { validate } from "../middlewares/validate.js";
-import { getUserOrders, previewOrder, placeOrder, cancelOrder, requestReturn, approveReturn, confirmReceived } from "../schemas/order.schema.js";
+import { getUserOrders, previewOrder, placeOrder, cancelOrder, requestReturn, approveReturn, confirmReceived, updateShippingAddress } from "../schemas/order.schema.js";
 
 const router = express.Router();
 
@@ -20,7 +20,7 @@ router.get("/my/stats", restrictTo("user"), OrderController.getUserOrderStats);
 // Deprecated: Use /api/users/me/addresses/default instead
 // router.get("/latest-address", restrictTo("user"), OrderController.getLatestOrderAddress);
 router.get("/:orderId", restrictTo("user"), OrderController.getOrderDetail);
-router.patch("/my/:orderId/address", restrictTo("user"), OrderController.updateOrderShippingAddress);
+router.patch("/my/:orderId/address", restrictTo("user"), validate(updateShippingAddress), OrderController.updateOrderShippingAddress);
 router.patch("/my/:orderId/cancel", restrictTo("user"), validate(cancelOrder), OrderController.cancelOrderByUser);
 router.post("/:orderId/request-return", restrictTo("user"), validate(requestReturn), OrderController.requestReturn);
 router.patch("/my/:orderId/confirm-received", restrictTo("user"), validate(confirmReceived), OrderController.confirmOrderReceived);

@@ -121,22 +121,18 @@ class OrderService {
 
   /**
    * Cập nhật địa chỉ giao hàng của đơn hàng
+   * @param accessToken - Token xác thực
+   * @param orderId - ID đơn hàng
+   * @param newAddressId - ID địa chỉ mới từ danh sách địa chỉ của user
    */
   async updateOrderAddress(
     accessToken: string, 
     orderId: string, 
-    shippingAddress: {
-      recipientName: string;
-      phoneNumber: string;
-      street: string;
-      ward: string;
-      district: string;
-      province: string;
-    }
-  ): Promise<ApiResponse<Order>> {
-    const response: ApiResponse<Order> = await apiFetch(`/orders/my/${orderId}/address`, accessToken, {
+    newAddressId: string
+  ): Promise<ApiResponse<{ _id: string; shippingAddress: any; addressChangeCount: number }>> {
+    const response = await apiFetch(`/orders/my/${orderId}/address`, accessToken, {
       method: "PATCH",
-      body: JSON.stringify({ shippingAddress }),
+      body: JSON.stringify({ newAddressId }),
     });
     return response;
   }

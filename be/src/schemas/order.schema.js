@@ -127,3 +127,22 @@ export const cancelOrder = {
     }),
   }),
 };
+
+export const updateShippingAddress = {
+  params: Joi.object({
+    orderId: Joi.string().hex().length(24).required().messages({
+      "string.base": "ID đơn hàng phải là một chuỗi.",
+      "string.hex": "ID đơn hàng phải là một chuỗi hex.",
+      "string.length": "ID đơn hàng phải có độ dài 24 ký tự.",
+      "any.required": "ID đơn hàng là bắt buộc.",
+    }),
+  }),
+  body: Joi.object({
+    newAddressId: Joi.string().hex().length(24).required().messages({
+      "string.base": "ID địa chỉ phải là một chuỗi.",
+      "string.hex": "ID địa chỉ phải là một chuỗi hex.",
+      "string.length": "ID địa chỉ phải có độ dài 24 ký tự.",
+      "any.required": "ID địa chỉ mới là bắt buộc.",
+    }),
+  }),
+};

@@ -262,13 +262,17 @@ export const cancelOrderByUser = async (req, res) => {
 export const updateOrderShippingAddress = async (req, res) => {
   const userId = req.user._id;
   const { orderId } = req.params;
-  const { shippingAddress } = req.body;
+  const { newAddressId } = req.body;
 
-  const updatedOrder = await OrderService.updateOrderShippingAddress(userId, orderId, shippingAddress);
+  const updatedOrder = await OrderService.updateOrderShippingAddress(userId, orderId, newAddressId);
 
   res.json({
     success: true,
     message: "Cập nhật địa chỉ giao hàng thành công",
-    data: updatedOrder,
+    data: {
+      _id: updatedOrder._id,
+      shippingAddress: updatedOrder.shippingAddress,
+      addressChangeCount: updatedOrder.addressChangeCount,
+    },
   });
 };
