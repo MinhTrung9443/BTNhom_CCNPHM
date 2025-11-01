@@ -234,7 +234,7 @@ export default function ChatWidget() {
     <>
       <OrderAttachmentModal open={showOrderModal} onOpenChange={setShowOrderModal} onSelectOrder={handleSelectOrder} />
       {/* Chat Toggle Button */}
-      <div className="fixed bottom-32 right-10 z-[9999]">
+      <div className="fixed bottom-6 left-337 z-[9999]">
         {!isOpen && (
           <Button
             onClick={handleOpenChat}
@@ -278,7 +278,7 @@ export default function ChatWidget() {
 
       {/* Full Chat Window */}
       {isOpen && !isMinimized && (
-        <Card className="fixed bottom-32 right-10 w-[320px] h-[500px] z-[9999] shadow-2xl chat-widget-enter-active border-2 flex flex-col">
+        <Card className="fixed bottom-32 right-10 w-[400px] h-[600px] z-[9999] shadow-2xl chat-widget-enter-active border-2 flex flex-col">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
             <CardTitle className="text-sm font-medium">
               Hỗ trợ khách hàng

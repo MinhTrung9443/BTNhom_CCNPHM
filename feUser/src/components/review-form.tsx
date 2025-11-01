@@ -102,7 +102,7 @@ export function ReviewForm({ isOpen, onClose, product, orderId, deliveredAt, exi
       if (result.success) {
         // Hiển thị thông báo về đánh giá
         toast.success(result.message);
-        
+
         // Hiển thị thông báo về mã giảm giá nếu có
         if (result.data && result.data.voucherEligibilityMessage) {
           if (result.data.isEligibleForVoucher) {
@@ -111,7 +111,7 @@ export function ReviewForm({ isOpen, onClose, product, orderId, deliveredAt, exi
             toast.info(result.data.voucherEligibilityMessage, { duration: 5000 });
           }
         }
-        
+
         if (onReviewUpdated) {
           onReviewUpdated();
         }
@@ -175,103 +175,112 @@ export function ReviewForm({ isOpen, onClose, product, orderId, deliveredAt, exi
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle className="text-xl">{existingReview ? "Chỉnh sửa đánh giá" : "Đánh giá sản phẩm"}</DialogTitle>
           <DialogDescription>
             {existingReview ? "Cập nhật đánh giá và chia sẻ thêm trải nghiệm của bạn" : "Chia sẻ trải nghiệm của bạn về sản phẩm này"}
           </DialogDescription>
-          
-          {/* Thông báo về mã giảm giá cho đánh giá mới */}
-          {!existingReview && (() => {
-            if (!deliveredAt) {
-              return null;
-            }
-            
-            const deliveryDate = new Date(deliveredAt);
-            const deadlineDate = new Date(deliveryDate.getTime() + 30 * 24 * 60 * 60 * 1000);
-            const now = new Date();
-            const daysRemaining = Math.ceil((deadlineDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-            const isEligible = daysRemaining > 0;
-            
-            const formatDate = (date: Date) => {
-              return date.toLocaleDateString('vi-VN', { 
-                day: '2-digit', 
-                month: '2-digit', 
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-              });
-            };
 
-            if (isEligible) {
-              return (
-                <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
-                  <div className="flex items-start gap-2">
-                    <div className="flex-shrink-0 mt-0.5">
-                      <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                      </svg>
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-green-800">🎁 Nhận mã giảm giá khi đánh giá</p>
-                      <p className="text-sm text-green-700 mt-1">
-                        Bạn sẽ nhận được <span className="font-semibold">mã giảm giá 5%</span> (tối đa 50.000đ) khi đánh giá.
-                      </p>
-                      <div className="mt-2 pt-2 border-t border-green-200">
-                        <p className="text-xs text-green-800">
-                          📅 <span className="font-semibold">Ngày nhận hàng:</span> {formatDate(deliveryDate)}
+          {/* Thông báo về mã giảm giá cho đánh giá mới */}
+          {!existingReview &&
+            (() => {
+              if (!deliveredAt) {
+                return null;
+              }
+
+              const deliveryDate = new Date(deliveredAt);
+              const deadlineDate = new Date(deliveryDate.getTime() + 30 * 24 * 60 * 60 * 1000);
+              const now = new Date();
+              const daysRemaining = Math.ceil((deadlineDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+              const isEligible = daysRemaining > 0;
+
+              const formatDate = (date: Date) => {
+                return date.toLocaleDateString("vi-VN", {
+                  day: "2-digit",
+                  month: "2-digit",
+                  year: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                });
+              };
+
+              if (isEligible) {
+                return (
+                  <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <div className="flex items-start gap-2">
+                      <div className="flex-shrink-0 mt-0.5">
+                        <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                          <path
+                            fillRule="evenodd"
+                            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-green-800">🎁 Nhận mã giảm giá khi đánh giá</p>
+                        <p className="text-sm text-green-700 mt-1">
+                          Bạn sẽ nhận được <span className="font-semibold">mã giảm giá 5%</span> (tối đa 50.000đ) khi đánh giá.
                         </p>
-                        <p className="text-xs text-green-800 mt-1">
-                          ⏰ <span className="font-semibold">Hạn đánh giá:</span> {formatDate(deadlineDate)}
-                        </p>
-                        <p className="text-xs font-semibold text-green-900 mt-1">
-                          ⚡ Còn <span className="text-base">{daysRemaining}</span> ngày để nhận voucher!
-                        </p>
+                        <div className="mt-2 pt-2 border-t border-green-200">
+                          <p className="text-xs text-green-800">
+                            📅 <span className="font-semibold">Ngày nhận hàng:</span> {formatDate(deliveryDate)}
+                          </p>
+                          <p className="text-xs text-green-800 mt-1">
+                            ⏰ <span className="font-semibold">Hạn đánh giá:</span> {formatDate(deadlineDate)}
+                          </p>
+                          <p className="text-xs font-semibold text-green-900 mt-1">
+                            ⚡ Còn <span className="text-base">{daysRemaining}</span> ngày để nhận voucher!
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              );
-            } else {
-              return (
-                <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                  <div className="flex items-start gap-2">
-                    <div className="flex-shrink-0 mt-0.5">
-                      <svg className="w-5 h-5 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                      </svg>
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-amber-800">⚠️ Đã hết hạn nhận mã giảm giá</p>
-                      <p className="text-sm text-amber-700 mt-1">
-                        Rất tiếc, bạn đã quá thời hạn 30 ngày để nhận mã giảm giá.
-                      </p>
-                      <div className="mt-2 pt-2 border-t border-amber-200">
-                        <p className="text-xs text-amber-700">
-                          📅 <span className="font-semibold">Ngày nhận hàng:</span> {formatDate(deliveryDate)}
-                        </p>
-                        <p className="text-xs text-amber-700 mt-1">
-                          ⏰ <span className="font-semibold">Hạn đã kết thúc:</span> {formatDate(deadlineDate)}
-                        </p>
+                );
+              } else {
+                return (
+                  <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                    <div className="flex items-start gap-2">
+                      <div className="flex-shrink-0 mt-0.5">
+                        <svg className="w-5 h-5 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
+                          <path
+                            fillRule="evenodd"
+                            d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
                       </div>
-                      <p className="text-xs text-amber-600 mt-2 italic">
-                        Tuy nhiên, đánh giá của bạn vẫn rất quan trọng để giúp người mua khác!
-                      </p>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-amber-800">⚠️ Đã hết hạn nhận mã giảm giá</p>
+                        <p className="text-sm text-amber-700 mt-1">Rất tiếc, bạn đã quá thời hạn 30 ngày để nhận mã giảm giá.</p>
+                        <div className="mt-2 pt-2 border-t border-amber-200">
+                          <p className="text-xs text-amber-700">
+                            📅 <span className="font-semibold">Ngày nhận hàng:</span> {formatDate(deliveryDate)}
+                          </p>
+                          <p className="text-xs text-amber-700 mt-1">
+                            ⏰ <span className="font-semibold">Hạn đã kết thúc:</span> {formatDate(deadlineDate)}
+                          </p>
+                        </div>
+                        <p className="text-xs text-amber-600 mt-2 italic">Tuy nhiên, đánh giá của bạn vẫn rất quan trọng để giúp người mua khác!</p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            }
-          })()}
-          
+                );
+              }
+            })()}
+
           {/* Thông báo cho việc chỉnh sửa */}
           {existingReview && (
             <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
               <div className="flex items-start gap-2">
                 <div className="flex-shrink-0 mt-0.5">
                   <svg className="w-5 h-5 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    <path
+                      fillRule="evenodd"
+                      d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                      clipRule="evenodd"
+                    />
                   </svg>
                 </div>
                 <div className="flex-1">
@@ -329,7 +338,7 @@ export function ReviewForm({ isOpen, onClose, product, orderId, deliveredAt, exi
               placeholder="Chia sẻ trải nghiệm của bạn về sản phẩm này..."
               value={comment}
               onChange={(e) => setComment(e.target.value)}
-              className="min-h-[120px] resize-none"
+              className="min-h-[50px] resize-none"
               maxLength={500}
             />
             <div className="flex justify-end text-xs">
