@@ -27,6 +27,11 @@ const protect = async (req, res, next) => {
         new AppError("Người dùng của token này không còn tồn tại.", 401)
       );
     }
+    if (!currentUser.isActive) {
+      return next(
+        new AppError("Tài khoản của bạn đã bị vô hiệu hóa. Vui lòng liên hệ quản trị viên để được hỗ trợ.", 403)
+      );
+    }
     req.user = currentUser;
     next();
   } catch (error) {
@@ -69,6 +74,10 @@ const optionalAuth = async (req, res, next) => {
 
     const currentUser = await User.findById(decoded.id).select("-password");
     if (currentUser) {
+      if (!currentUser.isActive) {
+        logger.warn(`optionalAuth: User ${currentUser._id} is inactive.`);
+        return next();
+      }
       req.user = currentUser;
       logger.info(`optionalAuth: User ${currentUser._id} attached to request.`);
     } else {

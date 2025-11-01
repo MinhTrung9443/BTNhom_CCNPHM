@@ -14,7 +14,7 @@ export const authConfig: NextAuthConfig = {
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
-          throw new Error('Email và password là bắt buộc');
+          return null;
         }
 
         try {
@@ -32,7 +32,7 @@ export const authConfig: NextAuthConfig = {
           const response: ApiResponse<LoginResponseData> = await res.json();
 
           if (!res.ok || !response.success) {
-            throw new Error(response.message || 'Đăng nhập thất bại');
+            return null;
           }
           
           const { user, token } = response.data;
@@ -52,8 +52,7 @@ export const authConfig: NextAuthConfig = {
           return null;
         } catch (error: unknown) {
           console.error('Login error:', error);
-          const message = error instanceof Error ? error.message : 'Đăng nhập thất bại';
-          throw new Error(message);
+          return null;
         }
       },
     }),

@@ -341,7 +341,7 @@ export default function ChatWidget() {
                         >
                           {msg.message}
                         </div>
-                        {msg.orderReference && (
+                        {msg.orderReference && msg.orderReference.orderId && (
                           <div className="mt-2">
                             <OrderReferenceCard orderReference={msg.orderReference} />
                           </div>

@@ -347,7 +347,7 @@ const ChatPage = () => {
               {messages.map((msg, index) => (
                 <div key={msg._id || index} className={`message ${msg.senderRole === "admin" ? "admin" : "user"}`}>
                   <div className="message-content">{msg.message}</div>
-                  {msg.orderReference && (
+                  {msg.orderReference && msg.orderReference.orderId && (
                     <div className="mt-2">
                       <OrderReferenceCard orderReference={msg.orderReference} />
                     </div>
