@@ -51,8 +51,16 @@ export default function ChatWidget() {
   const { data: session } = useSession();
 
   // The useSocket hook now provides everything needed for the chat functionality.
-  const { isConnected, messages, sendMessage: sendSocketMessage, loadOlderMessages, isLoadingOlderMessages, hasMoreMessages, scrollContainerRef: socketScrollRef } = useSocket();
-  
+  const {
+    isConnected,
+    messages,
+    sendMessage: sendSocketMessage,
+    loadOlderMessages,
+    isLoadingOlderMessages,
+    hasMoreMessages,
+    scrollContainerRef: socketScrollRef,
+  } = useSocket();
+
   // Kết nối ref từ useSocket với ref local
   useEffect(() => {
     if (messagesContainerRef.current && socketScrollRef) {
@@ -112,7 +120,7 @@ export default function ChatWidget() {
     const { scrollTop } = e.currentTarget;
     const currentScrollTop = scrollTop;
     const isScrollingUp = currentScrollTop < lastScrollTopRef.current;
-    
+
     // Chỉ load tin nhắn cũ khi:
     // 1. Đang scroll lên (không phải xuống)
     // 2. Gần đến đầu (scrollTop < 100)
@@ -124,7 +132,7 @@ export default function ChatWidget() {
       const oldestMessage = messages[0];
       loadOlderMessages(oldestMessage.timestamp);
     }
-    
+
     lastScrollTopRef.current = currentScrollTop;
   };
 
@@ -270,7 +278,7 @@ export default function ChatWidget() {
 
       {/* Full Chat Window */}
       {isOpen && !isMinimized && (
-        <Card className="fixed bottom-32 right-10 w-[400px] h-[650px] z-[9999] shadow-2xl chat-widget-enter-active border-2 flex flex-col">
+        <Card className="fixed bottom-32 right-10 w-[320px] h-[500px] z-[9999] shadow-2xl chat-widget-enter-active border-2 flex flex-col">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
             <CardTitle className="text-sm font-medium">
               Hỗ trợ khách hàng
@@ -289,12 +297,7 @@ export default function ChatWidget() {
           {/* Main content: messages + input, use flex-col and grow */}
           <div className="flex flex-col flex-1 min-h-0">
             {/* Messages Area */}
-            <div 
-              ref={messagesContainerRef}
-              className="flex-1 overflow-y-auto pr-3 mb-2" 
-              style={{ minHeight: 0 }}
-              onScroll={handleScroll}
-            >
+            <div ref={messagesContainerRef} className="flex-1 overflow-y-auto pr-3 mb-2" style={{ minHeight: 0 }} onScroll={handleScroll}>
               <div className="space-y-3">
                 {isLoadingOlderMessages && (
                   <div className="loading-older-messages-widget">
@@ -305,7 +308,7 @@ export default function ChatWidget() {
                     {/* Skeleton loading messages */}
                     <div className="space-y-2 mb-3">
                       {[1, 2, 3].map((i) => (
-                        <div key={i} className={`flex ${i % 2 === 0 ? 'justify-end' : 'justify-start'}`}>
+                        <div key={i} className={`flex ${i % 2 === 0 ? "justify-end" : "justify-start"}`}>
                           <div className="skeleton-message-widget max-w-[75%]">
                             <div className="skeleton-content-widget"></div>
                             <div className="skeleton-time-widget"></div>
@@ -377,12 +380,7 @@ export default function ChatWidget() {
                     <Paperclip className="h-4 w-4 text-green-600" />
                     <span className="text-sm text-green-700 font-medium">{selectedOrderRef.orderCode}</span>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleRemoveOrderRef}
-                    className="h-6 w-6 p-0 hover:bg-green-100"
-                  >
+                  <Button variant="ghost" size="sm" onClick={handleRemoveOrderRef} className="h-6 w-6 p-0 hover:bg-green-100">
                     <X className="h-3 w-3" />
                   </Button>
                 </div>
