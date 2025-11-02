@@ -136,7 +136,7 @@ export default function VoucherPage() {
   };
 
   const VoucherCard = ({ voucher, isUpcoming = false }: { voucher: PublicVoucher; isUpcoming?: boolean }) => (
-    <Card className="hover:shadow-lg transition-shadow duration-300 relative overflow-hidden border-l-4 border-l-green-500">
+    <Card className="hover:shadow-lg transition-shadow duration-300 relative overflow-hidden border-l-4 border-l-green-500 h-full flex flex-col">
       <CardHeader className="pb-3">
         <div className="space-y-3">
           <div className="flex justify-between items-start gap-3">
@@ -164,8 +164,8 @@ export default function VoucherPage() {
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-3">
-        <div className="space-y-2 text-sm text-gray-600">
+      <CardContent className="space-y-3 flex-1 flex flex-col">
+        <div className="space-y-2 text-sm text-gray-600 flex-1">
           <div className="flex items-center gap-2">
             <Calendar className="w-4 h-4" />
             <span>{isUpcoming ? `Bắt đầu: ${formatDate(voucher.startDate)}` : `Đến: ${formatDate(voucher.endDate)}`}</span>
@@ -213,72 +213,76 @@ export default function VoucherPage() {
               </div>
               <div className="flex items-center justify-between text-xs">
                 <span className="text-gray-500">Giới hạn mỗi người:</span>
-                <span className="font-semibold text-purple-600">
-                  {voucher.userUsageLimit !== null ? `${voucher.userUsageLimit} lần` : <span className="text-green-600">Không giới hạn</span>}
-                </span>
+                {voucher.userUsageLimit !== null && voucher.userUsageLimit !== undefined ? (
+                  <span className="font-semibold text-purple-600">{voucher.userUsageLimit} lần</span>
+                ) : (
+                  <span className="font-semibold text-green-600">Không giới hạn</span>
+                )}
               </div>
             </div>
           )}
         </div>
 
-        {!isUpcoming && session?.user ? (
-          <>
-            {voucher.isClaimed && (
-              <div className="text-sm text-center bg-gradient-to-r from-purple-50 to-blue-50 py-2.5 rounded-md border border-purple-200">
-                <div className="text-xs text-purple-600 font-semibold mb-1">📊 Thống kê của bạn</div>
-                {voucher.remainingUsage !== null ? (
-                  <div className="text-gray-700">
-                    Đã dùng: <span className="font-bold text-purple-600">{voucher.usageCount}</span>/{voucher.userUsageLimit}
-                    {voucher.remainingUsage > 0 ? (
+        <div className="mt-auto space-y-3">
+          {!isUpcoming && session?.user ? (
+            <>
+              {voucher.isClaimed && (
+                <div className="text-sm text-center bg-gradient-to-r from-purple-50 to-blue-50 py-2.5 rounded-md border border-purple-200">
+                  <div className="text-xs text-purple-600 font-semibold mb-1">📊 Thống kê của bạn</div>
+                  {voucher.remainingUsage !== null ? (
+                    <div className="text-gray-700">
+                      Đã dùng: <span className="font-bold text-purple-600">{voucher.usageCount}</span>/{voucher.userUsageLimit}
+                      {voucher.remainingUsage > 0 ? (
+                        <span className="block mt-1 text-green-600 font-semibold">
+                          ✓ Bạn còn {voucher.remainingUsage} lần nữa
+                        </span>
+                      ) : (
+                        <span className="block mt-1 text-red-600 font-semibold">
+                          ✗ Bạn đã hết lượt
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-gray-700">
+                      Đã dùng: <span className="font-bold text-purple-600">{voucher.usageCount}</span> lần
                       <span className="block mt-1 text-green-600 font-semibold">
-                        ✓ Bạn còn {voucher.remainingUsage} lần nữa
+                        ✓ Bạn không bị giới hạn
                       </span>
-                    ) : (
-                      <span className="block mt-1 text-red-600 font-semibold">
-                        ✗ Bạn đã hết lượt
-                      </span>
-                    )}
-                  </div>
-                ) : (
-                  <div className="text-gray-700">
-                    Đã dùng: <span className="font-bold text-purple-600">{voucher.usageCount}</span> lần
-                    <span className="block mt-1 text-green-600 font-semibold">
-                      ✓ Bạn không bị giới hạn
-                    </span>
-                  </div>
-                )}
-              </div>
-            )}
-            <Button
-              onClick={() => handleClaimVoucher(voucher._id)}
-              disabled={voucher.isClaimed || claimingVouchers.has(voucher._id)}
-              className={`w-full ${voucher.isClaimed ? "bg-gray-400 hover:bg-gray-400" : "bg-green-600 hover:bg-green-700"}`}
-            >
-              {claimingVouchers.has(voucher._id) ? (
-                <span className="flex items-center gap-2">
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Đang lưu...
-                </span>
-              ) : voucher.isClaimed ? (
-                "Đã lưu"
-              ) : (
-                <span className="flex items-center gap-2">
-                  <Save className="w-4 h-4" />
-                  Lưu voucher
-                </span>
+                    </div>
+                  )}
+                </div>
               )}
+              <Button
+                onClick={() => handleClaimVoucher(voucher._id)}
+                disabled={voucher.isClaimed || claimingVouchers.has(voucher._id)}
+                className={`w-full ${voucher.isClaimed ? "bg-gray-400 hover:bg-gray-400" : "bg-green-600 hover:bg-green-700"}`}
+              >
+                {claimingVouchers.has(voucher._id) ? (
+                  <span className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Đang lưu...
+                  </span>
+                ) : voucher.isClaimed ? (
+                  "Đã lưu"
+                ) : (
+                  <span className="flex items-center gap-2">
+                    <Save className="w-4 h-4" />
+                    Lưu voucher
+                  </span>
+                )}
+              </Button>
+            </>
+          ) : !isUpcoming && !session?.user ? (
+            <Button onClick={() => router.push("/login")} className="w-full bg-green-600 hover:bg-green-700">
+              Đăng nhập để lưu
             </Button>
-          </>
-        ) : !isUpcoming && !session?.user ? (
-          <Button onClick={() => router.push("/login")} className="w-full bg-green-600 hover:bg-green-700">
-            Đăng nhập để lưu
-          </Button>
-        ) : (
-          <Button disabled className="w-full bg-gray-400">
-            <Clock className="w-4 h-4 mr-2" />
-            Chưa mở
-          </Button>
-        )}
+          ) : (
+            <Button disabled className="w-full bg-gray-400">
+              <Clock className="w-4 h-4 mr-2" />
+              Chưa mở
+            </Button>
+          )}
+        </div>
       </CardContent>
     </Card>
   );
