@@ -32,14 +32,14 @@ const calculateShippingFee = async (shippingMethod) => {
 
 // Helper function to validate if voucher is applicable to the order
 const validateVoucherApplicability = (voucher, productsInCart) => {
-  const productIdsInCart = productsInCart.map(p => p._id.toString());
-  const categoryIdsInCart = [...new Set(productsInCart.map(p => p.categoryId.toString()))];
+  const productIdsInCart = productsInCart.map((p) => p._id.toString());
+  const categoryIdsInCart = [...new Set(productsInCart.map((p) => p.categoryId.toString()))];
 
   // Check excluded products - nếu TẤT CẢ sản phẩm trong cart đều bị loại trừ
   if (voucher.excludedProducts && voucher.excludedProducts.length > 0) {
-    const excludedProductIds = voucher.excludedProducts.map(id => id.toString());
-    const hasNonExcludedProduct = productIdsInCart.some(pid => !excludedProductIds.includes(pid));
-    
+    const excludedProductIds = voucher.excludedProducts.map((id) => id.toString());
+    const hasNonExcludedProduct = productIdsInCart.some((pid) => !excludedProductIds.includes(pid));
+
     if (!hasNonExcludedProduct) {
       throw new AppError("Voucher không áp dụng cho các sản phẩm trong đơn hàng", 400);
     }
@@ -48,8 +48,8 @@ const validateVoucherApplicability = (voucher, productsInCart) => {
   // Check applicable products - chỉ áp dụng cho một số sản phẩm cụ thể
   const appliesToAllProducts = !voucher.applicableProducts || voucher.applicableProducts.length === 0;
   if (!appliesToAllProducts) {
-    const voucherProductIds = voucher.applicableProducts.map(id => id.toString());
-    const isProductApplicable = productIdsInCart.some(pid => voucherProductIds.includes(pid));
+    const voucherProductIds = voucher.applicableProducts.map((id) => id.toString());
+    const isProductApplicable = productIdsInCart.some((pid) => voucherProductIds.includes(pid));
 
     if (!isProductApplicable) {
       throw new AppError("Voucher chỉ áp dụng cho một số sản phẩm cụ thể không có trong đơn hàng", 400);
@@ -58,9 +58,9 @@ const validateVoucherApplicability = (voucher, productsInCart) => {
 
   // Check excluded categories - nếu TẤT CẢ sản phẩm đều thuộc danh mục bị loại trừ
   if (voucher.excludedCategories && voucher.excludedCategories.length > 0) {
-    const excludedCategoryIds = voucher.excludedCategories.map(id => id.toString());
-    const hasNonExcludedCategory = categoryIdsInCart.some(catId => !excludedCategoryIds.includes(catId));
-    
+    const excludedCategoryIds = voucher.excludedCategories.map((id) => id.toString());
+    const hasNonExcludedCategory = categoryIdsInCart.some((catId) => !excludedCategoryIds.includes(catId));
+
     if (!hasNonExcludedCategory) {
       throw new AppError("Voucher không áp dụng cho danh mục sản phẩm trong đơn hàng", 400);
     }
@@ -69,8 +69,8 @@ const validateVoucherApplicability = (voucher, productsInCart) => {
   // Check applicable categories - chỉ áp dụng cho một số danh mục cụ thể
   const appliesToAllCategories = !voucher.applicableCategories || voucher.applicableCategories.length === 0;
   if (!appliesToAllCategories) {
-    const voucherCategoryIds = voucher.applicableCategories.map(id => id.toString());
-    const isCategoryApplicable = categoryIdsInCart.some(catId => voucherCategoryIds.includes(catId));
+    const voucherCategoryIds = voucher.applicableCategories.map((id) => id.toString());
+    const isCategoryApplicable = categoryIdsInCart.some((catId) => voucherCategoryIds.includes(catId));
 
     if (!isCategoryApplicable) {
       throw new AppError("Voucher chỉ áp dụng cho một số danh mục cụ thể không có trong đơn hàng", 400);
@@ -116,17 +116,14 @@ export const getUserOrdersForChat = async (userId, page = 1, limit = 10, search 
   // Tìm kiếm theo orderCode hoặc productName
   if (search) {
     const searchRegex = new RegExp(search, "i");
-    filter.$or = [
-      { orderCode: searchRegex },
-      { "orderLines.productName": searchRegex }
-    ];
+    filter.$or = [{ orderCode: searchRegex }, { "orderLines.productName": searchRegex }];
   }
 
   const skip = (page - 1) * limit;
 
   // Chỉ lấy các trường cần thiết để tối ưu hiệu năng
   const orders = await Order.find(filter)
-    .select('orderCode totalAmount status createdAt orderLines.productName orderLines.productImage')
+    .select("orderCode totalAmount status createdAt orderLines.productName orderLines.productImage")
     .sort({ createdAt: -1 })
     .skip(skip)
     .limit(limit)
@@ -135,16 +132,16 @@ export const getUserOrdersForChat = async (userId, page = 1, limit = 10, search 
   const total = await Order.countDocuments(filter);
 
   // Format lại dữ liệu để chỉ trả về thông tin cần thiết
-  const formattedOrders = orders.map(order => ({
+  const formattedOrders = orders.map((order) => ({
     _id: order._id,
     orderCode: order.orderCode,
     totalAmount: order.totalAmount,
     status: order.status,
     createdAt: order.createdAt,
-    orderLines: order.orderLines.map(line => ({
+    orderLines: order.orderLines.map((line) => ({
       productName: line.productName,
-      productImage: line.productImage
-    }))
+      productImage: line.productImage,
+    })),
   }));
 
   return {
@@ -158,7 +155,15 @@ export const getUserOrdersForChat = async (userId, page = 1, limit = 10, search 
   };
 };
 
-export const getAllOrders = async (page = 1, limit = 10, status = null, detailedStatus = null, search = null, sortBy = "createdAt", sortOrder = "desc") => {
+export const getAllOrders = async (
+  page = 1,
+  limit = 10,
+  status = null,
+  detailedStatus = null,
+  search = null,
+  sortBy = "createdAt",
+  sortOrder = "desc"
+) => {
   const skip = (page - 1) * limit;
   const sort = { [sortBy]: sortOrder === "asc" ? 1 : -1 };
 
@@ -172,10 +177,10 @@ export const getAllOrders = async (page = 1, limit = 10, status = null, detailed
         $cond: {
           if: { $gt: [{ $size: "$timeline" }, 0] },
           then: { $arrayElemAt: ["$timeline.status", -1] },
-          else: null
-        }
-      }
-    }
+          else: null,
+        },
+      },
+    },
   });
 
   // Stage 2: Match filters
@@ -200,7 +205,7 @@ export const getAllOrders = async (page = 1, limit = 10, status = null, detailed
       { orderCode: searchRegex },
       { _id: mongoose.isValidObjectId(search) ? new mongoose.Types.ObjectId(search) : null },
       { "orderLines.productName": searchRegex },
-    ].filter(item => item._id !== null);
+    ].filter((item) => item._id !== null);
   }
 
   if (Object.keys(matchStage).length > 0) {
@@ -213,8 +218,8 @@ export const getAllOrders = async (page = 1, limit = 10, status = null, detailed
       from: "users",
       localField: "userId",
       foreignField: "_id",
-      as: "userInfo"
-    }
+      as: "userInfo",
+    },
   });
 
   pipeline.push({
@@ -225,19 +230,19 @@ export const getAllOrders = async (page = 1, limit = 10, status = null, detailed
           then: {
             _id: { $arrayElemAt: ["$userInfo._id", 0] },
             name: { $arrayElemAt: ["$userInfo.name", 0] },
-            email: { $arrayElemAt: ["$userInfo.email", 0] }
+            email: { $arrayElemAt: ["$userInfo.email", 0] },
           },
-          else: "$userId"
-        }
-      }
-    }
+          else: "$userId",
+        },
+      },
+    },
   });
 
   pipeline.push({
     $project: {
       userInfo: 0,
-      latestDetailedStatus: 0 // Remove the temporary field from final output
-    }
+      latestDetailedStatus: 0, // Remove the temporary field from final output
+    },
   });
 
   // Create pipeline for counting
@@ -250,10 +255,7 @@ export const getAllOrders = async (page = 1, limit = 10, status = null, detailed
   pipeline.push({ $limit: limit });
 
   // Execute both pipelines
-  const [ordersResult, countResult] = await Promise.all([
-    Order.aggregate(pipeline),
-    Order.aggregate(countPipeline)
-  ]);
+  const [ordersResult, countResult] = await Promise.all([Order.aggregate(pipeline), Order.aggregate(countPipeline)]);
 
   const orders = ordersResult;
   const total = countResult.length > 0 ? countResult[0].total : 0;
@@ -332,7 +334,7 @@ export const previewOrder = async (userId, { orderLines, shippingAddress, vouche
 
   for (const line of orderLines) {
     const product = await Product.findById(line.productId).lean();
-    
+
     if (product) {
       productsInCart.push(product); // Store for later voucher validation
     }
@@ -425,10 +427,10 @@ export const previewOrder = async (userId, { orderLines, shippingAddress, vouche
         if (userLimit !== null && userVoucher.usageCount >= userLimit) {
           throw new AppError(`Bạn đã hết lượt sử dụng voucher này (tối đa ${userLimit} lần)`, 400);
         }
-        
+
         // Validate voucher applicability (products and categories)
         validateVoucherApplicability(voucher, productsInCart);
-        
+
         if (subtotal >= voucher.minPurchaseAmount) {
           // Tính giảm giá dựa trên loại voucher
           if (voucher.discountType === "percentage") {
@@ -444,18 +446,18 @@ export const previewOrder = async (userId, { orderLines, shippingAddress, vouche
             console.log("Fixed Discount:", discount);
             // Đảm bảo không vượt quá maxDiscountAmount
             console.log("Max Discount Amount:", voucher.maxDiscountAmount);
-            if (! voucher.discountType === "fixed")
-            if (discount > voucher.maxDiscountAmount) {
-              discount = voucher.maxDiscountAmount;
-            }
+            if (!voucher.discountType === "fixed")
+              if (discount > voucher.maxDiscountAmount) {
+                discount = voucher.maxDiscountAmount;
+              }
           }
-                      console.log("Fixed Discount2:", discount);
+          console.log("Fixed Discount2:", discount);
 
           // Đảm bảo discount không vượt quá subtotal
           if (discount > subtotal) {
             discount = subtotal;
           }
-            console.log("Fixed Discount3:", discount);
+          console.log("Fixed Discount3:", discount);
 
           appliedVoucherCode = voucher.code;
         } else {
@@ -469,18 +471,18 @@ export const previewOrder = async (userId, { orderLines, shippingAddress, vouche
     }
   }
   console.log("Discount:", discount);
-  
+
   // Tính giá trị đơn hàng sau khi trừ voucher (không bao gồm phí ship)
   const subtotalAfterVoucher = subtotal - discount;
-  
+
   // Lấy thông tin user để tính điểm
   const user = await User.findById(userId).select("loyaltyPoints").lean();
   const userPoints = user?.loyaltyPoints || 0;
-  
+
   // Tính số điểm tối đa có thể áp dụng (50% giá trị đơn hàng sau voucher, làm tròn xuống bội số 100)
   const maxAllowableDiscount = Math.floor((subtotalAfterVoucher * 0.5) / 100) * 100;
   const maxApplicablePoints = Math.min(userPoints, maxAllowableDiscount);
-  
+
   // Tính số điểm thực tế được áp dụng (dựa trên pointsToApply từ client)
   let pointsApplied = 0;
   if (pointsToApply > 0) {
@@ -496,7 +498,7 @@ export const previewOrder = async (userId, { orderLines, shippingAddress, vouche
   // 1 điểm = 1 VNĐ
   const totalAmount = subtotal - discount + shippingFee - pointsApplied;
   console.log("Total Amount Calculation:", { subtotal, shippingFee, discount, pointsApplied, maxApplicablePoints, totalAmount });
-  
+
   const preview = {
     orderLines: processedOrderLines,
     shippingAddress: shippingAddress,
@@ -599,15 +601,15 @@ const _executePostOrderActions = async (order) => {
       const userVoucher = await UserVoucher.findOne({ userId: order.userId, voucherId: voucher._id });
       if (userVoucher) {
         userVoucher.usageCount += 1;
-        
+
         // Nếu đã hết lượt thì đánh dấu isUsed = true (để tương thích với code cũ)
         const userLimit = voucher.userUsageLimit || null;
         if (userLimit !== null && userVoucher.usageCount >= userLimit) {
           userVoucher.isUsed = true;
         }
-        
+
         await userVoucher.save();
-        logger.info(`Voucher ${order.voucherCode} usage count incremented for user ${order.userId} (${userVoucher.usageCount}/${userLimit || '∞'})`);
+        logger.info(`Voucher ${order.voucherCode} usage count incremented for user ${order.userId} (${userVoucher.usageCount}/${userLimit || "∞"})`);
       }
     }
   }
@@ -945,7 +947,7 @@ export const autoConfirmOrders = async () => {
     status: ORDER_STATUS.PENDING,
     createdAt: { $lte: thirtyMinutesAgo },
     "payment.paymentMethod": "MOMO",
-    "payment.status": "pending",
+    "payment.status": { $in: ["pending", "failed"] },
   });
 
   let cancelledCount = 0;
@@ -1001,7 +1003,7 @@ export const autoCancelUnpaidMomoOrder = async (orderId) => {
   }
 
   // Double check conditions
-  if (order.payment.paymentMethod !== "MOMO" || order.payment.status !== "pending") {
+  if (order.payment.paymentMethod !== "MOMO" || !["pending", "failed"].includes(order.payment.status)) {
     logger.warn(`Order ${orderId} is not eligible for auto cancellation`);
     return order;
   }
@@ -1138,10 +1140,7 @@ const VALID_TRANSITIONS = {
     DETAILED_ORDER_STATUS.DELIVERY_FAILED,
     DETAILED_ORDER_STATUS.CANCELLATION_REQUESTED,
   ],
-  [DETAILED_ORDER_STATUS.DELIVERED]: [
-    DETAILED_ORDER_STATUS.COMPLETED,
-    DETAILED_ORDER_STATUS.RETURN_REQUESTED,
-  ],
+  [DETAILED_ORDER_STATUS.DELIVERED]: [DETAILED_ORDER_STATUS.COMPLETED, DETAILED_ORDER_STATUS.RETURN_REQUESTED],
   [DETAILED_ORDER_STATUS.DELIVERY_FAILED]: [
     DETAILED_ORDER_STATUS.SHIPPING_IN_PROGRESS, // Thử giao lại
     DETAILED_ORDER_STATUS.CANCELLED, // Hủy đơn
@@ -1172,26 +1171,24 @@ export const getValidTransitions = async (orderId) => {
 
   // Lấy detailed status mới nhất từ timeline
   const latestDetailedStatus = order.timeline[order.timeline.length - 1]?.status;
-  
+
   // Lấy danh sách các status có thể chuyển
   const validNextStatuses = VALID_TRANSITIONS[latestDetailedStatus] || [];
-  
+
   // Chỉ lấy các status mà admin có thể cập nhật thủ công
-  const adminEditableStatuses = validNextStatuses.filter(status => 
-    ADMIN_MANUAL_DETAILED_STATUSES.includes(status)
-  );
+  const adminEditableStatuses = validNextStatuses.filter((status) => ADMIN_MANUAL_DETAILED_STATUSES.includes(status));
 
   return {
     currentStatus: {
       general: order.status,
       detailed: latestDetailedStatus,
     },
-    validTransitions: adminEditableStatuses.map(status => ({
+    validTransitions: adminEditableStatuses.map((status) => ({
       value: status,
       label: getStatusLabel(status),
       requiresMetadata: requiresMetadataForStatus(status),
     })),
-    allStatuses: Object.values(DETAILED_ORDER_STATUS).map(status => ({
+    allStatuses: Object.values(DETAILED_ORDER_STATUS).map((status) => ({
       value: status,
       label: getStatusLabel(status),
       enabled: adminEditableStatuses.includes(status),
@@ -1277,7 +1274,7 @@ export const updateOrderStatusByAdmin = async (orderId, newDetailedStatus, admin
     },
     [DETAILED_ORDER_STATUS.SHIPPING_IN_PROGRESS]: {
       title: "Đơn hàng đang được giao",
-      message: metadata.trackingNumber 
+      message: metadata.trackingNumber
         ? `Đơn hàng ${order.orderCode} đang trên đường giao. Mã vận đơn: ${metadata.trackingNumber}`
         : `Đơn hàng ${order.orderCode} của bạn đang trên đường giao`,
     },
@@ -1287,9 +1284,7 @@ export const updateOrderStatusByAdmin = async (orderId, newDetailedStatus, admin
     },
     [DETAILED_ORDER_STATUS.CANCELLED]: {
       title: "Đơn hàng đã bị hủy",
-      message: metadata.reason 
-        ? `Đơn hàng ${order.orderCode} đã bị hủy. Lý do: ${metadata.reason}`
-        : `Đơn hàng ${order.orderCode} của bạn đã bị hủy`,
+      message: metadata.reason ? `Đơn hàng ${order.orderCode} đã bị hủy. Lý do: ${metadata.reason}` : `Đơn hàng ${order.orderCode} của bạn đã bị hủy`,
     },
     [DETAILED_ORDER_STATUS.DELIVERY_FAILED]: {
       title: "Giao hàng thất bại",
@@ -1297,13 +1292,13 @@ export const updateOrderStatusByAdmin = async (orderId, newDetailedStatus, admin
     },
     [DETAILED_ORDER_STATUS.REFUNDED]: {
       title: "Đã hoàn tiền",
-      message: `Đơn hàng ${order.orderCode} đã được hoàn tiền. Số tiền ${order.totalAmount.toLocaleString('vi-VN')} VNĐ sẽ được hoàn lại cho bạn.`,
+      message: `Đơn hàng ${order.orderCode} đã được hoàn tiền. Số tiền ${order.totalAmount.toLocaleString("vi-VN")} VNĐ sẽ được hoàn lại cho bạn.`,
     },
   };
 
   if (notificationMessages[newDetailedStatus]) {
     const userId = order.userId._id || order.userId;
-    
+
     // Use aggregated notification service
     await orderNotificationService.handleOrderStatusUpdate(
       orderId,
@@ -1316,9 +1311,9 @@ export const updateOrderStatusByAdmin = async (orderId, newDetailedStatus, admin
     // Send real-time order status update event
     if (global.io) {
       const userSocketId = userId.toString();
-      
+
       logger.info(`Emitting order status notification to user ${userSocketId} for order ${order.orderCode}`);
-      
+
       // Emit orderStatusUpdate for order-specific updates
       global.io.to(userSocketId).emit("orderStatusUpdate", {
         orderId: updatedOrder._id,
@@ -1326,10 +1321,10 @@ export const updateOrderStatusByAdmin = async (orderId, newDetailedStatus, admin
         status: newDetailedStatus,
         message: notificationMessages[newDetailedStatus].message,
       });
-      
+
       logger.info(`Successfully emitted order status update to user ${userSocketId}`);
     } else {
-      logger.warn('Socket.IO not available, cannot send real-time notification');
+      logger.warn("Socket.IO not available, cannot send real-time notification");
     }
   }
 
@@ -1788,7 +1783,7 @@ export const updateMomoPaymentFromReturn = async (orderId, userId, paymentData) 
 // === UPDATE ORDER SHIPPING ADDRESS ===
 export const updateOrderShippingAddress = async (userId, orderId, newAddressId) => {
   const order = await Order.findOne({ _id: orderId, userId });
-  
+
   if (!order) {
     throw new AppError("Không tìm thấy đơn hàng hoặc bạn không có quyền truy cập.", 404);
   }
@@ -1803,24 +1798,20 @@ export const updateOrderShippingAddress = async (userId, orderId, newAddressId) 
   // Chỉ cho phép thay đổi địa chỉ khi:
   // 1. Đơn hàng đang ở trạng thái PENDING (chờ xác nhận)
   // 2. Đơn hàng đang ở trạng thái PROCESSING và detailed status là CONFIRMED (đã xác nhận nhưng chưa chuẩn bị)
-  const canChangeAddress = 
-    order.status === ORDER_STATUS.PENDING ||
-    (order.status === ORDER_STATUS.PROCESSING && latestDetailedStatus === DETAILED_ORDER_STATUS.CONFIRMED);
+  const canChangeAddress =
+    order.status === ORDER_STATUS.PENDING || (order.status === ORDER_STATUS.PROCESSING && latestDetailedStatus === DETAILED_ORDER_STATUS.CONFIRMED);
 
   if (!canChangeAddress) {
-    throw new AppError(
-      "Không thể thay đổi địa chỉ giao hàng khi đơn hàng đã được chuẩn bị hoặc đang giao hàng.", 
-      400
-    );
+    throw new AppError("Không thể thay đổi địa chỉ giao hàng khi đơn hàng đã được chuẩn bị hoặc đang giao hàng.", 400);
   }
 
   // Lấy địa chỉ mới từ danh sách địa chỉ của user
-  const user = await User.findById(userId).select('addresses').lean();
+  const user = await User.findById(userId).select("addresses").lean();
   if (!user) {
     throw new AppError("Không tìm thấy người dùng.", 404);
   }
 
-  const newAddress = user.addresses.find(addr => addr._id.toString() === newAddressId);
+  const newAddress = user.addresses.find((addr) => addr._id.toString() === newAddressId);
   if (!newAddress) {
     throw new AppError("Địa chỉ không tồn tại hoặc không thuộc về bạn.", 404);
   }
