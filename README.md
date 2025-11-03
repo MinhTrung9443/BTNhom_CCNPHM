@@ -19,9 +19,11 @@
   * **Quản lý đơn hàng:** Theo dõi trạng thái đơn hàng, xem lịch sử đơn hàng, và yêu cầu hủy hoặc trả hàng.
   * **Tài khoản người dùng:** Cập nhật thông tin cá nhân, quản lý địa chỉ, xem lịch sử mua hàng, và các sản phẩm đã xem.
   * **Tính năng tương tác:** Thêm sản phẩm vào danh sách yêu thích, để lại đánh giá cho sản phẩm.
+  * **Tương tác bài viết:** Xem, thích, bình luận, chia sẻ.
   * **Hệ thống điểm tích lũy:** Tích điểm sau mỗi đơn hàng thành công và sử dụng điểm để được giảm giá.
   * **Voucher:** Khám phá, lưu và áp dụng voucher.
   * **Chat trực tuyến:** Hỗ trợ khách hàng theo thời gian thực.
+  * **Chat với AI:** Hỗ trợ khách hàng bằng trợ lý ảo.
 
 ### Trang quản trị (Admin - React)
 
@@ -31,6 +33,8 @@
   * **Quản lý đơn hàng:** Xem chi tiết đơn hàng, cập nhật trạng thái, và xử lý các yêu cầu hủy/trả hàng.
   * **Quản lý danh mục:** Tạo và quản lý các danh mục sản phẩm.
   * **Quản lý voucher:** Tạo và quản lý các mã giảm giá.
+  * **Kiểm duyệt bình luận:** Kiểm duyệt thủ công hoặc tự động.
+  * **Quản lý bài viết:** Đăng bài, quản lý SEO, thống kê lượt thích, bình luận, chia sẻ.
   * **Quản lý phương thức vận chuyển:** Cấu hình các tùy chọn giao hàng.
   * **Hệ thống thông báo:** Nhận thông báo về đơn hàng mới và các hoạt động quan trọng khác.
   * **Chat với khách hàng:** Tương tác và hỗ trợ khách hàng trực tiếp từ trang quản trị.
