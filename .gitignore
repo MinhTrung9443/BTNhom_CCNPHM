@@ -4,7 +4,7 @@
 .clinerules
 digest.txt
 .kilocode
-/be/.env
+# /be/.env
 /be/node_modules
 /be/dist
 /be/.kiro
@@ -12,7 +12,7 @@ digest.txt
 /be/.clinerules
 /be/digest.txt
 /be/.kilocode
-/fe/.env
+#/fe/.env
 /fe/node_modules
 /fe/dist
 /fe/.kiro
@@ -24,17 +24,17 @@ digest.txt
 /feUser/.next
 /feAdmin/node_modules
 /feAdmin/dist
-/feAdmin/.env
+#/feAdmin/.env
 
 feUser/.github/copilot-instructions.md
 fe
 /fe
 
-feUser/.env.local
-feAdmin/.env
-be/.env
+#feUser/.env.local
+#feAdmin/.env
+#be/.env
 
-feUser/.env.local
+#feUser/.env.local
 /be/logs
 .vscode
 *.log

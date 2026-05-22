@@ -44,5 +44,5 @@ yarn-error.log*
 # .kilocode/rules/rule.md
 # .github/copilot-instructions.md
 
-.env.local
+# .env.local
 package-lock.json
